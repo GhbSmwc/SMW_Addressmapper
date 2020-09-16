@@ -1,0 +1,40 @@
+<html>
+	<head>
+		<style>
+			html {
+			background-color: white;
+			color: black;
+			font-family: sans-serif;
+			}
+			
+			table, th, td {
+			border: 1px solid black;
+			border-collapse: collapse;
+			}
+			
+			span.NoLineBreak {
+				white-space: nowrap;
+			}
+		</style>
+	</head>
+<body>
+Enter a list of RAM addresses in the text area below. It must be formatted like this:
+<table><tr><td><pre>&lt;Address&gt;	&lt;Size_in_bytes&gt;	&lt;Description&gt;
+&lt;Address&gt;	&lt;Size_in_bytes&gt;	&lt;Description&gt;
+&lt;Address&gt;	&lt;Size_in_bytes&gt;	&lt;Description&gt;
+[...]</pre></td></tr></table><br>
+Where:
+<table><tr><td><pre>
+Address = the RAM address, in hex, without the &ldquo;$&rdquo; prefix.
+Size_in_bytes = How many bytes taken, starting from [Address] and ending at [Address + Size_in_bytes - 1].
+Description = Brief description, don't use tabs here, as it is reserved for tab-seperated columns.</pre></td></tr></table><br>
+<textarea id="UserInputList" cols="50" rows="10" oninput="DisplayAddress()"></textarea><br>
+
+
+<script>
+
+	function DisplayAddress() {
+		//Obtain each list of items
+			var ListOfUsedAddress = (document.getElementById("UserInputList").value).split('\n')
+	}
+</script>

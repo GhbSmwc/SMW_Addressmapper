@@ -72,6 +72,7 @@ Sort address:<br>
 					while (Index_WhichEntry < (ListOfUsedAddress.length - 1)) {
 						if ((ListOfUsedAddress[Index_WhichEntry][0] + ListOfUsedAddress[Index_WhichEntry][1] - 1n) < (ListOfUsedAddress[Index_WhichEntry + 1][0])) {
 							OverlapStatusArray[Index_WhichEntry] = "NoOverlap"
+							OverlapStatusArray[Index_WhichEntry + 1] = "NoOverlap"
 						} else {
 							OverlapStatusArray[Index_WhichEntry] = "Overlap"
 						}

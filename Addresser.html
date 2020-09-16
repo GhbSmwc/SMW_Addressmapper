@@ -22,7 +22,8 @@ Enter a list of RAM addresses in the text area below. It must be formatted like 
 <table><tr><td><pre>&lt;Address&gt;	&lt;Size_in_bytes&gt;	&lt;Description&gt;
 &lt;Address&gt;	&lt;Size_in_bytes&gt;	&lt;Description&gt;
 &lt;Address&gt;	&lt;Size_in_bytes&gt;	&lt;Description&gt;
-[...]</pre></td></tr></table><br>
+[...]&leftarrow; Last item not to have line breaks!</pre></td></tr></table><br>
+Note: Whitespace is TAB character, not a literal space character.<br>
 Where:
 <table><tr><td><pre>
 Address = the RAM address, in hex, without the &ldquo;$&rdquo; prefix.
@@ -36,5 +37,21 @@ Description = Brief description, don't use tabs here, as it is reserved for tab-
 	function DisplayAddress() {
 		//Obtain each list of items
 			var ListOfUsedAddress = (document.getElementById("UserInputList").value).split('\n')
+		//Check if all lines are valid format.
+			var Index = 0
+			var AllLinesValid = true
+			while ((Index < ListOfUsedAddress.length)||(AllLinesValid == true)) {
+				if ((/^[0-9a-fA-F]+?\t\d+?\t[^\t]*?$/.test(ListOfUsedAddress[Index])) == false) {
+					AllLinesValid = false
+				}
+				Index++
+			}
+		//Process each line.
+			if (AllLinesValid == true) {
+				
+				
+			} else {
+				
+			}
 	}
 </script>

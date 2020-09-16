@@ -27,9 +27,12 @@ Note: Whitespace is TAB character, not a literal space character.<br>
 Where:
 <table><tr><td><pre>
 Address = the RAM address, in hex, without the &ldquo;$&rdquo; prefix.
-Size_in_bytes = How many bytes taken, starting from [Address] and ending at [Address + Size_in_bytes - 1].
+Size_in_bytes = How many bytes taken in decimal, starting from [Address] and ending at [Address + Size_in_bytes - 1].
 Description = Brief description, don't use tabs here, as it is reserved for tab-seperated columns.</pre></td></tr></table><br>
 <textarea id="UserInputList" cols="50" rows="10" oninput="DisplayAddress()"></textarea><br>
+Sort address:<br>
+<input type="radio" id="Address_Ascending" name="Address_Sort" checked><label for="Address_Ascending">Ascending</label><br>
+<input type="radio" id="Address_Descending" name="Address_Sort"><label for="Address_Descending">Descending</label>
 
 
 <script>
@@ -38,20 +41,55 @@ Description = Brief description, don't use tabs here, as it is reserved for tab-
 		//Obtain each list of items
 			var ListOfUsedAddress = (document.getElementById("UserInputList").value).split('\n')
 		//Check if all lines are valid format.
-			var Index = 0
+			var Index_ErrorLine = 0
 			var AllLinesValid = true
-			while ((Index < ListOfUsedAddress.length)||(AllLinesValid == true)) {
-				if ((/^[0-9a-fA-F]+?\t\d+?\t[^\t]*?$/.test(ListOfUsedAddress[Index])) == false) {
+			while ((Index_ErrorLine < (ListOfUsedAddress.length - 1))&&(AllLinesValid == true)) {
+				if ((/^[0-9a-fA-F]+?\t\d+?\t[^\t]*?$/.test(ListOfUsedAddress[Index_ErrorLine])) == false) {
 					AllLinesValid = false
 				}
-				Index++
+				//Next
+					Index_ErrorLine++
 			}
 		//Process each line.
 			if (AllLinesValid == true) {
-				
-				
+				//Each line is split into a sub-array
+					var Index_WhichEntry = 0
+					while (Index_WhichEntry < ListOfUsedAddress.length) {
+						//Split each item in a row into separate elements.
+							ListOfUsedAddress[Index_WhichEntry] = ListOfUsedAddress[Index_WhichEntry].split('\t')
+						//Convert address and number of bytes to BigInt just in case of precision loss or something.
+							ListOfUsedAddress[Index_WhichEntry][0] = BigInt("0x" + ListOfUsedAddress[Index_WhichEntry][0])
+							ListOfUsedAddress[Index_WhichEntry][1] = BigInt(ListOfUsedAddress[Index_WhichEntry][1])
+						//Next
+							Index_WhichEntry++
+					}
+				//Sort each main item (each line; each entry containing address, number of bytes, and description) by address, ascending
+				//initially so that we can check each address afterwards if they overlap.
+					ListOfUsedAddress.sort(SortFunction);
+					
+					Index_WhichEntry = 0
+					var OverlapStatusArray = new Array(ListOfUsedAddress.length).fill("")
+					while (Index_WhichEntry < (ListOfUsedAddress.length - 1)) {
+						if ((ListOfUsedAddress[Index_WhichEntry][0] + ListOfUsedAddress[Index_WhichEntry][1] - 1n) < (ListOfUsedAddress[Index_WhichEntry + 1][0])) {
+							OverlapStatusArray[Index_WhichEntry] = "NoOverlap"
+						} else {
+							OverlapStatusArray[Index_WhichEntry] = "Overlap"
+						}
+						
+						//Next
+							Index_WhichEntry++
+					}
 			} else {
+				//Display an error that one of the lines are off.
 				
 			}
+	}
+	function SortFunction(a, b) {
+		if (a[0] === b[0]) {
+			return 0;
+		}
+		else {
+			return (a[0] < b[0]) ? -1 : 1;
+		}
 	}
 </script>

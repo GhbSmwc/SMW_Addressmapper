@@ -31,20 +31,23 @@ Size_in_bytes = How many bytes taken in decimal, starting from [Address] and end
 Description = Brief description, don't use tabs here, as it is reserved for tab-seperated columns.</pre></td></tr></table><br>
 <textarea id="UserInputList" cols="50" rows="10" oninput="DisplayAddress()"></textarea><br>
 Sort address:<br>
-<input type="radio" id="Address_Ascending" name="Address_Sort" checked><label for="Address_Ascending">Ascending</label><br>
-<input type="radio" id="Address_Descending" name="Address_Sort"><label for="Address_Descending">Descending</label>
+<input type="radio" id="Address_Ascending" name="Address_Sort" onchange="DisplayAddress()" checked><label for="Address_Ascending">Ascending</label><br>
+<input type="radio" id="Address_Descending" name="Address_Sort" onchange="DisplayAddress()"><label for="Address_Descending">Descending</label><br>
+<hr>
+<span id="Output"></span>
 
 
 <script>
 
 	function DisplayAddress() {
+			var Output = ""
 		//Obtain each list of items
 			var ListOfUsedAddress = (document.getElementById("UserInputList").value).split('\n')
 		//Check if all lines are valid format.
 			var Index_ErrorLine = 0
 			var AllLinesValid = true
-			while ((Index_ErrorLine < (ListOfUsedAddress.length - 1))&&(AllLinesValid == true)) {
-				if ((/^[0-9a-fA-F]+?\t\d+?\t[^\t]*?$/.test(ListOfUsedAddress[Index_ErrorLine])) == false) {
+			while ((Index_ErrorLine < (ListOfUsedAddress.length))&&(AllLinesValid == true)) {
+				if ((/^[0-9a-fA-F]+?\t\d+?\t[^\t]+?$/.test(ListOfUsedAddress[Index_ErrorLine])) == false) {
 					AllLinesValid = false
 				}
 				//Next
@@ -66,24 +69,61 @@ Sort address:<br>
 				//Sort each main item (each line; each entry containing address, number of bytes, and description) by address, ascending
 				//initially so that we can check each address afterwards if they overlap.
 					ListOfUsedAddress.sort(SortFunction);
-					
-					Index_WhichEntry = 0
+				//Now write their overlap status
+					Index_WhichEntry = 1 //Since we always check an element before our current one, the first one does not have anything before that.
 					var OverlapStatusArray = new Array(ListOfUsedAddress.length).fill("")
-					while (Index_WhichEntry < (ListOfUsedAddress.length - 1)) {
-						if ((ListOfUsedAddress[Index_WhichEntry][0] + ListOfUsedAddress[Index_WhichEntry][1] - 1n) < (ListOfUsedAddress[Index_WhichEntry + 1][0])) {
+					OverlapStatusArray[0] = "first"
+					while (Index_WhichEntry < ListOfUsedAddress.length) {
+						if ((ListOfUsedAddress[Index_WhichEntry][0]) > (ListOfUsedAddress[Index_WhichEntry - 1][0] + ListOfUsedAddress[Index_WhichEntry - 1][1] - 1n)) {
 							OverlapStatusArray[Index_WhichEntry] = "NoOverlap"
-							OverlapStatusArray[Index_WhichEntry + 1] = "NoOverlap"
 						} else {
 							OverlapStatusArray[Index_WhichEntry] = "Overlap"
+							OverlapStatusArray[Index_WhichEntry - 1] = "Overlap"
 						}
 						
 						//Next
 							Index_WhichEntry++
 					}
+				//Display output
+					if (document.getElementById("Address_Descending").checked) {
+						ListOfUsedAddress.reverse()
+						OverlapStatusArray.reverse()
+					}
+					Output += "<table>"
+					Output += "<tr><th>Address</th><th>Size(/EndAddress)</th><th>Description</th>"
+					Index_WhichEntry = 0
+					while (Index_WhichEntry < ListOfUsedAddress.length) {
+						Output += "<tr>"
+						if (OverlapStatusArray[Index_WhichEntry] != "Overlap") {
+							Output += "<td>"
+						} else {
+							Output += "<td bgcolor='salmon'>"
+						}
+						Output += "<kbd>$" + ListOfUsedAddress[Index_WhichEntry][0].toString(16).toUpperCase() + "</kbd>"
+						if (OverlapStatusArray[Index_WhichEntry] == "Overlap") {
+							Output += " Overlap detected!"
+						}
+						Output += "</td>"
+						Output += "<td><kbd>" + ListOfUsedAddress[Index_WhichEntry][1].toString(10) + "</kbd>"
+						if (ListOfUsedAddress[Index_WhichEntry][1] > 1n) {
+							//Show end address if more than 1 byte
+								Output += "/<kbd>$" + (ListOfUsedAddress[Index_WhichEntry][0] + ListOfUsedAddress[Index_WhichEntry][1] - 1n).toString(16).toUpperCase() + "</kbd>"
+						}
+						Output += "</td>"
+						Output += "<td>" + ListOfUsedAddress[Index_WhichEntry][2] + "</td>"
+						Output += "</tr>"
+						
+						//Next
+							Index_WhichEntry++
+					}
+					
+					Output += "</table>"
 			} else {
 				//Display an error that one of the lines are off.
 				
 			}
+			
+			document.getElementById("Output").innerHTML = Output
 	}
 	function SortFunction(a, b) {
 		if (a[0] === b[0]) {

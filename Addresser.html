@@ -63,6 +63,11 @@ Sort address:<br>
 						//Convert address and number of bytes to BigInt just in case of precision loss or something.
 							ListOfUsedAddress[Index_WhichEntry][0] = BigInt("0x" + ListOfUsedAddress[Index_WhichEntry][0])
 							ListOfUsedAddress[Index_WhichEntry][1] = BigInt(ListOfUsedAddress[Index_WhichEntry][1])
+							
+						//Check if the user enters 0 number of bytes (corrects it to 1)
+							if (ListOfUsedAddress[Index_WhichEntry][1] == 0n) {
+								ListOfUsedAddress[Index_WhichEntry][1] = 1n
+							}
 						//Next
 							Index_WhichEntry++
 					}

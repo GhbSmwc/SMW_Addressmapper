@@ -51,7 +51,8 @@ Sort address:<br>
 			var Index_ErrorLine = 0
 			var AllLinesValid = true
 			var NumberOfBytesValid = true
-			var FirstByteAfterLastByteInLastRange = 0n
+			var HighestEndAddressGapDetect = 0n //Needed so we can determine the starting address of a gap, after the ending of an overlapped address
+			var HighestEndAddressOverlapDetect = 0n //Needed in case if we have multiple overlapping address.
 			while ((Index_ErrorLine < (ListOfUsedAddress.length))&&(AllLinesValid == true)) {
 				if ((/^\$?[0-9a-fA-F]+?\t(\d+?|-\$?[0-9a-fA-F]+?)\t[^\t]+?$/.test(ListOfUsedAddress[Index_ErrorLine])) == false) {
 					AllLinesValid = false
@@ -66,8 +67,8 @@ Sort address:<br>
 				//ListOfUsedAddress[Index_WhichEntry][0] = address column
 				//ListOfUsedAddress[Index_WhichEntry][1] = size column
 				//ListOfUsedAddress[Index_WhichEntry][2] = description column
-				//ListOfUsedAddress[Index_WhichEntry][3] = (internally) Indicate if an item is by user or is a gap between ranges.
-				//ListOfUsedAddress[Index_WhichEntry][4] = (internally) Indicate an overlap or not
+				//ListOfUsedAddress[Index_WhichEntry][3] = Overlap indicator.
+				//ListOfUsedAddress[Index_WhichEntry][4] = Adjacent/Gap indicator in relation to previous address.
 					var Index_WhichEntry = 0
 					while (Index_WhichEntry < ListOfUsedAddress.length) {
 						//Split each item in a row into separate elements.
@@ -97,7 +98,7 @@ Sort address:<br>
 									NumberOfBytesValid = false
 								}
 						//Add a new item on each row
-							ListOfUsedAddress[Index_WhichEntry].push("UserEnteredRange", "")
+							ListOfUsedAddress[Index_WhichEntry].push("", "")
 						//Next
 							Index_WhichEntry++
 					}
@@ -108,10 +109,24 @@ Sort address:<br>
 					//check overlaps and gaps
 						Index_WhichEntry = 1
 						while (Index_WhichEntry < ListOfUsedAddress.length) {
-							if (ListOfUsedAddress[Index_WhichEntry][0] <= ListOfUsedAddress[Index_WhichEntry - 1][0] + ListOfUsedAddress[Index_WhichEntry - 1][1] - 1n) {
-								ListOfUsedAddress[Index_WhichEntry - 1][4] = "OverlappedAddress"
-								ListOfUsedAddress[Index_WhichEntry][4] = "OverlappedAddress"
-							}
+							//Check if a given used address range intersects with another. Since this is now sorted ascending address order initally here, the next item shall
+							//have a start address greater or equal to than the current item.
+								if (ListOfUsedAddress[Index_WhichEntry - 1][0] + ListOfUsedAddress[Index_WhichEntry - 1][1] - 1n > HighestEndAddressOverlapDetect) {
+									HighestEndAddressOverlapDetect = ListOfUsedAddress[Index_WhichEntry - 1][0] + ListOfUsedAddress[Index_WhichEntry - 1][1] - 1n
+								}
+								if (ListOfUsedAddress[Index_WhichEntry][0] <= HighestEndAddressOverlapDetect) { //ListOfUsedAddress[Index_WhichEntry - 1][0] + ListOfUsedAddress[Index_WhichEntry - 1][1] - 1n is the ending address of the previous item.
+									ListOfUsedAddress[Index_WhichEntry - 1][3] = "Overlap"
+									ListOfUsedAddress[Index_WhichEntry][3] = "Overlap"
+								}
+							//Adjacent/Gap indicator in relation to highest end address before.
+								if (ListOfUsedAddress[Index_WhichEntry - 1][0] + ListOfUsedAddress[Index_WhichEntry - 1][1] - 1n > HighestEndAddressGapDetect) {
+									HighestEndAddressGapDetect = ListOfUsedAddress[Index_WhichEntry - 1][0] + ListOfUsedAddress[Index_WhichEntry - 1][1] - 1n
+								}
+								if (ListOfUsedAddress[Index_WhichEntry][0] == HighestEndAddressGapDetect + 1n) {
+									ListOfUsedAddress[Index_WhichEntry][4] = "Adjacent"
+								} else if (ListOfUsedAddress[Index_WhichEntry][0] > HighestEndAddressGapDetect + 1n) {
+									ListOfUsedAddress[Index_WhichEntry][4] = "Gap"
+								}
 							//Next
 								Index_WhichEntry++
 						}
@@ -125,20 +140,21 @@ Sort address:<br>
 						Output += "<tr><th>Address</th><th>Size(/EndAddress)</th><th>Description</th>"
 						Index_WhichEntry = 0
 						while (Index_WhichEntry < ListOfUsedAddress.length) {
-							//Start address
+							//Start row
 								Output += "<tr>"
-								if (ListOfUsedAddress[Index_WhichEntry][4] == "") {
+							//Start address
+								if (ListOfUsedAddress[Index_WhichEntry][3] != "Overlap") {
 									Output += "<td>"
 								} else {
 									Output += "<td bgcolor='salmon'>"
 								}
 								Output += "<kbd>$" + ListOfUsedAddress[Index_WhichEntry][0].toString(16).toUpperCase() + "</kbd>"
-								if (ListOfUsedAddress[Index_WhichEntry][4] == "OverlappedAddress") {
+								if (ListOfUsedAddress[Index_WhichEntry][3] == "Overlap") {
 									Output += " Overlap detected!"
 								}
 								Output += "</td>"
 							//Number of bytes/end address
-								if (ListOfUsedAddress[Index_WhichEntry][4] == "") {
+								if (ListOfUsedAddress[Index_WhichEntry][3] != "Overlap") {
 									Output += "<td>"
 								} else {
 									Output += "<td bgcolor='salmon'>"
@@ -150,12 +166,15 @@ Sort address:<br>
 								}
 								Output += "</td>"
 							//Description
-								if (ListOfUsedAddress[Index_WhichEntry][4] == "") {
+								if (ListOfUsedAddress[Index_WhichEntry][3] != "Overlap") {
 									Output += "<td>"
 								} else {
 									Output += "<td bgcolor='salmon'>"
 								}
 								Output += ListOfUsedAddress[Index_WhichEntry][2] + "</td>"
+							//indicator in relation to previous address
+								Output += "<td>" + ListOfUsedAddress[Index_WhichEntry][4] + "</td>"
+							//End of row
 								Output += "</tr>"
 							//Next
 								Index_WhichEntry++

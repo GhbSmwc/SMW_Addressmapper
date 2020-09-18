@@ -66,7 +66,8 @@ Sort address:<br>
 				//ListOfUsedAddress[Index_WhichEntry][0] = address column
 				//ListOfUsedAddress[Index_WhichEntry][1] = size column
 				//ListOfUsedAddress[Index_WhichEntry][2] = description column
-				//ListOfUsedAddress[Index_WhichEntry][3] = (internally) Overlap/Adjacent/Gap status column
+				//ListOfUsedAddress[Index_WhichEntry][3] = (internally) Indicate if an item is by user or is a gap between ranges.
+				//ListOfUsedAddress[Index_WhichEntry][4] = (internally) Indicate an overlap or not
 					var Index_WhichEntry = 0
 					while (Index_WhichEntry < ListOfUsedAddress.length) {
 						//Split each item in a row into separate elements.
@@ -96,7 +97,7 @@ Sort address:<br>
 									NumberOfBytesValid = false
 								}
 						//Add a new item on each row
-							ListOfUsedAddress[Index_WhichEntry].push("", "", "", "")
+							ListOfUsedAddress[Index_WhichEntry].push("UserEnteredRange", "")
 						//Next
 							Index_WhichEntry++
 					}
@@ -105,7 +106,17 @@ Sort address:<br>
 					//initially so that we can easily check each address afterwards if they overlap or gapped.
 						ListOfUsedAddress.sort(SortFunction);
 					//check overlaps and gaps
-
+						Index_WhichEntry = 1
+						while (Index_WhichEntry < ListOfUsedAddress.length) {
+							if (ListOfUsedAddress[Index_WhichEntry][0] <= ListOfUsedAddress[Index_WhichEntry - 1][0] + ListOfUsedAddress[Index_WhichEntry - 1][1] - 1n) {
+								ListOfUsedAddress[Index_WhichEntry - 1][4] = "OverlappedAddress"
+								ListOfUsedAddress[Index_WhichEntry][4] = "OverlappedAddress"
+							}
+							//Next
+								Index_WhichEntry++
+						}
+					//Sort again just in case they're out of order.
+						
 					//Display output
 						if (document.getElementById("Address_Descending").checked) {
 							ListOfUsedAddress.reverse()
@@ -114,25 +125,38 @@ Sort address:<br>
 						Output += "<tr><th>Address</th><th>Size(/EndAddress)</th><th>Description</th>"
 						Index_WhichEntry = 0
 						while (Index_WhichEntry < ListOfUsedAddress.length) {
-							Output += "<tr>"
-							if (ListOfUsedAddress[Index_WhichEntry][3] != "Overlap") {
-								Output += "<td>"
-							} else {
-								Output += "<td bgcolor='salmon'>"
-							}
-							Output += "<kbd>$" + ListOfUsedAddress[Index_WhichEntry][0].toString(16).toUpperCase() + "</kbd>"
-							if (ListOfUsedAddress[Index_WhichEntry][3] == "Overlap") {
-								Output += " Overlap detected!"
-							}
-							Output += "</td>"
-							Output += "<td><kbd>" + ListOfUsedAddress[Index_WhichEntry][1].toString(10) + "</kbd>"
-							if (ListOfUsedAddress[Index_WhichEntry][1] > 1n) {
-								//Show end address if more than 1 byte
-									Output += "/<kbd>$" + (ListOfUsedAddress[Index_WhichEntry][0] + ListOfUsedAddress[Index_WhichEntry][1] - 1n).toString(16).toUpperCase() + "</kbd>"
-							}
-							Output += "</td>"
-							Output += "<td>" + ListOfUsedAddress[Index_WhichEntry][2] + "</td>"
-							Output += "</tr>"
+							//Start address
+								Output += "<tr>"
+								if (ListOfUsedAddress[Index_WhichEntry][4] == "") {
+									Output += "<td>"
+								} else {
+									Output += "<td bgcolor='salmon'>"
+								}
+								Output += "<kbd>$" + ListOfUsedAddress[Index_WhichEntry][0].toString(16).toUpperCase() + "</kbd>"
+								if (ListOfUsedAddress[Index_WhichEntry][4] == "OverlappedAddress") {
+									Output += " Overlap detected!"
+								}
+								Output += "</td>"
+							//Number of bytes/end address
+								if (ListOfUsedAddress[Index_WhichEntry][4] == "") {
+									Output += "<td>"
+								} else {
+									Output += "<td bgcolor='salmon'>"
+								}
+								Output += "<kbd>" + ListOfUsedAddress[Index_WhichEntry][1].toString(10) + "</kbd>"
+								if (ListOfUsedAddress[Index_WhichEntry][1] > 1n) {
+									//Show end address if more than 1 byte
+										Output += "/<kbd>$" + (ListOfUsedAddress[Index_WhichEntry][0] + ListOfUsedAddress[Index_WhichEntry][1] - 1n).toString(16).toUpperCase() + "</kbd>"
+								}
+								Output += "</td>"
+							//Description
+								if (ListOfUsedAddress[Index_WhichEntry][4] == "") {
+									Output += "<td>"
+								} else {
+									Output += "<td bgcolor='salmon'>"
+								}
+								Output += ListOfUsedAddress[Index_WhichEntry][2] + "</td>"
+								Output += "</tr>"
 							//Next
 								Index_WhichEntry++
 						}

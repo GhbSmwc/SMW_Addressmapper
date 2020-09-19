@@ -39,7 +39,7 @@ Where:
 			the hyphen and before the hexadecimal address number (example: <kbd>$-10</kbd> is wrong, <kbd>-$10</kbd> is correct)).</li>
 		</ul>
 	</li>
-	<li><kbd>&lt;Description&gt;</kbd> is a brief description. Note: HTML tags, elements and other reserved symbols apply on the description!</li>
+	<li><kbd>&lt;Description&gt;</kbd> (optional) is a brief description. Note: HTML tags, elements and other reserved symbols apply on the description!</li>
 </ul>
 <textarea id="UserInputList" cols="50" rows="10" oninput="DisplayAddress()"></textarea><br>
 Sort address:<br>
@@ -68,8 +68,11 @@ Sort address:<br>
 			var GapArray = new Array(0).fill()
 			var ListOfGaps = new Array(0).fill()
 			while ((Index_ErrorLine < (ListOfUsedAddress.length))&&(AllLinesValid == true)) {
-				if ((/^\$?[0-9a-fA-F]+?\t(\d+?|-\$?[0-9a-fA-F]+?)\t[^\t]+?$/.test(ListOfUsedAddress[Index_ErrorLine])) == false) {
+				if ((/^\$?[0-9a-fA-F]+?\t(\d+?|-\$?[0-9a-fA-F]+?)(\t[^\t]*?)?$/.test(ListOfUsedAddress[Index_ErrorLine])) == false) {
 					AllLinesValid = false
+				}
+				if ((/^\$?[0-9a-fA-F]+?\t(\d+?|-\$?[0-9a-fA-F]+?)?$/.test(ListOfUsedAddress[Index_ErrorLine])) == true) {
+					ListOfUsedAddress[Index_ErrorLine] += "\t"
 				}
 				//Next
 					Index_ErrorLine++

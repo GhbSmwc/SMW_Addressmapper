@@ -19,7 +19,9 @@ $7E13C9	-$7E13E5	RAM used by SMW.
 $7E13E8	-$7E13F1	RAM used by SMW.
 $7E13F3	-$7E1409	RAM used by SMW.
 $7E140D	-$7E1414	RAM used by SMW.
-$7E1417	-$7E1460	RAM used by SMW.
+$7E1417	-$7E142B	RAM used by SMW.
+$7E142C	-$7E142F	RAM used by SMW. Note: if using “Center Scroll” with !Setting_CenterScroll_ScrollType set to 0, remove this.
+$7E1430	-$7E1460	RAM used by SMW.
 $7E1462	-$7E146B	RAM used by SMW.
 $7E1470	-$7E1472	RAM used by SMW.
 $7E1474	1	RAM used by SMW.
@@ -70,4 +72,8 @@ $7E1FFB	-$7E1FFE	RAM used by SMW.
 $7E2000	-$7EC0FF	RAM used by SMW.
 $7EC680	-$7EC6DF	RAM used by SMW.
 $7EC800	-$7EFFFF	RAM used by SMW.
+$7F0000	-$7F3FFF	RAM used by SMW. Note: Remove this if “Free $7F0000 (OW Event Restore)” is installed
+$7F4000	-$7F7FFF	RAM used by SMW.
+$7F8000	-$7F8182	RAM used by SMW. Note: Remove this if “Free up RAM $7F:8000” is installed
+$7F8183	-$7F837A	Empty, but partially taken by LM.
 $7F837B	-$7F9C7A	RAM used by SMW.

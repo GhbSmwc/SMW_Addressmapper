@@ -43,11 +43,17 @@ Where:
 </ul>
 <textarea id="UserInputList" cols="50" rows="10" oninput="DisplayAddress()"></textarea><br>
 <table><tr>
-<td><h2>Left panel - all addresses</h2>
+<td valign='top'><h2>Left panel - all addresses</h2>
 <dl>
-<dt><input type="checkbox" id="Address_Descending" onchange="DisplayAddress()"><label for="Address_Descending">All address panel - descending starting address order</label></dt></td>
+<dt>Sort by:<br>
+<dl>
+	<dt><input type="radio" id="AllRAM_StartAddressOrder" name="AllRAM_Sort" onchange="DisplayAddress()" checked><label for="AllRAM_StartAddressOrder">Starting address</label></dt>
+	<dt><input type="radio" id="AllRAM_SizeOrder" name="AllRAM_Sort" onchange="DisplayAddress()"><label for="AllRAM_SizeOrder">Size</label></dt>
 </dl>
-<td><h2>Right panel - gaps</h2>
+<input type="checkbox" id="Address_Descending" onchange="DisplayAddress()"><label for="Address_Descending">All address panel - descending starting address order</label></dt></td>
+</dl>
+<td valign='top'><h2>Right panel - gaps</h2>
+Sort by:<br>
 <dl>
 	<dt><input type="radio" id="Gap_StartAddressOrder" name="AddressGap_Sort" onchange="DisplayAddress()" checked><label for="Gap_StartAddressOrder">Starting address</label></dt>
 	<dt><input type="radio" id="Gap_Size" name="AddressGap_Sort" onchange="DisplayAddress()"><label for="Gap_Size">Size</label></dt>
@@ -175,15 +181,20 @@ Where:
 								//Next
 									GapAddressIndex++
 							}
-					//Sort again just in case they're out of order.
+					//Sort again just in case they're out of order after inserting gap addresses.
 						ListOfUsedAddress.sort(SortByStartAddr);
+					//Sort differently based on options
+						if (document.getElementById("AllRAM_SizeOrder").checked == true) {
+							ListOfUsedAddress.sort(SortBySizeOrder);
+						}
 					//Display output
 						Output += "<table><tr>"
 						//Display all RAM (left panel)
 							if (document.getElementById("Address_Descending").checked) {
 								ListOfUsedAddress.reverse()
 							}
-							Output += "<td>"
+							Output += "<td valign='top'>"
+							Output += "<h2>All listed RAM, and gaps</h2>"
 							Output += "<table>"
 							Output += "<tr><th>Address</th><th>Size(/EndAddress)</th><th>Description</th>"
 							if (DebugDisplay) {
@@ -251,7 +262,7 @@ Where:
 							}
 							Output += "</td></tr></table>"
 							Output += "</td>"
-						//Display all gap RAM
+						//Display all gap RAM (right panel)
 							if (document.getElementById("Gap_StartAddressOrder").checked == true) {
 								ListOfGaps.sort(SortByStartAddr)
 							} else {
@@ -261,6 +272,7 @@ Where:
 								ListOfGaps.reverse()
 							}
 							Output += "<td valign='top'>"
+							Output += "<h2>Filter by gaps:</h2>"
 							Output += "<table>"
 							Output += "<tr><th>Address</th><th>Size(/EndAddress)</th></tr>"
 							Index_WhichEntry = 0
@@ -268,9 +280,9 @@ Where:
 								//Start row
 									Output += "<tr>"
 								//Start address
-									Output += "<td><pre>$" + ListOfGaps[Index_WhichEntry][0].toString(16).toUpperCase() + "</pre></td>"
+									Output += "<td bgcolor='C0C0C0'><pre>$" + ListOfGaps[Index_WhichEntry][0].toString(16).toUpperCase() + "</pre></td>"
 								//Size
-									Output += "<td><kbd>" + ListOfGaps[Index_WhichEntry][1].toString(10) + "</kbd>"
+									Output += "<td bgcolor='C0C0C0'><kbd>" + ListOfGaps[Index_WhichEntry][1].toString(10) + "</kbd>"
 									if (ListOfGaps[Index_WhichEntry][1] > 1n) {
 										//Show end address if more than 1 byte
 											Output += "/<kbd>$" + (ListOfGaps[Index_WhichEntry][0] + ListOfGaps[Index_WhichEntry][1] - 1n).toString(16).toUpperCase() + "</kbd>"

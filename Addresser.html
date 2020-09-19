@@ -44,6 +44,9 @@ Sort address:<br>
 <script>
 
 	function DisplayAddress() {
+		//Debug stuff
+			var DebugDisplay = false	//For developer - set this to true to display various info.
+		//Handle output
 			var Output = ""
 		//Obtain each list of items
 			var ListOfUsedAddress = (document.getElementById("UserInputList").value).split('\n')
@@ -52,7 +55,10 @@ Sort address:<br>
 			var AllLinesValid = true
 			var NumberOfBytesValid = true
 			var HighestEndAddressGapDetect = 0n //Needed so we can determine the starting address of a gap, after the ending of an overlapped address
+			var GapAddressCount = 0
 			var HighestEndAddressOverlapDetect = 0n //Needed in case if we have multiple overlapping address.
+			var GapArray = new Array(0).fill()
+			var ListOfGaps = new Array(0).fill()
 			while ((Index_ErrorLine < (ListOfUsedAddress.length))&&(AllLinesValid == true)) {
 				if ((/^\$?[0-9a-fA-F]+?\t(\d+?|-\$?[0-9a-fA-F]+?)\t[^\t]+?$/.test(ListOfUsedAddress[Index_ErrorLine])) == false) {
 					AllLinesValid = false
@@ -68,7 +74,8 @@ Sort address:<br>
 				//ListOfUsedAddress[Index_WhichEntry][1] = size column
 				//ListOfUsedAddress[Index_WhichEntry][2] = description column
 				//ListOfUsedAddress[Index_WhichEntry][3] = Overlap indicator.
-				//ListOfUsedAddress[Index_WhichEntry][4] = Adjacent/Gap indicator in relation to previous address.
+				//ListOfUsedAddress[Index_WhichEntry][4] = (internal, mainly debug) Adjacent/Gap indicator in relation to previous address.
+				//ListOfUsedAddress[Index_WhichEntry][5] = (internal) determine if this is a user-entered range or a gap.
 					var Index_WhichEntry = 0
 					while (Index_WhichEntry < ListOfUsedAddress.length) {
 						//Split each item in a row into separate elements.
@@ -108,7 +115,10 @@ Sort address:<br>
 						ListOfUsedAddress.sort(SortFunction);
 					//check overlaps and gaps
 						Index_WhichEntry = 1
+						ListOfUsedAddress[0][5] = "UserEnteredRange"
 						while (Index_WhichEntry < ListOfUsedAddress.length) {
+							//Write the given addresses range as user-entered data
+								ListOfUsedAddress[Index_WhichEntry][5] = "UserEnteredRange"
 							//Check if a given used address range intersects with another. Since this is now sorted ascending address order initally here, the next item shall
 							//have a start address greater or equal to than the current item.
 								if (ListOfUsedAddress[Index_WhichEntry - 1][0] + ListOfUsedAddress[Index_WhichEntry - 1][1] - 1n > HighestEndAddressOverlapDetect) {
@@ -123,28 +133,48 @@ Sort address:<br>
 									HighestEndAddressGapDetect = ListOfUsedAddress[Index_WhichEntry - 1][0] + ListOfUsedAddress[Index_WhichEntry - 1][1] - 1n
 								}
 								if (ListOfUsedAddress[Index_WhichEntry][0] == HighestEndAddressGapDetect + 1n) {
-									ListOfUsedAddress[Index_WhichEntry][4] = "Adjacent"
+									ListOfUsedAddress[Index_WhichEntry][4] = "AdjacentToPreviousAddress"
 								} else if (ListOfUsedAddress[Index_WhichEntry][0] > HighestEndAddressGapDetect + 1n) {
-									ListOfUsedAddress[Index_WhichEntry][4] = "Gap"
+									ListOfUsedAddress[Index_WhichEntry][4] = "GapBetweenHereAndPrevious"
+									//Create an array containing between-range gap addresses.
+										GapArray = Array(0) //Reset the array so that it doesn't keep adding even more items in the list on every loop
+										GapArray.push((HighestEndAddressGapDetect + 1n), (ListOfUsedAddress[Index_WhichEntry][0] - HighestEndAddressGapDetect - 1n), "", "", "AdjacentToPreviousAddress", "GapGeneratedByJS")
+										ListOfGaps.push(GapArray)
+										
+										GapAddressCount++
 								}
 							//Next
 								Index_WhichEntry++
 						}
+						var GapAddressIndex = 0
+						while (GapAddressIndex < ListOfGaps.length) {
+							ListOfUsedAddress.push(ListOfGaps[GapAddressIndex])
+							//Next
+								GapAddressIndex++
+						}
 					//Sort again just in case they're out of order.
-						
+						ListOfUsedAddress.sort(SortFunction);
 					//Display output
 						if (document.getElementById("Address_Descending").checked) {
 							ListOfUsedAddress.reverse()
 						}
 						Output += "<table>"
 						Output += "<tr><th>Address</th><th>Size(/EndAddress)</th><th>Description</th>"
+						if (DebugDisplay) {
+							Output += "<th>Relation with previous address</th>"
+						}
+						Output += "</tr>"
 						Index_WhichEntry = 0
 						while (Index_WhichEntry < ListOfUsedAddress.length) {
 							//Start row
 								Output += "<tr>"
 							//Start address
 								if (ListOfUsedAddress[Index_WhichEntry][3] != "Overlap") {
-									Output += "<td>"
+									if (ListOfUsedAddress[Index_WhichEntry][5] == "UserEnteredRange") {
+										Output += "<td>"
+									} else if (ListOfUsedAddress[Index_WhichEntry][5] == "GapGeneratedByJS") {
+										Output += "<td bgcolor='C0C0C0'>"
+									}
 								} else {
 									Output += "<td bgcolor='salmon'>"
 								}
@@ -152,10 +182,17 @@ Sort address:<br>
 								if (ListOfUsedAddress[Index_WhichEntry][3] == "Overlap") {
 									Output += " Overlap detected!"
 								}
+								if (ListOfUsedAddress[Index_WhichEntry][5] == "GapGeneratedByJS") {
+									Output += " A Gap between two ranges."
+								}
 								Output += "</td>"
 							//Number of bytes/end address
 								if (ListOfUsedAddress[Index_WhichEntry][3] != "Overlap") {
-									Output += "<td>"
+									if (ListOfUsedAddress[Index_WhichEntry][5] == "UserEnteredRange") {
+										Output += "<td>"
+									} else if (ListOfUsedAddress[Index_WhichEntry][5] == "GapGeneratedByJS") {
+										Output += "<td bgcolor='C0C0C0'>"
+									}
 								} else {
 									Output += "<td bgcolor='salmon'>"
 								}
@@ -167,13 +204,20 @@ Sort address:<br>
 								Output += "</td>"
 							//Description
 								if (ListOfUsedAddress[Index_WhichEntry][3] != "Overlap") {
-									Output += "<td>"
+									if (ListOfUsedAddress[Index_WhichEntry][5] == "UserEnteredRange") {
+										Output += "<td>"
+									} else if (ListOfUsedAddress[Index_WhichEntry][5] == "GapGeneratedByJS") {
+										Output += "<td bgcolor='C0C0C0'>"
+									}
 								} else {
 									Output += "<td bgcolor='salmon'>"
 								}
 								Output += ListOfUsedAddress[Index_WhichEntry][2] + "</td>"
-							//indicator in relation to previous address
-								Output += "<td>" + ListOfUsedAddress[Index_WhichEntry][4] + "</td>"
+							//Debug display
+								if (DebugDisplay) {
+									//indicator in relation to previous address
+										Output += "<td>" + ListOfUsedAddress[Index_WhichEntry][4] + "</td>"
+								}
 							//End of row
 								Output += "</tr>"
 							//Next

@@ -41,7 +41,7 @@ Where:
 	</li>
 	<li><kbd>&lt;Description&gt;</kbd> (optional) is a brief description. Note: HTML tags, elements and other reserved symbols apply on the description!</li>
 </ul>
-<textarea id="UserInputList" cols="50" rows="10" oninput="DisplayAddress()"></textarea><br>
+<textarea id="UserInputList" cols="50" rows="20" oninput="DisplayAddress()"></textarea><br>
 <table><tr>
 <td valign='top'><h2>Left panel - all addresses</h2>
 <dl>
@@ -276,22 +276,26 @@ Sort by:<br>
 							Output += "<table>"
 							Output += "<tr><th>Address</th><th>Size(/EndAddress)</th></tr>"
 							Index_WhichEntry = 0
-							while (Index_WhichEntry < ListOfGaps.length) {
-								//Start row
-									Output += "<tr>"
-								//Start address
-									Output += "<td bgcolor='C0C0C0'><pre>$" + ListOfGaps[Index_WhichEntry][0].toString(16).toUpperCase() + "</pre></td>"
-								//Size
-									Output += "<td bgcolor='C0C0C0'><kbd>" + ListOfGaps[Index_WhichEntry][1].toString(10) + "</kbd>"
-									if (ListOfGaps[Index_WhichEntry][1] > 1n) {
-										//Show end address if more than 1 byte
-											Output += "/<kbd>$" + (ListOfGaps[Index_WhichEntry][0] + ListOfGaps[Index_WhichEntry][1] - 1n).toString(16).toUpperCase() + "</kbd>"
-									}
-									Output += "</td>"
-								//End of row
-									Output += "</tr>"
-								//Next
-									Index_WhichEntry++
+							if (ListOfGaps.length >= 1) {
+								while (Index_WhichEntry < ListOfGaps.length) {
+									//Start row
+										Output += "<tr>"
+									//Start address
+										Output += "<td bgcolor='C0C0C0'><pre>$" + ListOfGaps[Index_WhichEntry][0].toString(16).toUpperCase() + "</pre></td>"
+									//Size
+										Output += "<td bgcolor='C0C0C0'><kbd>" + ListOfGaps[Index_WhichEntry][1].toString(10) + "</kbd>"
+										if (ListOfGaps[Index_WhichEntry][1] > 1n) {
+											//Show end address if more than 1 byte
+												Output += "/<kbd>$" + (ListOfGaps[Index_WhichEntry][0] + ListOfGaps[Index_WhichEntry][1] - 1n).toString(16).toUpperCase() + "</kbd>"
+										}
+										Output += "</td>"
+									//End of row
+										Output += "</tr>"
+									//Next
+										Index_WhichEntry++
+								}
+							} else {
+								Output += "<tr><td colspan='2'>No gaps between the lowest range and highest range were found.</td></tr>"
 							}
 							Output += "</table>"
 							Output += "</td>"

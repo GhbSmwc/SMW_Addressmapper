@@ -1,3 +1,56 @@
+You may be wondering how I get this info quickly. All I did is go to the RAM map, search for empty RAM, copy the table in text format (it will try to convert it into tab-seperated values via the browser),
+paste it in notepad++, sort lines lexicographically ascending (Edit -> Line Operations), make edits (including using find-and-replace regex functions) so that it is in a format compatible with the HTML
+JS tool, open the HTML JS tool, paste the text. The output then displays, and all gaps between each empty RAM data should be RAM addresses used by SMW (each region in the same gap is merged, by the way).
+I then took that gap data containing used addresses, and paste it here.
+
+To convert to an appropriate format for the JS tool straight from the RAM map:
+	First, search for empty RAM on smwc's ram map.
+	Copy all the text in that table.
+	Paste it in notepad++
+	Remove the word “byte” or “bytes”:
+		Do this first
+			Find what: [bytes]
+			Replace with [] (nothing)
+			hit replace all
+		and then:
+			Find what: [1 byte]
+			Replace with [] (nothing)
+			hit replace all
+		If done in the wrong order, you'll have
+		leftover “s” in the way.
+	Remove spaces after the number of bytes:
+		Find what: [ \t]
+		Replace with [\t]
+		use regular expression
+		hit replace all
+	And then to rid out the description and type that potentially have characters
+	causing the JS tool to error out:
+		Find what: [^(?'AddrNumbBytes'\$[a-zA-Z0-9]+\t\d+\t)Empty\t.+$]
+		Replace with: [$+{AddrNumbBytes}]
+		hit replace all
+	Note that some leftover description is still present due to linebreaks in the description column.
+	To extract only the RAM and number of bytes, hit CTRL+F:
+		Find what: [^\$[a-zA-Z0-9]+\t\d+\t$]
+		Hit Find All in Current Document
+	And you now should have the correct format.
+	Open the HTML JS tool, paste it, and any gaps between each empty RAM should be used-RAM you can then copy
+	that table (again, turns it into tab-separated values), and now you should have a list of used RAM. Because
+	this JS tool prints out the number of bytes and the ending addresses (if more than 1 byte it spans), you then
+	need to remove either one or the other. I did this:
+		If you want just the number of bytes:
+			Find what: [/\$[a-zA-Z0-9]+$]
+			Replace with: []
+			Hit replace all
+		If you want the ending address:
+			Find what: [\t\d+/]
+			Replace with: [\t-]
+			Hit replace all
+	And it should be in a compatible format.
+	Note that if you do this back and fourth repeatedly, you'll start losing ranges at the lowest and highest of the list of
+	RAM address. This is because this only list gaps in between the lowest and highest range.
+
+Here is the list I got. You can copy it and paste it into the JS tool. Be careful not to have empty line(s)
+upon pasting.
 $7E0059	-$7E005B	RAM used by SMW.
 $7E005D	-$7E005F	RAM used by SMW.
 $7E0064	-$7E0078	RAM used by SMW.

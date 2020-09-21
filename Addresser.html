@@ -28,7 +28,7 @@ Make sure the format is:
 	<li>No additional tabs, meaning multiple tabs that are used to align columns in text editors is not allowed. The tab character is reserved for <a href="https://en.wikipedia.org/wiki/Tab-separated_values">tab-separated values</a>.</li>
 </ul>
 
-Note: Whitespace is TAB character, not a literal space character. Easy way to insert a tab character without switching focus is by holding <kbd>ALT</kbd>, type <kbd>9</kbd>, then let go <kbd>ALT</kbd><br><br>
+Note: Whitespace is TAB character, not a literal space character. Easy way to insert a tab character without switching focus is by holding <kbd>ALT</kbd>, type <kbd>9</kbd>, then let go <kbd>ALT</kbd> (may not work in some browsers)<br><br>
 Where:
 <ul>
 	<li><kbd>&lt;Address&gt;</kbd> is the starting address, in hex. <kbd>$</kbd> prefix is optional.</li>
@@ -306,7 +306,7 @@ Sort by:<br>
 				}
 			} else {
 				//Display an error that one of the lines are off.
-					Output += "Error! Format is wrong (empty lines, extra TAB character, empty entry), or entries using invalid characters."
+					Output += "Error! Format is wrong (empty lines, extra TAB character, empty entry, using space when there should be a tab or vice versa), or entries using invalid characters."
 			}
 			
 			document.getElementById("Output").innerHTML = Output

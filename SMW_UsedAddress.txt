@@ -48,6 +48,7 @@ To convert to an appropriate format for the JS tool straight from the RAM map:
 	And it should be in a compatible format.
 	Note that if you do this back and fourth repeatedly, you'll start losing ranges at the lowest and highest of the list of
 	RAM address. This is because this only list gaps in between the lowest and highest range.
+	Also note that not all gaps are guaranteed are freeram, so editing is required.
 
 Here is the list I got. You can copy it and paste it into the JS tool. Be careful not to have empty line(s)
 upon pasting.
@@ -123,11 +124,19 @@ $7E1F2E	-$7E1F3A	RAM used by SMW.
 $7E1F3C	-$7E1F47	RAM used by SMW.
 $7E1F49	-$7E1FF9	RAM used by SMW.
 $7E1FFB	-$7E1FFE	RAM used by SMW.
-$7E2000	-$7EC0FF	RAM used by SMW.
+$7E2000	-$7E7CFF	RAM used by SMW.
+$7E7D00	-$7EACFF	RAM used by SMW.
+$7EAD00	-$7EB8FF	RAM used by SMW and LM's examination
+$7EB900	-$7EBCFF	RAM used by SMW.
+$7EBD00	-$7EC0FF	RAM used by SMW.
+$7EC100	-$7EC67F	Originally empty, but LM use this for examination.
 $7EC680	-$7EC6DF	RAM used by SMW.
+$7EC6E0	-$7EC7FF	Empty, untouched RAM on an unhacked ROM. In a hacked ROM, it may be occupied by ExAnimation data (see $7E:C100).
 $7EC800	-$7EFFFF	RAM used by SMW.
 $7F0000	-$7F3FFF	RAM used by SMW. Note: Remove this if “Free $7F0000 (OW Event Restore)” is installed
 $7F4000	-$7F7FFF	RAM used by SMW.
 $7F8000	-$7F8182	RAM used by SMW. Note: Remove this if “Free up RAM $7F:8000” is installed
 $7F8183	-$7F837A	Empty, but partially taken by LM.
 $7F837B	-$7F9C7A	RAM used by SMW.
+$7F9C7B	-$7FC7FF	Empty, but partially used by other SMW tools.
+$7FC800	-$7FFFFF	RAM used by SMW.

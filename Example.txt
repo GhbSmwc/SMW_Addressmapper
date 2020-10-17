@@ -1,9 +1,3 @@
-7E0060	4	Description 1
-7E0079	1	Description 2
-7E0F5E	20	Description 3
-7E0F5F	1	Description 4
-
-7E0000	1	test1
-7E0060	-7E0063	test2
-7E0062	1	test3
-7E0064	9	test4
+Example: One user experienced an issue with using directional quake patch and the wall kick patch.
+7E0060	2	Used by Directional Quake v2.0
+7E0061	1	Used by the wall kick patch

@@ -10,26 +10,39 @@ Introduction:
 		!no_back_timer		= $62		; The timer for not moving back. (RAM)
 		!temp_y_spd		= $63		; The temporary Y speed. (RAM)
 		
-	Notice that !flags is using $61. Therefore $7E0061 is being reused by entirely unrelated patches, which is why both patches don't work.
+	Notice that !flags is using $61. Therefore $7E0061 is being reused by entirely unrelated patches, which is why both patches don't work without changing the
+	defines so they do not conflict.
 	
-	You may think this tool is redundant since people can simply create a txt file, in the following formats (assuming you edited the wallkick patch
-	defines to use alternative unused RAM addresses):
-		List each RAM, but only by starting address:
+	You may think this tool is redundant since people can simply create a txt file, list the RAM in the following formats (assuming you edited the wallkick patch
+	defines to use alternative unused RAM addresses) as they insert each patch:
+		List each RAM, showing the number of bytes and ending address (assuming you fixed !flags to use a safer address, not $61):
 			7E0058	1 byte		Used by wall kick patch
-			7E005C	1 byte		Used by wall kick patch
 			7E0060	2 bytes/7E0061	Used by directional quake patch
 			7E0062	2 bytes/7E0063	Used by wall kick patch
 			
-			This is good, but not all empty RAMs 1-byte large, and there's a chance that some of them are partially used. If you try searching for 7E0063,
-			via CTRL+F for example, will not find it, as there is no direct text explicitly saying that address is used (2 bytes at 7E0062 is used). You would
-			have to do maths (add an address by how many bytes, and the result is an address beyond the last byte) to find the starting empty RAM.
-		What about this method? We list each byte of RAM addresses (including if a given data takes multiple bytes) like so:
-			7E0058	;>Used by wall kick patch
-			7E005C	;>Used by wall kick patch
-			7E0060	;\Used by directional quake patch
-			7E0061	;/
-			7E0062	;\Used by wall kick patch
-			7E0063	;/
+			You can CTRL+F to find single-byte used RAM easily.
+			You can CTRL+F to find the starting address and ending address (if you write the ending address) without flaw if they take up 2 bytes.
+			
+			However, it is still possible you could enter a RAM, it doesn't find it, assume it is unused, and use that RAM,
+			despite potentially, a data, starting at an address before it, could use that address. Here is a made-up example:
+			
+				7E0060	3 bytes/7E0062		Used by patch A
+			
+			And I try searching for $7E0061, it fails, despite 7E0060, 7E0061, and 7E0062 is used by patch A. This problem will
+			happen if at least 3 bytes are taken, since the middle bytes (excluding the starting and ending addresses) are not
+			shown.
+		What about this method? We list each byte of RAM addresses (including if a given data takes multiple bytes), one byte after another
+		like so:
+			Using the primary example:
+				7E0058	;>Used by wall kick patch
+				7E0060	;\Used by directional quake patch
+				7E0061	;/
+				7E0062	;\Used by wall kick patch
+				7E0063	;/
+			Or using the 3-byte example earlier:
+				7E0060	;\Used by patch A
+				7E0061	;|
+				7E0062	;/
 			
 			While this is good for CTRL+F, sometimes, the user may have to edit the patches some more if they changed the settings that would
 			increase the number of bytes a given data would use. This results in having to edit all the affected listed address. This is also

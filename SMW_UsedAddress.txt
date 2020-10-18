@@ -1,3 +1,6 @@
+This txt file purpose is to make it so you can track both SMW original used address and your installed patches. Some patches may free up RAM (such as my center scroll patch), thus making it even easier
+to track.
+
 You may be wondering how I get this info quickly. All I did is go to the RAM map, search for empty RAM, copy the table in text format (it will try to convert it into tab-seperated values via the browser),
 paste it in notepad++, sort lines lexicographically ascending (Edit -> Line Operations), make edits (including using find-and-replace regex functions) so that it is in a format compatible with the HTML
 JS tool, open the HTML JS tool, paste the text. The output then displays, and all gaps between each empty RAM data should be RAM addresses used by SMW (each region in the same gap is merged, by the way).

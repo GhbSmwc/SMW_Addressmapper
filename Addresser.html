@@ -82,8 +82,13 @@ Sort by:<br>
 			var AllLinesValid = true
 			var NumberOfBytesValid = true
 			var HighestEndAddressGapDetect = 0n //Needed so we can determine the starting address of a gap, after the ending of an overlapped address
+				//^Needed in case if we have multiple overlapping address. This is also needed to find the actual ending because the last byte
+				// of the last address processed is NOT always the last byte, if we had (1st) one address, and then another (2nd) but shorter range,
+				// we wouldn't want to use the ending address of 2nd because we look at the address after the last byte of whoever is the longest.
 			var GapAddressCount = 0
-			var HighestEndAddressOverlapDetect = 0n //Needed in case if we have multiple overlapping address.
+			var HighestEndAddressOverlapDetect = 0n
+				//^Same as HighestEndAddressGapDetect, multiple address, but we need the ending of the highest address, else the information is
+				// displayed wrong.
 			var GapArray = new Array(0).fill()
 			var ListOfGaps = new Array(0).fill()
 			while ((Index_ErrorLine < (ListOfUsedAddress.length))&&(AllLinesValid == true)) {

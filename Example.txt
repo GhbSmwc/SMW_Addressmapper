@@ -1,3 +1,0 @@
-Example: One user experienced an issue with using directional quake patch and the wall kick patch.
-7E0060	2	Used by Directional Quake v2.0
-7E0061	1	Used by the wall kick patch

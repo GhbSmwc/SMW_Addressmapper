@@ -2,8 +2,8 @@ Introduction:
 	As I explained, beginners who is new to computing may assume that freeram would always only take the address being supplied (in the define), but not the addresses
 	afterwards. They did not know that each address is a byte, and that multi-byte would take that address and n-1 bytes afterwards.
 
-	Example: One user experienced an issue with using directional quake patch and the wall kick patch: https://www.smwcentral.net/?p=section&a=details&id=18776
-	Looking at the patches, the Directional quake patch takes TWO bytes of memory, under the default settings, it would take $7E0060 and $7E0061. The wallkick patch's
+	Example: One user experienced an issue with using directional quake patch and the wall kick patch: https://www.smwcentral.net/?p=section&a=details&id=18776 (see comments)
+	Looking at the 2 patches, the Directional quake patch takes TWO bytes of memory, under the default settings, it would take $7E0060 and $7E0061. The wallkick patch's
 	default RAM is:
 	
 		!flags			= $61		; The wallkick flags. (RAM)
@@ -11,7 +11,7 @@ Introduction:
 		!temp_y_spd		= $63		; The temporary Y speed. (RAM)
 		
 	Notice that !flags is using $61. Therefore $7E0061 is being reused by entirely unrelated patches, which is why both patches don't work without changing the
-	defines so they do not conflict.
+	defines so they don't conflict.
 	
 	You may think this tool is redundant since people can simply create a txt file, list the RAM in the following formats (assuming you edited the wallkick patch
 	defines to use alternative unused RAM addresses) as they insert each patch:
@@ -28,10 +28,10 @@ Introduction:
 			
 				7E0060	3 bytes/7E0062		Used by patch A
 			
-			And I try searching for $7E0061, it fails, despite 7E0060, 7E0061, and 7E0062 is used by patch A. This problem will
+			And I try searching for $7E0061, it fails, despite $7E0060, $7E0061, and $7E0062 is used by patch A. This problem will
 			happen if at least 3 bytes are taken, since the middle bytes (excluding the starting and ending addresses) are not
 			shown.
-		What about this method? We list each byte of RAM addresses (including if a given data takes multiple bytes), one byte after another
+		What about this method? We list each contiguous byte of RAM addresses (including if a given data takes multiple bytes), one byte after another
 		like so:
 			Using the primary example:
 				7E0058	;>Used by wall kick patch
@@ -39,17 +39,22 @@ Introduction:
 				7E0061	;/
 				7E0062	;\Used by wall kick patch
 				7E0063	;/
-			Or using the 3-byte example earlier:
+			Or using the 3-byte example recently:
 				7E0060	;\Used by patch A
 				7E0061	;|
 				7E0062	;/
 			
 			While this is good for CTRL+F, sometimes, the user may have to edit the patches some more if they changed the settings that would
-			increase the number of bytes a given data would use. This results in having to edit all the affected listed address. This is also
-			clunky in terms that if there is a patch that takes a huge number of bytes, would require scrolling long distances.
+			relocate the data, or increase the number of bytes a given data would use. This results in having to edit all the affected listed
+			address. This is also clunky in terms that if there is a patch that takes a huge number of bytes, would require scrolling long
+			distances.
+		
+			This is even more of a problem that if you have lots of ASM stuff inserted into your game, and happen to have a large number of used
+			RAM being overlapped, would have to manually and tediously compare each and every one of them listed to see if they overlap.
 	So I found a way on how to automate and format the list of used RAM, making it easier to find potential problems with RAM managing.
 How to use:
-	As you keep installing any ASM-related resources in your hack, you would note each RAM addresses used by the said ASM stuff. Here is a simple example:
+	As you keep installing any ASM-related resources in your hack, you would note each RAM addresses used by the said ASM stuff, like any person who tracks
+	the inserted patches, including collaboration hacks. Here is a simple example:
 	1 byte of $7E0060 is used for patch A and 2 bytes at $7E0061 is used for patch B. You would note them like this:
 ;---------------------
 7E0060	1	Patch A
@@ -61,11 +66,28 @@ How to use:
 	Then if you are installing another patch, you enter another entry of RAM of that patch into the list. Then copy the entire list, and paste it into the “text area” of
 	the HTML javascript. What will happen is at the bottom of the HTML, shows 2 types of information:
 	
-		The left panel shows what you've entered, sorted either by starting address or their sizes. If there are conflicts (2 or more patches reusing RAM),
-		they're colored red with the starting address box having the text “Overlap detected!”. You can then CTRL+F to check and find which ones have those
-		issues, which suggest they will glitch. If none found on the list, then there is no conflicts.
+		The left panel shows what you've entered, sorted either by their starting addresses or their sizes. If there are conflicts (2 or more ASM stuff reusing the
+		same address(es) of RAM at any part of the range), they're colored red with the starting address column having the text “Overlap detected!” written. You
+		can then CTRL+F to check and find which ones have those issues, which suggest they will glitch. If none found on the list, then there are no conflicts.
 		
 			Also on the left panel displays gaps when there are 2 ranges with unused bytes in between. Useful if you want to find potentially-unused RAM
 			and place a new usage located a byte after the previous range's last byte.
 		
 		The right panel, same as before, but filtered by gaps.
+	
+	If you used the first example (wallkick + directional quake):
+;---------------------
+7E0060	2	Used by directional quake patch (!Freeram_DirQuake_Layer1XDisplacement)
+7E0061	1	Used by wallkick patch (!flags)
+7E0062	1	Used by wallkick patch (!no_back_timer)
+7E0063	1	Used by wallkick patch (!temp_y_spd)
+;---------------------
+	It should mark the two entries in red; the directional quake taking $7E0060-$7E0061 for !Freeram_DirQuake_Layer1XDisplacement and the wallkick taking $7E0061 by !flags.
+Note:
+	It is possible that a RAM may be re-used to save memory without issues. This happens when a given RAM address is not being used by multiple unrelated things at the same time:
+	You may use it in a per-level effects, such as a custom timer only used in certain levels, but that same address is used as a flag or a counter in other levels. As long as
+	the game does not have to remember it spanning across the game (such as your HP if you want it to keep its value throughout the levels). Same applies to custom scratch RAM
+	(with memory more than 16 bytes; $7E0000-$7E000F, like my Graphical Bar). If this is the case, you can:
+		-Merge the info into one on the list. Technically, there is no character limit on the description, you could make it say “Used by Patch A and Patch B”.
+		-For per-level used RAM that needs to be retained for the level (like a timer), simply have a “local used-RAM list” seperated from the “global used-RAM list”.
+		 (local means used in specific areas in the game, global is the entire game that is always used for a given purpose and only that purpose).

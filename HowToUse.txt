@@ -55,15 +55,18 @@ Introduction:
 How to use:
 	As you keep installing any ASM-related resources in your hack, you would note each RAM addresses used by the said ASM stuff, like any person who tracks
 	the inserted patches, including collaboration hacks. Here is a simple example:
-	1 byte of $7E0060 is used for patch A and 2 bytes at $7E0061 is used for patch B. You would note them like this:
+	1 byte of $7E0060 is used for patch A and 2 bytes at $7E0061 is used for patch B. You would note them like this in a txt file:
 ;---------------------
 7E0060	1	Patch A
 7E0061	2	Patch B
 ;---------------------
-	This is the format the javascript would allow. Of course, you can supply a range instead of number of bytes by having the second number (after the first tab character)
-	be -XXXXXX (or -$XXXXXX) (note the hyphen denotes a range, not size).
+	Make sure there are no empty lines (every single line in existence must have content), as it converts each line into each item in an array
+	(uses a [string.split('\n')] to convert into line-array), then later splits them by tab character ([.split('\t')]) to get the data of each RAM.
 	
-	Then if you are installing another patch, you enter another entry of RAM of that patch into the list. Then copy the entire list, and paste it into the “text area” of
+	This is the format the javascript code would allow. Of course, you can supply a range instead of number of bytes by having the second number (after the first tab character)
+	be an address, preceded with a hyphen symbol (-XXXXXX (or -$XXXXXX)).
+	
+	Then if you are installing another patch, you make another entry of RAM of that patch into the txt file. Then copy the entire list, and paste it into the “text area” of
 	the HTML javascript. What will happen is at the bottom of the HTML, shows 2 types of information:
 	
 		The left panel shows what you've entered, sorted either by their starting addresses or their sizes. If there are conflicts (2 or more ASM stuff reusing the

@@ -28,8 +28,7 @@ Make sure the format is:
 	<li>No additional tabs, meaning multiple tabs that are used to align columns in text editors is not allowed. The tab character is reserved for <a href="https://en.wikipedia.org/wiki/Tab-separated_values">tab-separated values</a>.</li>
 </ul>
 
-Note: Whitespace shown above is a TAB character, not a literal space character. Easy way to insert a tab character without switching focus is by holding <kbd>ALT</kbd>, type <kbd>9</kbd>, then let go <kbd>ALT</kbd> (may not work in some browsers). If
-you find this difficult, open a text editor, write your list in the format mentioned above, copy, and paste here.<br><br>
+Note: Whitespace shown above is a TAB character, not a literal space character.<br><br>
 Where:
 <ul>
 	<li><kbd>&lt;Address&gt;</kbd> is the starting address, in hex. <kbd>$</kbd> prefix is optional.</li>
@@ -54,6 +53,7 @@ a grey entry stating a gap.<br>
 	<dt><input type="radio" id="AllRAM_StartAddressOrder" name="AllRAM_Sort" onchange="DisplayAddress()" checked><label for="AllRAM_StartAddressOrder">Starting address</label></dt>
 	<dt><input type="radio" id="AllRAM_SizeOrder" name="AllRAM_Sort" onchange="DisplayAddress()"><label for="AllRAM_SizeOrder">Size</label></dt>
 </dl>
+<dl>
 <input type="checkbox" id="Address_Descending" onchange="DisplayAddress()"><label for="Address_Descending">descending order</label></dt></td>
 </dl>
 <td valign='top'><h2>Right panel - gaps</h2>
@@ -69,6 +69,45 @@ Sort by:<br>
 
 
 <script>
+	window.onload = function(){    
+		var addressList = document.getElementById("UserInputList");
+   		if(addressList.addEventListener ) {
+			addressList.addEventListener('keydown',this.keyHandler,false);
+    		} else if(addressList.attachEvent ) {
+        		addressList.attachEvent('onkeydown',this.keyHandler);
+    		}
+	}
+
+	function keyHandler(e) {
+
+		var target;
+		if (!e) var e = window.event;
+		if (e.target) target = e.target;
+		else if (e.srcElement) target = e.srcElement;
+
+        	if(e.keyCode == 9) {
+			if (document.selection) {
+				target.focus();
+				sel = document.selection.createRange();
+				sel.text = '\t';
+			} else if (target.selectionStart || target.selectionStart === 0) {
+	        		var startPos = target.selectionStart;
+				var endPos = target.selectionEnd;
+				target.value = target.value.substring(0, startPos) + '\t' + target.value.substring(endPos, target.value.length);
+
+				target.selectionStart = startPos + 1;
+				target.selectionEnd = startPos + 1;
+
+			} else {
+				target.value += '\t';
+			}
+
+            		if(e.preventDefault) {
+            		    	e.preventDefault();
+            		}
+            		return false;
+        	}
+    	}
 
 	function DisplayAddress() {
 		//Debug stuff

@@ -92,5 +92,5 @@ Note:
 	the game does not have to remember it spanning across the game (such as your HP if you want it to keep its value throughout the levels). Same applies to custom scratch RAM
 	(with memory more than 16 bytes; $7E0000-$7E000F, like my Graphical Bar). If this is the case, you can:
 		-Merge the info into one on the list. Technically, there is no character limit on the description, you could make it say “Used by Patch A and Patch B”.
-		-For per-level used RAM that needs to be retained for the level (like a timer), simply have a “local used-RAM list” seperated from the “global used-RAM list”.
+		-For per-level used RAM that needs to be retained for the level (like a timer), simply have a “local used-RAM list” separated from the “global used-RAM list”.
 		 (local means used in specific areas in the game, global is the entire game that is always used for a given purpose and only that purpose).

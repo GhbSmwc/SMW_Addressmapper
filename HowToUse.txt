@@ -1,10 +1,10 @@
 Introduction:
-	As I explained, beginners who is new to computing may assume that freeram would always only take the address being supplied (in the define), but not the addresses
+	As I explained, beginners who is new to computing may assume that freeram would always only take the address being supplied (in the define), but not the potential addresses
 	afterwards. They did not know that each address is a byte, and that multi-byte would take that address and n-1 bytes afterwards.
 
 	Example: One user experienced an issue with using directional quake patch and the wall kick patch: https://www.smwcentral.net/?p=section&a=details&id=18776 (see comments)
-	Looking at the 2 patches, the Directional quake patch takes TWO bytes of memory, under the default settings, it would take $7E0060 and $7E0061. The wallkick patch's
-	default RAM is:
+	Looking at the 2 patches, the Directional quake patch takes TWO bytes of memory, under the default settings (set to use $60, which is $7E0060), it would take $7E0060
+	*and* $7E0061. The wallkick patch's default RAM is:
 	
 		!flags			= $61		; The wallkick flags. (RAM)
 		!no_back_timer		= $62		; The timer for not moving back. (RAM)
@@ -46,7 +46,7 @@ Introduction:
 			
 			While this is good for CTRL+F, sometimes, the user may have to edit the patches some more if they changed the settings that would
 			relocate the data, or increase the number of bytes a given data would use. This results in having to edit all the affected listed
-			address. This is also clunky in terms that if there is a patch that takes a huge number of bytes, would require scrolling long
+			addresses. This is also clunky in terms that if there is a patch that takes a huge number of bytes, would require scrolling long
 			distances.
 		
 			This is even more of a problem that if you have lots of ASM stuff inserted into your game, and happen to have a large number of used

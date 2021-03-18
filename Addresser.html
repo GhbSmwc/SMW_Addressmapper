@@ -200,7 +200,7 @@ Sort by:<br>
 						while (Index_WhichEntry < ListOfUsedAddress.length) {
 							//Write the given addresses range as user-entered data
 								ListOfUsedAddress[Index_WhichEntry][5] = "UserEnteredRange"
-							//Check if a given used address range intersects with another. Since this is now sorted ascending address order initially here, the next item shall
+							//Check if a given used address range intersects with another. Since this is now sorted ascending address order initally here, the next item shall
 							//have a start address greater or equal to than the current item.
 								if (ListOfUsedAddress[Index_WhichEntry - 1][0] + ListOfUsedAddress[Index_WhichEntry - 1][1] - 1n > HighestEndAddressOverlapDetect) {
 									HighestEndAddressOverlapDetect = ListOfUsedAddress[Index_WhichEntry - 1][0] + ListOfUsedAddress[Index_WhichEntry - 1][1] - 1n

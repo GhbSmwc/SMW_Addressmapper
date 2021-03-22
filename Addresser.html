@@ -94,6 +94,7 @@ Sort by:<br>
 	        		var startPos = target.selectionStart;
 				var endPos = target.selectionEnd;
 				target.value = target.value.substring(0, startPos) + '\t' + target.value.substring(endPos, target.value.length);
+				DisplayAddress()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
 
 				target.selectionStart = startPos + 1;
 				target.selectionEnd = startPos + 1;
@@ -104,6 +105,7 @@ Sort by:<br>
 
             		if(e.preventDefault) {
             		    	e.preventDefault();
+				DisplayAddress()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
             		}
             		return false;
         	}

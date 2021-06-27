@@ -2,13 +2,13 @@
 	<head>
 		<style>
 			html {
-			background-color: white;
-			color: black;
+			background-color: black;
+			color: white;
 			font-family: sans-serif;
 			}
 			
 			table, th, td {
-			border: 1px solid black;
+			border: 1px solid white;
 			border-collapse: collapse;
 			}
 			
@@ -24,11 +24,15 @@ Enter a list of RAM addresses in the text area below. It must be formatted like 
 &lt;Address&gt;	&lt;Size_in_bytes_Or_EndAddress&gt;	&lt;Description&gt;</pre></td></tr></table><br>
 Make sure the format is:
 <ul>
-	<li>No empty lines, meaning each line must have content. This also applies after the last listed item.</li>
 	<li>No additional tabs, meaning multiple tabs that are used to align columns in text editors is not allowed. The tab character is reserved for <a href="https://en.wikipedia.org/wiki/Tab-separated_values">tab-separated values</a>.</li>
 </ul>
 
-Note: Whitespace shown above is a TAB character, not a literal space character.<br><br>
+Notes:
+	<ul>
+		<li>Lines that are blank or composed of just any whitespace characters are ignored.</li>
+		<li>Whitespace shown above is a TAB character, not a literal space character.</li>
+	</ul>
+
 Where:
 <ul>
 	<li><kbd>&lt;Address&gt;</kbd> is the starting address, in hex. <kbd>$</kbd> prefix is optional.</li>
@@ -67,7 +71,7 @@ Sort by:<br>
 <hr>
 <span id="Output"></span>
 
-
+</body>
 <script>
 	window.onload = function(){    
 		var addressList = document.getElementById("UserInputList");
@@ -113,11 +117,11 @@ Sort by:<br>
 
 	function DisplayAddress() {
 		//Debug stuff
-			var DebugDisplay = false	//For developer - set this to true to display various info.
+			const DebugDisplay = false	//For developer - set this to true to display various info.
 		//Handle output
 			var Output = ""
-		//Obtain each list of items
-			var ListOfUsedAddress = (document.getElementById("UserInputList").value).split('\n')
+		//Obtain each list of items (without any blank lines)
+			var ListOfUsedAddress = RemoveBlankOrSpacesEntry((document.getElementById("UserInputList").value).split('\n'))
 		//Check if all lines are valid format.
 			var Index_ErrorLine = 0
 			var AllLinesValid = true
@@ -243,6 +247,10 @@ Sort by:<br>
 							ListOfUsedAddress.sort(SortBySizeOrder);
 						}
 					//Display output
+						//Display a potential address after the last byte of the highest range (in case you wanted to find a new RAM address that is beyond the last address
+						//byte of all the ranges)
+						Output += "<kbd>Potential ending address before the starting byte of all the ranges: " + DisplaySignedBigIntHexString(ListOfUsedAddress[0][0] - 1n) + "</kbd><br>"
+						Output += "<kbd>Potential starting address beyond the last byte of all the ranges: $" + (ListOfUsedAddress[ListOfUsedAddress.length - 1][0] + ListOfUsedAddress[ListOfUsedAddress.length - 1][1]).toString(16).toUpperCase() + "</kbd>"
 						Output += "<table><tr>"
 						//Display all RAM (left panel)
 							if (document.getElementById("Address_Descending").checked) {
@@ -265,10 +273,10 @@ Sort by:<br>
 										if (ListOfUsedAddress[Index_WhichEntry][5] == "UserEnteredRange") {
 											Output += "<td>"
 										} else if (ListOfUsedAddress[Index_WhichEntry][5] == "GapGeneratedByJS") {
-											Output += "<td bgcolor='C0C0C0'>"
+											Output += "<td bgcolor='808080'>"
 										}
 									} else {
-										Output += "<td bgcolor='salmon'>"
+										Output += "<td bgcolor='#800000'>"
 									}
 									Output += "<kbd>$" + ListOfUsedAddress[Index_WhichEntry][0].toString(16).toUpperCase() + "</kbd>"
 									if (ListOfUsedAddress[Index_WhichEntry][3] == "Overlap") {
@@ -283,10 +291,10 @@ Sort by:<br>
 										if (ListOfUsedAddress[Index_WhichEntry][5] == "UserEnteredRange") {
 											Output += "<td>"
 										} else if (ListOfUsedAddress[Index_WhichEntry][5] == "GapGeneratedByJS") {
-											Output += "<td bgcolor='C0C0C0'>"
+											Output += "<td bgcolor='808080'>"
 										}
 									} else {
-										Output += "<td bgcolor='salmon'>"
+										Output += "<td bgcolor='#800000'>"
 									}
 									Output += "<kbd>" + ListOfUsedAddress[Index_WhichEntry][1].toString(10) + "</kbd>"
 									if (ListOfUsedAddress[Index_WhichEntry][1] > 1n) {
@@ -299,10 +307,10 @@ Sort by:<br>
 										if (ListOfUsedAddress[Index_WhichEntry][5] == "UserEnteredRange") {
 											Output += "<td>"
 										} else if (ListOfUsedAddress[Index_WhichEntry][5] == "GapGeneratedByJS") {
-											Output += "<td bgcolor='C0C0C0'>"
+											Output += "<td bgcolor='808080'>"
 										}
 									} else {
-										Output += "<td bgcolor='salmon'>"
+										Output += "<td bgcolor='#800000'>"
 									}
 									Output += ListOfUsedAddress[Index_WhichEntry][2] + "</td>"
 								//Debug display
@@ -336,9 +344,9 @@ Sort by:<br>
 									//Start row
 										Output += "<tr>"
 									//Start address
-										Output += "<td bgcolor='C0C0C0'><kbd>$" + ListOfGaps[Index_WhichEntry][0].toString(16).toUpperCase() + "</kbd></td>"
+										Output += "<td bgcolor='808080'><kbd>$" + ListOfGaps[Index_WhichEntry][0].toString(16).toUpperCase() + "</kbd></td>"
 									//Size
-										Output += "<td bgcolor='C0C0C0'><kbd>" + ListOfGaps[Index_WhichEntry][1].toString(10) + "</kbd>"
+										Output += "<td bgcolor='808080'><kbd>" + ListOfGaps[Index_WhichEntry][1].toString(10) + "</kbd>"
 										if (ListOfGaps[Index_WhichEntry][1] > 1n) {
 											//Show end address if more than 1 byte
 												Output += "/<kbd>$" + (ListOfGaps[Index_WhichEntry][0] + ListOfGaps[Index_WhichEntry][1] - 1n).toString(16).toUpperCase() + "</kbd>"
@@ -361,7 +369,7 @@ Sort by:<br>
 				}
 			} else {
 				//Display an error that one of the lines are off.
-					Output += "Error! Format is wrong (empty lines, extra TAB character, empty entry, using space when there should be a tab or vice versa), or entries using invalid characters."
+					Output += "Error! Format is wrong (extra TAB character(s), empty entry, using space when there should be a tab or vice versa), or entries using invalid characters."
 			}
 			
 			document.getElementById("Output").innerHTML = Output
@@ -381,5 +389,26 @@ Sort by:<br>
 		else {
 			return (a[1] < b[1]) ? -1 : 1;
 		}
+	}
+	function RemoveBlankOrSpacesEntry(InputArray) {
+		var OutputArray = new Array()
+		var index1 = 0
+		var index2 = 0
+		while (index1 < InputArray.length) {
+			if ((/^(\s*)$|^()$/).test(InputArray[index1]) == false) {
+				OutputArray.push(InputArray[index1])
+				index2++
+			}
+			index1++
+		}
+		return OutputArray
+	}
+	function DisplaySignedBigIntHexString(num) {
+		if (num >= 0n) {
+			num = "$"+ num.toString(16).toUpperCase()
+		} else {
+			num = "(-$" + (num*-1n).toString(16).toUpperCase() + ")"
+		}
+		return num
 	}
 </script>

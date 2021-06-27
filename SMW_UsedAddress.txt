@@ -127,8 +127,8 @@ $7E1F2E	-$7E1F3A	RAM used by SMW.
 $7E1F3C	-$7E1F47	RAM used by SMW.
 $7E1F49	-$7E1FF9	RAM used by SMW.
 $7E1FFB	-$7E1FFE	RAM used by SMW.
-$7E2000	-$7E7CFF	RAM used by SMW.
-$7E7D00	-$7EACFF	RAM used by SMW.
+$7E2000	-$7E7CFF	RAM used by SMW. Note: Remove this if “Free up RAM $7E2000” is installed.
+$7E7D00	-$7EACFF	RAM used by SMW. Note: Remove this if “Free up RAM $7E2000” is installed.
 $7EAD00	-$7EB8FF	RAM used by SMW and LM's examination
 $7EB900	-$7EBCFF	RAM used by SMW.
 $7EBD00	-$7EC0FF	RAM used by SMW.
@@ -136,7 +136,7 @@ $7EC100	-$7EC67F	Originally empty, but LM use this for examination.
 $7EC680	-$7EC6DF	RAM used by SMW.
 $7EC6E0	-$7EC7FF	Empty, untouched RAM on an unhacked ROM. In a hacked ROM, it may be occupied by ExAnimation data (see $7E:C100).
 $7EC800	-$7EFFFF	RAM used by SMW.
-$7F0000	-$7F3FFF	RAM used by SMW. Note: Remove this if “Free $7F0000 (OW Event Restore)” is installed
+$7F0000	-$7F3FFF	RAM used by SMW. Note: Remove this if “Free $7F0000 (OW Event Restore)” is installed.
 $7F4000	-$7F7FFF	RAM used by SMW.
 $7F8000	-$7F8182	RAM used by SMW. Note: Remove this if “Free up RAM $7F:8000” is installed
 $7F8183	-$7F837A	Empty, but partially taken by LM. Not sure the exact amount of bytes used though.

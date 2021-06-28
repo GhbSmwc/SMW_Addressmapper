@@ -48,6 +48,11 @@ Where:
 If there are re-used addresses on multiple entries, they will display as a row colored red with the text &ldquo;Overlap detected!&rdquo; written next to their starting address being affected. If there are gaps between two closest ranges, will insert
 a grey entry stating a gap.<br>
 
+Filter:<br>
+<input type="checkbox" id="Filter_UsedAddress"><label for="Filter_UsedAddress">Used addresses</label><br>
+<input type="checkbox" id="Filter_Overlaps"><label for="Filter_Overlaps">Overlaps</label><br>
+<input type="checkbox" id="Filter_Gaps"><label for="Filter_Gaps">Gaps</label><br>
+
 <textarea id="UserInputList" cols="50" rows="20" oninput="DisplayAddress()"></textarea><br>
 <table><tr>
 <td valign='top'><h2>Left panel - all addresses</h2>
@@ -160,7 +165,7 @@ Sort by:<br>
 				//ListOfUsedAddress[Index_WhichEntry][0] = address column
 				//ListOfUsedAddress[Index_WhichEntry][1] = size column
 				//ListOfUsedAddress[Index_WhichEntry][2] = description column
-				//ListOfUsedAddress[Index_WhichEntry][3] = Overlap indicator.
+				//ListOfUsedAddress[Index_WhichEntry][3] = UserEnteredAddress/Overlap/gap indicator.
 				//ListOfUsedAddress[Index_WhichEntry][4] = (internal, mainly debug) Adjacent/Gap indicator in relation to previous address.
 				//ListOfUsedAddress[Index_WhichEntry][5] = (internal) determine if this is a user-entered range or a gap.
 					var Index_WhichEntry = 0
@@ -192,7 +197,7 @@ Sort by:<br>
 									NumberOfBytesValid = false
 								}
 						//Add a new item on each row
-							ListOfUsedAddress[Index_WhichEntry].push("", "")
+							ListOfUsedAddress[Index_WhichEntry].push("UserEnteredAddress", "")
 						//Next
 							Index_WhichEntry++
 					}
@@ -206,7 +211,7 @@ Sort by:<br>
 						while (Index_WhichEntry < ListOfUsedAddress.length) {
 							//Write the given addresses range as user-entered data
 								ListOfUsedAddress[Index_WhichEntry][5] = "UserEnteredRange"
-							//Check if a given used address range intersects with another. Since this is now sorted ascending address order initally here, the next item shall
+							//Check if a given used address range intersects with another. Since this is now sorted ascending address order initially here, the next item shall
 							//have a start address greater or equal to than the current item.
 								if (ListOfUsedAddress[Index_WhichEntry - 1][0] + ListOfUsedAddress[Index_WhichEntry - 1][1] - 1n > HighestEndAddressOverlapDetect) {
 									HighestEndAddressOverlapDetect = ListOfUsedAddress[Index_WhichEntry - 1][0] + ListOfUsedAddress[Index_WhichEntry - 1][1] - 1n
@@ -224,8 +229,13 @@ Sort by:<br>
 								} else if (ListOfUsedAddress[Index_WhichEntry][0] > HighestEndAddressGapDetect + 1n) {
 									ListOfUsedAddress[Index_WhichEntry][4] = "GapBetweenHereAndPrevious"
 									//Create an array containing between-range gap addresses.
+									//Format:
+									//GapArray[Index][0] = address
+									//GapArray[Index][1] = size
+									//GapArray[Index][2] = description (blank)
+									//GapArray[Index][3] = Gap indicator
 										GapArray = Array(0) //Reset the array so that it doesn't keep adding even more items in the list on every loop
-										GapArray.push((HighestEndAddressGapDetect + 1n), (ListOfUsedAddress[Index_WhichEntry][0] - HighestEndAddressGapDetect - 1n), "", "", "AdjacentToPreviousAddress", "GapGeneratedByJS")
+										GapArray.push((HighestEndAddressGapDetect + 1n), (ListOfUsedAddress[Index_WhichEntry][0] - HighestEndAddressGapDetect - 1n), "", "Gap", "AdjacentToPreviousAddress", "GapGeneratedByJS")
 										ListOfGaps.push(GapArray)
 										
 										GapAddressCount++

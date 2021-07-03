@@ -29,7 +29,7 @@ Make sure the format is:
 
 Notes:
 	<ul>
-		<li>Lines that are blank or composed of just any whitespace characters are ignored.</li>
+		<li>Lines that are blank or composed of just any whitespace characters are ignored. It will also ignore any lines that start with either a semicolon or a space, followed by a semicolon (therefore ASM-styled comments are allowed).</li>
 		<li>Whitespace shown above is a TAB character, not a literal space character.</li>
 	</ul>
 
@@ -48,6 +48,8 @@ Where:
 If there are re-used addresses on multiple entries, they will display as a row colored red with the text &ldquo;Overlap detected!&rdquo; written next to their starting address being affected. If there are gaps between two closest ranges, will insert
 a grey entry stating a gap.<br><br>
 
+Paste your data here:<br>
+<textarea id="UserInputList" cols="75" rows="30" oninput="DisplayAddress()"></textarea><br><br>
 
 Sort by:<br>
 <input type="radio" id="AllRAM_StartAddressOrder" name="AllRAM_Sort" onchange="DisplayAddress()" checked><label for="AllRAM_StartAddressOrder">Starting address</label><br>
@@ -59,9 +61,12 @@ Filter:<br>
 <button onclick="Filter_Checks_CheckAll()">Check All</button><button onclick="Filter_Checks_UncheckAll()">Uncheck All</button><button onclick="Filter_Checks_InvertAll()">Invert</button><br>
 <input type="checkbox" checked class="Filter_Checks" id="Filter_UsedAddress" onchange="DisplayAddress()"><label for="Filter_UsedAddress">Used addresses</label><br>
 <input type="checkbox" checked class="Filter_Checks" id="Filter_Overlaps" onchange="DisplayAddress()"><label for="Filter_Overlaps">Used address that overlapped</label><br>
-<input type="checkbox" checked class="Filter_Checks" id="Filter_Gaps" onchange="DisplayAddress()"><label for="Filter_Gaps">Gaps</label><br>
+<input type="checkbox" checked class="Filter_Checks" id="Filter_Gaps" onchange="DisplayAddress()"><label for="Filter_Gaps">Gaps</label><br><br>
 
-<textarea id="UserInputList" cols="50" rows="20" oninput="DisplayAddress()"></textarea><br>
+Output plaintext list size/ending address format:<br>
+<input type="radio" checked id="PlaintextFormat_EndAddress" onchange="DisplayAddress()" name="PlaintextFormat"><label for="PlaintextFormat_EndAddress">Ending address</label><br>
+<input type="radio" id="PlaintextFormat_Size" onchange="DisplayAddress()" name="PlaintextFormat"><label for="PlaintextFormat_Size">Size</label><br>
+<input type="radio" id="PlaintextFormat_Both" onchange="DisplayAddress()" name="PlaintextFormat"><label for="PlaintextFormat_Both">Both (<kbd>&lt;Size&gt;/&lt;EndingAddress&gt;</kbd>)</label><br><br>
 
 <hr>
 <span id="Output"></span>
@@ -145,7 +150,8 @@ Filter:<br>
 			var Output = ""
 		//Obtain each list of items (without any blank lines)
 			var ListOfUsedAddress = RemoveBlankOrSpacesEntry((document.getElementById("UserInputList").value).split('\n'))
-		//Counters, needed to display how many stuff were detected found to overlap, gaps, and how many ranges were entered
+		//Counters, needed to display how many stuff were detected found to overlap, gaps, and how many ranges were entered.
+		//Note: I made them use bigint just in case of E-notation.
 			var Count_NumberOfRangesEntered = 0n //Note that this includes duplicates.
 			var Count_Overlaps = 0n
 			var Count_Gaps = 0n
@@ -286,7 +292,7 @@ Filter:<br>
 							Index_WhichEntry++
 						}
 					//Filter
-						ListOfUsedAddressBackup = ListOfUsedAddress //We need this because we need the last byte before the lowest range and the first byte after the highest range.
+						ListOfUsedAddressBackup = ListOfUsedAddress.sort(SortByStartAddr) //We need this because we need the last byte before the lowest range and the first byte after the highest range.
 						ListOfUsedAddress = FilterStatusTypes(ListOfUsedAddress)
 					//Sort based on user's preference
 						if (document.getElementById("AllRAM_StartAddressOrder").checked) {
@@ -315,7 +321,39 @@ Filter:<br>
 							Output += "<kbd>Total found: " + (BigInt(ListOfUsedAddressBackup.length)).toString(10) + "</kbd><br>" //convert a double to bigint just in case it shows E notation.
 						//Display results
 							Output += "<h2>Results</h2>"
-							Output += "<kbd>Number of results: " + (BigInt(ListOfUsedAddress.length)).toString(10) + "</kbd>"
+							//Plaintext form
+								if (ListOfUsedAddress.length != 0) {
+									Output += "<kbd>Number of results: " + (BigInt(ListOfUsedAddress.length)).toString(10) + "</kbd><br>"
+									Output += "<textarea cols='75' rows='30' readonly>"
+									Index_WhichEntry = 0
+									while (Index_WhichEntry < ListOfUsedAddress.length) {
+										//Address
+											Output += "$" + (ListOfUsedAddress[Index_WhichEntry][0]).toString(16).toUpperCase() + "\t"
+										//Size or ending address
+											if (document.getElementById("PlaintextFormat_Size").checked) {
+												Output += (ListOfUsedAddress[Index_WhichEntry][1]).toString(10)
+											} else if (document.getElementById("PlaintextFormat_EndAddress").checked) {
+												Output += "-$" + (ListOfUsedAddress[Index_WhichEntry][0] + ListOfUsedAddress[Index_WhichEntry][1] - 1n).toString(16).toUpperCase()
+											} else if (document.getElementById("PlaintextFormat_Both").checked) {
+												Output += (ListOfUsedAddress[Index_WhichEntry][1]).toString(10) + "/$" + (ListOfUsedAddress[Index_WhichEntry][0] + ListOfUsedAddress[Index_WhichEntry][1] - 1n).toString(16).toUpperCase()
+											}
+											Output += "\t"
+										//Description
+											Output += ListOfUsedAddress[Index_WhichEntry][2]
+											//Status indicator added after description
+												if (ListOfUsedAddress[Index_WhichEntry][2] != "") {
+													Output += " "
+												}
+												Output += "[Status: " + ListOfUsedAddress[Index_WhichEntry][3] + "]"
+										//Newline, unless it is the last item
+											if (Index_WhichEntry != ListOfUsedAddress.length - 1) {
+												Output += "\n"
+											}
+										//Next
+											Index_WhichEntry++
+									}
+									Output += "</textarea>"
+								}
 							if (ListOfUsedAddress.length != 0) {
 								Output += "<table>"
 								Output += "<tr><th>Address</th><th>Size(/EndAddress)</th><th>Description</th>"
@@ -412,7 +450,7 @@ Filter:<br>
 			var index1 = 0
 			var index2 = 0
 			while (index1 < InputArray.length) {
-				if ((/^(\s*)$|^()$/).test(InputArray[index1]) == false) {
+				if ((/^(\s*)$|^()$|^(\s*;+.*)$/).test(InputArray[index1]) == false) {
 					OutputArray.push(InputArray[index1])
 					index2++
 				}

@@ -31,8 +31,9 @@ Notes:
 	<ul>
 		<li>Lines that are blank or composed of just any whitespace characters are ignored. It will also ignore any lines that start with either a semicolon or a space (0 or more), followed by a semicolon (therefore ASM-styled comments are allowed).</li>
 		<li>Whitespace shown above is a TAB character, not a literal space character.</li>
-		<li>This does not take in account of addressing mirroring (a shorthand <kbd>$00</kbd> instead of <kbd>$7E0000</kbd>), so I strongly recommend putting the full address numbers here.</li>
-		<li>This tool could be applied to other systems (beyond the SNES), since it merely checks ranges.</li>
+		<li>This does not take in account of addressing mirroring (a shorthand <kbd>$00</kbd> instead of <kbd>$7E0000</kbd>), so I strongly recommend putting the full address numbers here. Furthermore, it does not detect what type of memory map it is,
+		things like negative address (only shown on &ldquo;<kbd>Potential ending address before the starting byte of all the ranges</kbd>&rdquo;), address pointing beyond the last byte of the entire memory map, and so on.</li>
+		<li>This tool could be applied to other systems (beyond the SNES), since it merely check ranges.</li>
 	</ul>
 
 Where:

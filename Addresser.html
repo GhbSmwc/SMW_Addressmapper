@@ -59,7 +59,7 @@ Sort by:<br>
 
 Filter:<br>
 <button onclick="Filter_Checks_CheckAll()">Check All</button><button onclick="Filter_Checks_UncheckAll()">Uncheck All</button><button onclick="Filter_Checks_InvertAll()">Invert</button><br>
-<input type="checkbox" checked class="Filter_Checks" id="Filter_UsedAddress" onchange="DisplayAddress()"><label for="Filter_UsedAddress">Used addresses</label><br>
+<input type="checkbox" checked class="Filter_Checks" id="Filter_NotOverlap" onchange="DisplayAddress()"><label for="Filter_NotOverlap">Used addresses</label><br>
 <input type="checkbox" checked class="Filter_Checks" id="Filter_Overlaps" onchange="DisplayAddress()"><label for="Filter_Overlaps">Used address that overlapped</label><br>
 <input type="checkbox" checked class="Filter_Checks" id="Filter_Gaps" onchange="DisplayAddress()"><label for="Filter_Gaps">Gaps</label><br><br>
 
@@ -152,7 +152,7 @@ Output plaintext list size/ending address format:<br>
 			var ListOfUsedAddress = RemoveBlankOrSpacesEntry((document.getElementById("UserInputList").value).split('\n'))
 		//Counters, needed to display how many stuff were detected found to overlap, gaps, and how many ranges were entered.
 		//Note: I made them use bigint just in case of E-notation.
-			var Count_NumberOfRangesEntered = 0n //Note that this includes duplicates.
+			var Count_NumberOfRangesEntered = 0n
 			var Count_Overlaps = 0n
 			var Count_Gaps = 0n
 		//Check if all lines are valid format.
@@ -193,7 +193,7 @@ Output plaintext list size/ending address format:<br>
 				//ListOfUsedAddress[Index_WhichEntry][0] = address column
 				//ListOfUsedAddress[Index_WhichEntry][1] = size column
 				//ListOfUsedAddress[Index_WhichEntry][2] = description column
-				//ListOfUsedAddress[Index_WhichEntry][3] = UserEnteredAddress/Overlap/Gap indicator.
+				//ListOfUsedAddress[Index_WhichEntry][3] = NotOverlap/Overlap/Gap indicator.
 				//ListOfUsedAddress[Index_WhichEntry][4] = (internal, mainly debug) Adjacent/Gap indicator in relation to previous address.
 				//ListOfUsedAddress[Index_WhichEntry][5] = (internal) determine if this is a user-entered range or a gap.
 					var Index_WhichEntry = 0
@@ -225,7 +225,7 @@ Output plaintext list size/ending address format:<br>
 									NumberOfBytesValid = false
 								}
 						//Add a new item on each row
-							ListOfUsedAddress[Index_WhichEntry].push("UserEnteredAddress", "")
+							ListOfUsedAddress[Index_WhichEntry].push("NotOverlap", "")
 						//Next
 							Index_WhichEntry++
 					}
@@ -281,7 +281,7 @@ Output plaintext list size/ending address format:<br>
 					//Count
 						Index_WhichEntry = 0
 						while (Index_WhichEntry < ListOfUsedAddress.length) {
-							if (ListOfUsedAddress[Index_WhichEntry][3] == "UserEnteredAddress") {
+							if (ListOfUsedAddress[Index_WhichEntry][3] == "NotOverlap") {
 								Count_NumberOfRangesEntered++
 							} else if (ListOfUsedAddress[Index_WhichEntry][3] == "Overlap") {
 								Count_Overlaps++
@@ -315,7 +315,7 @@ Output plaintext list size/ending address format:<br>
 						//byte of all the ranges)
 							Output += "<kbd>Potential starting address beyond the last byte of all the ranges: $" + (ListOfUsedAddressBackup[ListOfUsedAddressBackup.length - 1][0] + ListOfUsedAddressBackup[ListOfUsedAddressBackup.length - 1][1]).toString(16).toUpperCase() + "</kbd><br><br>"
 						//Display how many user ranges, overlaps and gaps
-							Output += "<kbd><span style='color : #00ff00'>Number of ranges you entered, including potential duplicates: " + Count_NumberOfRangesEntered.toString(10) + "</kbd><br>"
+							Output += "<kbd><span style='color : #00ff00'>Number of ranges you entered, that didn't conflict/overlap: " + Count_NumberOfRangesEntered.toString(10) + "</kbd><br>"
 							Output += "<kbd><span style='color : #ff0000'>Number of ranges you entered that overlap at least one another range: " + Count_Overlaps.toString(10) + "</kbd></span><br>"
 							Output += "<kbd><span style='color : #808080'>Number of gaps found between the lowest and highest range: " + Count_Gaps.toString(10) + "</span></kbd><br>"
 							Output += "<kbd>Total found: " + (BigInt(ListOfUsedAddressBackup.length)).toString(10) + "</kbd><br>" //convert a double to bigint just in case it shows E notation.
@@ -471,7 +471,7 @@ Output plaintext list size/ending address format:<br>
 			//InputArray[Index][0] = address column
 			//InputArray[Index][1] = size column
 			//InputArray[Index][2] = description column
-			//InputArray[Index][3] = UserEnteredAddress/Overlap/gap indicator.
+			//InputArray[Index][3] = NotOverlap/Overlap/gap indicator.
 			//InputArray[Index][4] = (internal, mainly debug) Adjacent/Gap indicator in relation to previous address.
 			//InputArray[Index][5] = (internal) determine if this is a user-entered range or a gap.
 			//
@@ -479,7 +479,7 @@ Output plaintext list size/ending address format:<br>
 			var OutputArray = new Array()
 			//IndicatorList[Index2][0] = Indicator
 			//IndicatorList[Index2][1] = True/false state
-			var IndicatorList = [["UserEnteredAddress", document.getElementById("Filter_UsedAddress").checked],
+			var IndicatorList = [["NotOverlap", document.getElementById("Filter_NotOverlap").checked],
 			["Overlap", document.getElementById("Filter_Overlaps").checked],
 			["Gap", document.getElementById("Filter_Gaps").checked]]
 			var Index = 0
@@ -500,7 +500,7 @@ Output plaintext list size/ending address format:<br>
 		}
 		function TableBGColorStatus(StatusNameString) {
 			var ColorCode = "Blue"
-			if (StatusNameString == "UserEnteredAddress") {
+			if (StatusNameString == "NotOverlap") {
 				ColorCode = "#00c000"
 			} else if (StatusNameString == "Overlap") {
 				ColorCode = "#800000"

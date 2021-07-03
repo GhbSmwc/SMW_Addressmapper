@@ -60,23 +60,24 @@ How to use:
 7E0060	1	Patch A
 7E0061	2	Patch B
 ;---------------------
-	Make sure there are no empty lines (every single line in existence must have content), as it converts each line into each item in an array
-	(uses a [string.split('\n')] to convert into line-array), then later splits them by tab character ([.split('\t')]) to get the data of each RAM.
+	Blank lines, lines with just any whitespace characters, or lines with zero or more whitespace character followed by a semicolon will be ignored (ASM-styled comments
+	will not break this). It first break each line into an element in an array (uses a [string.split('\n')] to convert into line-array), then later splits them by tab
+	character ([.split('\t')]) to get the data of each RAM. If there any lines with an invalid format, it will error out.
 	
-	This is the format the javascript code would allow. Of course, you can supply a range instead of number of bytes by having the second number (after the first tab character)
+	This is the format the javascript (JS) code would allow. Of course, you can supply a range instead of number of bytes by having the second number (after the first tab character)
 	be an address, preceded with a hyphen symbol (-XXXXXX (or -$XXXXXX)).
 	
 	Then if you are installing another patch, you make another entry of RAM of that patch into the txt file. Then copy the entire list, and paste it into the “text area” of
-	the HTML javascript. What will happen is at the bottom of the HTML, shows 2 types of information:
+	the HTML javascript. What will happen is at the bottom of the HTML, shows a list of the RAM you entered, but with some additional information:
 	
-		The left panel shows what you've entered, sorted either by their starting addresses or their sizes. If there are conflicts (2 or more ASM stuff reusing the
-		same address(es) of RAM at any part of the range), they're colored red with the starting address column having the text “Overlap detected!” written. You
-		can then CTRL+F to check and find which ones have those issues, which suggest they will glitch. If none found on the list, then there are no conflicts.
+		An uneditable textarea, for easy copying (select it, CTRL+A, CTRL+C). Useful if you wanted to take that formatted list, edit, and feed that into the JS tool.
 		
-			Also on the left panel displays gaps when there are 2 ranges with unused bytes in between. Useful if you want to find potentially-unused RAM
-			and place a new usage located a byte after the previous range's last byte.
+		An HTML table, with colors. A clone of the above, but much cleaner format due to plaintext limitations (despite being tab-separated values, the data may not
+		always be aligned on the columns). Green is the submitted address you entered without any overlaps ("UserEnteredAddress"), red also means your submitted address
+		is overlapping (or conflicting) with another, and grey means a gap between 2 closest ranges to one another exists (if at least 1 byte in between them exist).
 		
-		The right panel, same as before, but filtered by gaps.
+		Filtering. Just below the sort setting, features a UI element that lets you filter to look for address based on their status (address you sent w/o overlaps, overlaps,
+		and gaps). This makes searching for various things like unused RAM and/or conflicting used RAM much easier.
 	
 	If you used the first example (wallkick + directional quake):
 ;---------------------
@@ -89,11 +90,35 @@ How to use:
 Note:
 	It is possible that a RAM may be re-used to save memory without issues. This happens when a given RAM address is not being used by multiple unrelated things at the same time:
 	You may use it in a per-level effects, such as a custom timer only used in certain levels, but that same address is used as a flag or a counter in other levels. As long as
-	the game does not have to remember it spanning across the game (such as your HP if you want it to keep its value throughout the levels). Same applies to custom scratch RAM
-	(with memory more than 16 bytes; $7E0000-$7E000F, like my Graphical Bar). If this is the case, you can:
+	the game does not have to remember it spanning across the game (such as your HP if you want it to keep its value throughout specific levels but not on overworld maps).
+	Same applies to custom scratch RAM (with memory more than 16 bytes; $7E0000-$7E000F, like my Graphical Bar). If this is the case, you can:
 		-Merge the info into one on the list. Technically, there is no character limit on the description, you could make it say “Used by Patch A and Patch B”.
 		-For per-level used RAM that needs to be retained for the level (like a timer), simply have a “local used-RAM list” separated from the “global used-RAM list”.
 		 (local means used in specific areas in the game, global is the entire game that is always used for a given purpose and only that purpose).
+Useful tip(s):
+	It's possible to make asar output a txt file in the format the JS accepts this, here's how to do it:
+	
+	Create an ASM defines file (example, DefineTest.asm), or have it in the ASM file with the code doing this:
+;---------------------
+!Freeram_test = $7E0060	;>Lets assume this takes 4 bytes.
+!Size	= 4		;>Some patches or any other ASM resource may have ram with a certain size depending on the settings.
+
+print "$", hex(!Freeram_test), "	", dec(!Size), "	Description here"
+;---------------------
+	Then create a batch file (test.bat), in that file to contain this text (each space is a parameter, and a newline submits the data):
+;---------------------
+[path to asar.exe] [path to game file] > [path location to create the txt file]
+pause
+;---------------------
+If there are spaces in the file path, wrap the whole path in quotes. Then save, run it (should open the command prompt).
+Example:
+;---------------------
+"C:\Users\GreenHammerBro\Desktop\smw romhacking\General Tools\asar181\asar.exe" "C:\Users\GreenHammerBro\Desktop\smw romhacking\Submission\AddresserTool\DefineTest.asm" "C:\Users\GreenHammerBro\Desktop\smw romhacking\Submission\AddresserTool\a.smc" >> "C:\Users\RedBro\Desktop\smw romhacking\Submission\AddresserTool\Output.txt"
+pause
+;---------------------
+And a file should appear with the RAM info (at [path location to create the txt file]). Note: this HAS to be outputted as a text file, the command prompt will convert it into 5 regular space characters.
+
+
 Credits:
 	HammerBrother: Created the tool
 	dtothefourth (https://www.smwcentral.net/?p=profile&id=37441 ): Made or knows the code that makes adding the tab character much easier.

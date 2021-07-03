@@ -46,45 +46,36 @@ Where:
 	<li><kbd>&lt;Description&gt;</kbd> (optional) is a brief description. Note: HTML tags, elements and other reserved symbols apply on the description!</li>
 </ul>
 If there are re-used addresses on multiple entries, they will display as a row colored red with the text &ldquo;Overlap detected!&rdquo; written next to their starting address being affected. If there are gaps between two closest ranges, will insert
-a grey entry stating a gap.<br>
+a grey entry stating a gap.<br><br>
+
+
+Sort by:<br>
+<input type="radio" id="AllRAM_StartAddressOrder" name="AllRAM_Sort" onchange="DisplayAddress()" checked><label for="AllRAM_StartAddressOrder">Starting address</label><br>
+<input type="radio" id="AllRAM_SizeOrder" name="AllRAM_Sort" onchange="DisplayAddress()"><label for="AllRAM_SizeOrder">Size</label><br><br>
+
+<input type="checkbox" id="Address_Descending" onchange="DisplayAddress()"><label for="Address_Descending">descending order</label><br><br>
 
 Filter:<br>
-<input type="checkbox" id="Filter_UsedAddress"><label for="Filter_UsedAddress">Used addresses</label><br>
-<input type="checkbox" id="Filter_Overlaps"><label for="Filter_Overlaps">Overlaps</label><br>
-<input type="checkbox" id="Filter_Gaps"><label for="Filter_Gaps">Gaps</label><br>
+<button onclick="Filter_Checks_CheckAll()">Check All</button><button onclick="Filter_Checks_UncheckAll()">Uncheck All</button><button onclick="Filter_Checks_InvertAll()">Invert</button><br>
+<input type="checkbox" checked class="Filter_Checks" id="Filter_UsedAddress" onchange="DisplayAddress()"><label for="Filter_UsedAddress">Used addresses</label><br>
+<input type="checkbox" checked class="Filter_Checks" id="Filter_Overlaps" onchange="DisplayAddress()"><label for="Filter_Overlaps">Used address that overlapped</label><br>
+<input type="checkbox" checked class="Filter_Checks" id="Filter_Gaps" onchange="DisplayAddress()"><label for="Filter_Gaps">Gaps</label><br>
 
 <textarea id="UserInputList" cols="50" rows="20" oninput="DisplayAddress()"></textarea><br>
-<table><tr>
-<td valign='top'><h2>Left panel - all addresses</h2>
-<dl>
-<dt>Sort by:<br>
-<dl>
-	<dt><input type="radio" id="AllRAM_StartAddressOrder" name="AllRAM_Sort" onchange="DisplayAddress()" checked><label for="AllRAM_StartAddressOrder">Starting address</label></dt>
-	<dt><input type="radio" id="AllRAM_SizeOrder" name="AllRAM_Sort" onchange="DisplayAddress()"><label for="AllRAM_SizeOrder">Size</label></dt>
-</dl>
-<dl>
-<input type="checkbox" id="Address_Descending" onchange="DisplayAddress()"><label for="Address_Descending">descending order</label></dt></td>
-</dl>
-<td valign='top'><h2>Right panel - gaps</h2>
-Sort by:<br>
-<dl>
-	<dt><input type="radio" id="Gap_StartAddressOrder" name="AddressGap_Sort" onchange="DisplayAddress()" checked><label for="Gap_StartAddressOrder">Starting address</label></dt>
-	<dt><input type="radio" id="Gap_Size" name="AddressGap_Sort" onchange="DisplayAddress()"><label for="Gap_Size">Size</label></dt>
-</dl>
-<input type="checkbox" id="GapAddress_Descending" onchange="DisplayAddress()"><label for="GapAddress_Descending">descending order</label></td>
-</tr></table>
+
 <hr>
 <span id="Output"></span>
 
 </body>
 <script>
+//Tab key to make it not switch the focus and actually insert a tab character.
 	window.onload = function(){    
 		var addressList = document.getElementById("UserInputList");
-   		if(addressList.addEventListener ) {
+		if(addressList.addEventListener ) {
 			addressList.addEventListener('keydown',this.keyHandler,false);
-    		} else if(addressList.attachEvent ) {
-        		addressList.attachEvent('onkeydown',this.keyHandler);
-    		}
+		} else if(addressList.attachEvent ) {
+			addressList.attachEvent('onkeydown',this.keyHandler);
+		}
 	}
 
 	function keyHandler(e) {
@@ -94,13 +85,13 @@ Sort by:<br>
 		if (e.target) target = e.target;
 		else if (e.srcElement) target = e.srcElement;
 
-        	if(e.keyCode == 9) {
+		if(e.keyCode == 9) {
 			if (document.selection) {
 				target.focus();
 				sel = document.selection.createRange();
 				sel.text = '\t';
 			} else if (target.selectionStart || target.selectionStart === 0) {
-	        		var startPos = target.selectionStart;
+				var startPos = target.selectionStart;
 				var endPos = target.selectionEnd;
 				target.value = target.value.substring(0, startPos) + '\t' + target.value.substring(endPos, target.value.length);
 				DisplayAddress()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
@@ -112,14 +103,41 @@ Sort by:<br>
 				target.value += '\t';
 			}
 
-            		if(e.preventDefault) {
-            		    	e.preventDefault();
+			if(e.preventDefault) {
+				e.preventDefault();
 				DisplayAddress()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
-            		}
-            		return false;
-        	}
-    	}
-
+			}
+			return false;
+		}
+	}
+//Main functions
+	function Filter_Checks_CheckAll() {
+		var FilterListSettings = document.getElementsByClassName("Filter_Checks")
+		var Index = 0
+		while (Index < FilterListSettings.length) {
+			FilterListSettings[Index].checked = true
+			Index++
+		}
+		DisplayAddress()
+	}
+	function Filter_Checks_UncheckAll() {
+		var FilterListSettings = document.getElementsByClassName("Filter_Checks")
+		var Index = 0
+		while (Index < FilterListSettings.length) {
+			FilterListSettings[Index].checked = false
+			Index++
+		}
+		DisplayAddress()
+	}
+	function Filter_Checks_InvertAll() {
+		var FilterListSettings = document.getElementsByClassName("Filter_Checks")
+		var Index = 0
+		while (Index < FilterListSettings.length) {
+			FilterListSettings[Index].checked = (FilterListSettings[Index].checked ^ 1)
+			Index++
+		}
+		DisplayAddress()
+	}
 	function DisplayAddress() {
 		//Debug stuff
 			const DebugDisplay = false	//For developer - set this to true to display various info.
@@ -127,6 +145,10 @@ Sort by:<br>
 			var Output = ""
 		//Obtain each list of items (without any blank lines)
 			var ListOfUsedAddress = RemoveBlankOrSpacesEntry((document.getElementById("UserInputList").value).split('\n'))
+		//Counters, needed to display how many stuff were detected found to overlap, gaps, and how many ranges were entered
+			var Count_NumberOfRangesEntered = 0n //Note that this includes duplicates.
+			var Count_Overlaps = 0n
+			var Count_Gaps = 0n
 		//Check if all lines are valid format.
 			var Index_ErrorLine = 0
 			var AllLinesValid = true
@@ -165,7 +187,7 @@ Sort by:<br>
 				//ListOfUsedAddress[Index_WhichEntry][0] = address column
 				//ListOfUsedAddress[Index_WhichEntry][1] = size column
 				//ListOfUsedAddress[Index_WhichEntry][2] = description column
-				//ListOfUsedAddress[Index_WhichEntry][3] = UserEnteredAddress/Overlap/gap indicator.
+				//ListOfUsedAddress[Index_WhichEntry][3] = UserEnteredAddress/Overlap/Gap indicator.
 				//ListOfUsedAddress[Index_WhichEntry][4] = (internal, mainly debug) Adjacent/Gap indicator in relation to previous address.
 				//ListOfUsedAddress[Index_WhichEntry][5] = (internal) determine if this is a user-entered range or a gap.
 					var Index_WhichEntry = 0
@@ -250,129 +272,96 @@ Sort by:<br>
 								//Next
 									GapAddressIndex++
 							}
-					//Sort again just in case they're out of order after inserting gap addresses.
-						ListOfUsedAddress.sort(SortByStartAddr);
-					//Sort differently based on options
-						if (document.getElementById("AllRAM_SizeOrder").checked == true) {
-							ListOfUsedAddress.sort(SortBySizeOrder);
+					//Count
+						Index_WhichEntry = 0
+						while (Index_WhichEntry < ListOfUsedAddress.length) {
+							if (ListOfUsedAddress[Index_WhichEntry][3] == "UserEnteredAddress") {
+								Count_NumberOfRangesEntered++
+							} else if (ListOfUsedAddress[Index_WhichEntry][3] == "Overlap") {
+								Count_Overlaps++
+							} else if (ListOfUsedAddress[Index_WhichEntry][3] == "Gap") {
+								Count_Gaps++
+							}
+							
+							Index_WhichEntry++
+						}
+					//Filter
+						ListOfUsedAddressBackup = ListOfUsedAddress //We need this because we need the last byte before the lowest range and the first byte after the highest range.
+						ListOfUsedAddress = FilterStatusTypes(ListOfUsedAddress)
+					//Sort based on user's preference
+						if (document.getElementById("AllRAM_StartAddressOrder").checked) {
+							if (document.getElementById("Address_Descending").checked == false) {
+								ListOfUsedAddress.sort(SortByStartAddr);
+							} else {
+								ListOfUsedAddress.sort(SortByStartAddrRev);
+							}
+						} else if (document.getElementById("AllRAM_SizeOrder").checked) {
+							if (document.getElementById("Address_Descending").checked == false) {
+								ListOfUsedAddress.sort(SortBySizeOrder);
+							} else {
+								ListOfUsedAddress.sort(SortBySizeOrderRev);
+							}
 						}
 					//Display output
+						//Show the last byte before the lowest entered range.
+							Output += "<kbd>Potential ending address before the starting byte of all the ranges: " + DisplaySignedBigIntHexString(ListOfUsedAddressBackup[0][0] - 1n) + "</kbd><br>"
 						//Display a potential address after the last byte of the highest range (in case you wanted to find a new RAM address that is beyond the last address
 						//byte of all the ranges)
-						Output += "<kbd>Potential ending address before the starting byte of all the ranges: " + DisplaySignedBigIntHexString(ListOfUsedAddress[0][0] - 1n) + "</kbd><br>"
-						Output += "<kbd>Potential starting address beyond the last byte of all the ranges: $" + (ListOfUsedAddress[ListOfUsedAddress.length - 1][0] + ListOfUsedAddress[ListOfUsedAddress.length - 1][1]).toString(16).toUpperCase() + "</kbd>"
-						Output += "<table><tr>"
-						//Display all RAM (left panel)
-							if (document.getElementById("Address_Descending").checked) {
-								ListOfUsedAddress.reverse()
-							}
-							Output += "<td valign='top'>"
-							Output += "<h2>All listed RAM, and gaps</h2>"
-							Output += "<table>"
-							Output += "<tr><th>Address</th><th>Size(/EndAddress)</th><th>Description</th>"
-							if (DebugDisplay) {
-								Output += "<th>Relation with previous address</th>"
-							}
-							Output += "</tr>"
-							Index_WhichEntry = 0
-							while (Index_WhichEntry < ListOfUsedAddress.length) {
-								//Start row
-									Output += "<tr>"
-								//Start address
-									if (ListOfUsedAddress[Index_WhichEntry][3] != "Overlap") {
-										if (ListOfUsedAddress[Index_WhichEntry][5] == "UserEnteredRange") {
-											Output += "<td>"
-										} else if (ListOfUsedAddress[Index_WhichEntry][5] == "GapGeneratedByJS") {
-											Output += "<td bgcolor='808080'>"
-										}
-									} else {
-										Output += "<td bgcolor='#800000'>"
-									}
-									Output += "<kbd>$" + ListOfUsedAddress[Index_WhichEntry][0].toString(16).toUpperCase() + "</kbd>"
-									if (ListOfUsedAddress[Index_WhichEntry][3] == "Overlap") {
-										Output += " Overlap detected!"
-									}
-									if (ListOfUsedAddress[Index_WhichEntry][5] == "GapGeneratedByJS") {
-										Output += " A Gap between two ranges."
-									}
-									Output += "</td>"
-								//Number of bytes/end address
-									if (ListOfUsedAddress[Index_WhichEntry][3] != "Overlap") {
-										if (ListOfUsedAddress[Index_WhichEntry][5] == "UserEnteredRange") {
-											Output += "<td>"
-										} else if (ListOfUsedAddress[Index_WhichEntry][5] == "GapGeneratedByJS") {
-											Output += "<td bgcolor='808080'>"
-										}
-									} else {
-										Output += "<td bgcolor='#800000'>"
-									}
-									Output += "<kbd>" + ListOfUsedAddress[Index_WhichEntry][1].toString(10) + "</kbd>"
-									if (ListOfUsedAddress[Index_WhichEntry][1] > 1n) {
-										//Show end address if more than 1 byte
-											Output += "/<kbd>$" + (ListOfUsedAddress[Index_WhichEntry][0] + ListOfUsedAddress[Index_WhichEntry][1] - 1n).toString(16).toUpperCase() + "</kbd>"
-									}
-									Output += "</td>"
-								//Description
-									if (ListOfUsedAddress[Index_WhichEntry][3] != "Overlap") {
-										if (ListOfUsedAddress[Index_WhichEntry][5] == "UserEnteredRange") {
-											Output += "<td>"
-										} else if (ListOfUsedAddress[Index_WhichEntry][5] == "GapGeneratedByJS") {
-											Output += "<td bgcolor='808080'>"
-										}
-									} else {
-										Output += "<td bgcolor='#800000'>"
-									}
-									Output += ListOfUsedAddress[Index_WhichEntry][2] + "</td>"
-								//Debug display
-									if (DebugDisplay) {
-										//indicator in relation to previous address
-											Output += "<td>" + ListOfUsedAddress[Index_WhichEntry][4] + "</td>"
-									}
-								//End of row
-									Output += "</tr>"
-								//Next
-									Index_WhichEntry++
-							}
-							Output += "</td></tr></table>"
-							Output += "</td>"
-						//Display all gap RAM (right panel)
-							if (document.getElementById("Gap_StartAddressOrder").checked == true) {
-								ListOfGaps.sort(SortByStartAddr)
-							} else {
-								ListOfGaps.sort(SortBySizeOrder)
-							}
-							if (document.getElementById("GapAddress_Descending").checked == true) {
-								ListOfGaps.reverse()
-							}
-							Output += "<td valign='top'>"
-							Output += "<h2>Filter by gaps:</h2>"
-							Output += "<table>"
-							Output += "<tr><th>Address</th><th>Size(/EndAddress)</th></tr>"
-							Index_WhichEntry = 0
-							if (ListOfGaps.length >= 1) {
-								while (Index_WhichEntry < ListOfGaps.length) {
+							Output += "<kbd>Potential starting address beyond the last byte of all the ranges: $" + (ListOfUsedAddressBackup[ListOfUsedAddressBackup.length - 1][0] + ListOfUsedAddressBackup[ListOfUsedAddressBackup.length - 1][1]).toString(16).toUpperCase() + "</kbd><br><br>"
+						//Display how many user ranges, overlaps and gaps
+							Output += "<kbd><span style='color : #00ff00'>Number of ranges you entered, including potential duplicates: " + Count_NumberOfRangesEntered.toString(10) + "</kbd><br>"
+							Output += "<kbd><span style='color : #ff0000'>Number of ranges you entered that overlap at least one another range: " + Count_Overlaps.toString(10) + "</kbd></span><br>"
+							Output += "<kbd><span style='color : #808080'>Number of gaps found between the lowest and highest range: " + Count_Gaps.toString(10) + "</span></kbd><br>"
+							Output += "<kbd>Total found: " + (BigInt(ListOfUsedAddressBackup.length)).toString(10) + "</kbd><br>" //convert a double to bigint just in case it shows E notation.
+						//Display results
+							Output += "<h2>Results</h2>"
+							Output += "<kbd>Number of results: " + (BigInt(ListOfUsedAddress.length)).toString(10) + "</kbd>"
+							if (ListOfUsedAddress.length != 0) {
+								Output += "<table>"
+								Output += "<tr><th>Address</th><th>Size(/EndAddress)</th><th>Description</th>"
+								if (DebugDisplay) {
+									Output += "<th>Relation with previous address</th>"
+								}
+								Output += "</tr>"
+								Index_WhichEntry = 0
+								while (Index_WhichEntry < ListOfUsedAddress.length) {
 									//Start row
 										Output += "<tr>"
 									//Start address
-										Output += "<td bgcolor='808080'><kbd>$" + ListOfGaps[Index_WhichEntry][0].toString(16).toUpperCase() + "</kbd></td>"
-									//Size
-										Output += "<td bgcolor='808080'><kbd>" + ListOfGaps[Index_WhichEntry][1].toString(10) + "</kbd>"
-										if (ListOfGaps[Index_WhichEntry][1] > 1n) {
-											//Show end address if more than 1 byte
-												Output += "/<kbd>$" + (ListOfGaps[Index_WhichEntry][0] + ListOfGaps[Index_WhichEntry][1] - 1n).toString(16).toUpperCase() + "</kbd>"
+										Output += "<td bgcolor='" + TableBGColorStatus(ListOfUsedAddress[Index_WhichEntry][3]) + "'>"
+										Output += "<kbd>$" + ListOfUsedAddress[Index_WhichEntry][0].toString(16).toUpperCase() + "</kbd>"
+										if (ListOfUsedAddress[Index_WhichEntry][3] == "Overlap") {
+											Output += " Overlap detected!"
+										}
+										if (ListOfUsedAddress[Index_WhichEntry][3] == "Gap") {
+											Output += " A Gap between two ranges."
 										}
 										Output += "</td>"
+									//Number of bytes/end address
+										Output += "<td bgcolor='" + TableBGColorStatus(ListOfUsedAddress[Index_WhichEntry][3]) + "'>"
+										Output += "<kbd>" + ListOfUsedAddress[Index_WhichEntry][1].toString(10) + "</kbd>"
+										if (ListOfUsedAddress[Index_WhichEntry][1] > 1n) {
+											//Show end address if more than 1 byte
+												Output += "/<kbd>$" + (ListOfUsedAddress[Index_WhichEntry][0] + ListOfUsedAddress[Index_WhichEntry][1] - 1n).toString(16).toUpperCase() + "</kbd>"
+										}
+										Output += "</td>"
+									//Description
+										Output += "<td bgcolor='" + TableBGColorStatus(ListOfUsedAddress[Index_WhichEntry][3]) + "'>"
+										Output += ListOfUsedAddress[Index_WhichEntry][2] + "</td>"
+									//Debug display
+										if (DebugDisplay) {
+											//indicator in relation to previous address
+												Output += "<td>" + ListOfUsedAddress[Index_WhichEntry][4] + "</td>"
+										}
 									//End of row
 										Output += "</tr>"
 									//Next
 										Index_WhichEntry++
 								}
+								Output += "</table>"
 							} else {
-								Output += "<tr><td colspan='2'>No gaps between the lowest range and highest range were found.</td></tr>"
+								Output += "No results found."
 							}
-							Output += "</table>"
-							Output += "</td>"
-						Output += "</tr></table>"
 				} else {
 					//Invalid number of bytes or an end address before the start address.
 						Output += "Error! One of the items have an invalid number of bytes, or have end address being lower than the start address."
@@ -384,41 +373,102 @@ Sort by:<br>
 			
 			document.getElementById("Output").innerHTML = Output
 	}
-	function SortByStartAddr(a, b) {
-		if (a[0] === b[0]) {
-			return 0;
-		}
-		else {
-			return (a[0] < b[0]) ? -1 : 1;
-		}
-	}
-	function SortBySizeOrder(a, b) {
-		if (a[1] === b[1]) {
-			return 0;
-		}
-		else {
-			return (a[1] < b[1]) ? -1 : 1;
-		}
-	}
-	function RemoveBlankOrSpacesEntry(InputArray) {
-		var OutputArray = new Array()
-		var index1 = 0
-		var index2 = 0
-		while (index1 < InputArray.length) {
-			if ((/^(\s*)$|^()$/).test(InputArray[index1]) == false) {
-				OutputArray.push(InputArray[index1])
-				index2++
+	//Sort functions
+		function SortByStartAddr(a, b) {
+			if (a[0] === b[0]) {
+				return 0;
 			}
-			index1++
+			else {
+				return (a[0] < b[0]) ? -1 : 1;
+			}
 		}
-		return OutputArray
-	}
-	function DisplaySignedBigIntHexString(num) {
-		if (num >= 0n) {
-			num = "$"+ num.toString(16).toUpperCase()
-		} else {
-			num = "(-$" + (num*-1n).toString(16).toUpperCase() + ")"
+		function SortByStartAddrRev(a, b) {
+			if (a[0] === b[0]) {
+				return 0;
+			}
+			else {
+				return (a[0] < b[0]) ? 1 : -1;
+			}
 		}
-		return num
-	}
+		function SortBySizeOrder(a, b) {
+			if (a[1] === b[1]) {
+				return 0;
+			}
+			else {
+				return (a[1] < b[1]) ? -1 : 1;
+			}
+		}
+		function SortBySizeOrderRev(a, b) {
+			if (a[1] === b[1]) {
+				return 0;
+			}
+			else {
+				return (a[1] < b[1]) ? 1 : -1;
+			}
+		}
+	//Other
+		function RemoveBlankOrSpacesEntry(InputArray) {
+			var OutputArray = new Array()
+			var index1 = 0
+			var index2 = 0
+			while (index1 < InputArray.length) {
+				if ((/^(\s*)$|^()$/).test(InputArray[index1]) == false) {
+					OutputArray.push(InputArray[index1])
+					index2++
+				}
+				index1++
+			}
+			return OutputArray
+		}
+		function DisplaySignedBigIntHexString(num) {
+			if (num >= 0n) {
+				num = "$"+ num.toString(16).toUpperCase()
+			} else {
+				num = "(-$" + (num*-1n).toString(16).toUpperCase() + ")"
+			}
+			return num
+		}
+		function FilterStatusTypes(InputArray) {
+			//Checks should a given address should be included or not based on the filter settings.
+			//InputArray[Index][0] = address column
+			//InputArray[Index][1] = size column
+			//InputArray[Index][2] = description column
+			//InputArray[Index][3] = UserEnteredAddress/Overlap/gap indicator.
+			//InputArray[Index][4] = (internal, mainly debug) Adjacent/Gap indicator in relation to previous address.
+			//InputArray[Index][5] = (internal) determine if this is a user-entered range or a gap.
+			//
+			var IsIncludedInFilter = false
+			var OutputArray = new Array()
+			//IndicatorList[Index2][0] = Indicator
+			//IndicatorList[Index2][1] = True/false state
+			var IndicatorList = [["UserEnteredAddress", document.getElementById("Filter_UsedAddress").checked],
+			["Overlap", document.getElementById("Filter_Overlaps").checked],
+			["Gap", document.getElementById("Filter_Gaps").checked]]
+			var Index = 0
+			var Index2 = 0
+			while (Index < InputArray.length) {
+				Index2 = 0
+				IsIncludedInFilter = false
+				while ((Index2 < IndicatorList.length)&&(IsIncludedInFilter == false)) {
+					if ((InputArray[Index][3] == IndicatorList[Index2][0])&&(IndicatorList[Index2][1] == true)) {
+						OutputArray.push(InputArray[Index])
+						IsIncludedInFilter = true
+					}
+					Index2++
+				}
+				Index++
+			}
+			return OutputArray
+		}
+		function TableBGColorStatus(StatusNameString) {
+			var ColorCode = "Blue"
+			if (StatusNameString == "UserEnteredAddress") {
+				ColorCode = "#00c000"
+			} else if (StatusNameString == "Overlap") {
+				ColorCode = "#800000"
+			} else if (StatusNameString == "Gap") {
+				ColorCode = "#808080"
+			}
+			return ColorCode
+		}
 </script>

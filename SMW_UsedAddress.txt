@@ -55,6 +55,7 @@ To convert to an appropriate format for the JS tool straight from the RAM map:
 
 Here is the list I got. You can copy it and paste it into the JS tool. Be careful not to have empty line(s)
 upon pasting.
+$7E0000	-$7E0057	RAM used by SMW.
 $7E0059	-$7E005B	RAM used by SMW.
 $7E005D	-$7E005F	RAM used by SMW.
 $7E0064	-$7E0078	RAM used by SMW.

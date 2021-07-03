@@ -60,6 +60,9 @@ How to use:
 7E0060	1	Patch A
 7E0061	2	Patch B
 ;---------------------
+	Now note: This tool does not recognize any RAM/ROM mirroring, therefore Submitting it as $00 does not treat it as $7E0000. Best method of dealing with this is by
+	putting the full address of the actual memory and not the mirroring address.
+	
 	Blank lines, lines with just any whitespace characters, or lines with zero or more whitespace character followed by a semicolon will be ignored (ASM-styled comments
 	will not break this). It first break each line into an element in an array (uses a [string.split('\n')] to convert into line-array), then later splits them by tab
 	character ([.split('\t')]) to get the data of each RAM. If there any lines with an invalid format, it will error out.

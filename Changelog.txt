@@ -1,0 +1,34 @@
+2021-05-03 v2.0
+	-Released with the changes including a tab function. Thanks
+	 to dtothefourth (https://www.smwcentral.net/?p=profile&id=37441 )
+
+2021-07-03 v3.0
+	-This changelog is added.
+	-Addresser.html HTML Javascript tool changes:
+	--Filtering addresses added.
+	---Because of this, a second table (table on the right
+	   showing all the gaps) is not needed. Just have only
+	   “Gaps” checked on the filter setting.
+	--Dark theme, easy on your eyes.
+	--Ranges you entered not overlapping will now appear green.
+	--A counter display is shown how many were not overlapping,
+	  overlapping, or gaps.
+	--A plaintext version is also outputted for easy-to-copy and
+	  re-entering that onto the JS without editing.
+	--The list ignores lines that are blank or have just white
+	  spaces, and lines that have 0 or more white space followed
+	  by a semicolon, allowing ASM-styled comments.
+	--Added an optional feature to ignore duplicate lines, very
+	  useful if you accidentally re-enter the same information
+	  due to things like 2 separate ASM resources that work
+	  together and rely on the same RAM.
+	-HowToUse.txt changes:
+	--Because of the JS tool now outputs plaintext list, the
+	  instruction on how to get all the used RAM is now marked
+	  obsolete.
+	--Learning a bit more on how a command line console works
+	  with asar, it is possible output a list of used RAM as a
+	  txt file and the JS tool will accept that. I was hoping
+	  this will be a game changer for future ASM submissions
+	  to do that for anyone not knowing how to manage their
+	  memory use.

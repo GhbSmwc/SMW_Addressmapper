@@ -119,7 +119,7 @@ Example:
 "C:\Users\GreenHammerBro\Desktop\smw romhacking\General Tools\asar181\asar.exe" "C:\Users\GreenHammerBro\Desktop\smw romhacking\Submission\AddresserTool\DefineTest.asm" "C:\Users\GreenHammerBro\Desktop\smw romhacking\Submission\AddresserTool\a.smc" >> "C:\Users\RedBro\Desktop\smw romhacking\Submission\AddresserTool\Output.txt"
 pause
 ;---------------------
-And a file should appear with the RAM info (at [path location to create the txt file]). Note: this HAS to be outputted as a text file, the command prompt will convert it into 5 regular space characters.
+And a file should appear with the RAM info (at [path location to create the txt file]). Note: this HAS to be outputted as a text file, the command prompt will convert it into 5 regular space characters on the console window.
 
 
 Credits:

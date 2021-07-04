@@ -32,3 +32,12 @@
 	  this will be a game changer for future ASM submissions
 	  to do that for anyone not knowing how to manage their
 	  memory use.
+2021-07-04 Escape tag option and warn the user about improper HTML tag setup for description
+	-I discovered a major issue and have fixed them regarding
+	 HTML tags in the description:
+	--Improper tag setup like ending the table tags without
+	  starting them beforehand can break the outer table.
+	--Added a setting that will escape HTML tags and the
+	  escape character itself (the ampersand), when enabled,
+	  will disable the HTML effects, which prevents breaking
+	  the table.

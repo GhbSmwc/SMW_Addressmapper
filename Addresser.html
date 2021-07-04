@@ -46,7 +46,8 @@ Where:
 			the hyphen and before the hexadecimal address number (example: <kbd>$-10</kbd> is wrong, <kbd>-$10</kbd> is correct)).</li>
 		</ul>
 	</li>
-	<li><kbd>&lt;Description&gt;</kbd> (optional) is a brief description. Note: HTML tags, elements and other reserved symbols apply on the description!</li>
+	<li><kbd>&lt;Description&gt;</kbd> (optional) is a brief description. Note: HTML tags, elements and other reserved symbols apply on the description, and improper opening and closing/ending tags could <abbr title="For example: having only the opening tag or closing/ending tag, if you end the table tag (&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;), before you start it (&lt;table&gt;&lt;tr&gt;&lt;td&gt;), it would mess up the outer table's content after the invalid HTML setup.">break the table</abbr>!
+	If you want to view the table with invalid tag setup and have it not be broken, check the box labeled &ldquo;Escape html tags and escape characters for table description&rdquo;, and it will cancel out the HTML effects (they're <a href="https://en.wikipedia.org/wiki/Character_encodings_in_HTML#XML_character_references">escaped</a>) within the description field.</li>
 </ul>
 If there are re-used addresses on multiple entries, they will display as a row colored red with the text &ldquo;Overlap detected!&rdquo; written next to their starting address being affected. If there are gaps between two closest ranges, will insert
 a grey entry stating a gap.<br><br>
@@ -54,7 +55,9 @@ a grey entry stating a gap.<br><br>
 Paste your data here:<br>
 <textarea id="UserInputList" cols="75" rows="30" oninput="DisplayAddress()"></textarea><br><br>
 
-<input type="checkbox" checked id="CleanDuplicateEntries" onchange="DisplayAddress()"><label for="CleanDuplicateEntries"><abbr title="Any lines that are identical copies are ignored and not flagged as an overlap.">Ignore duplicates</abbr></label><br><br>
+<input type="checkbox" checked id="CleanDuplicateEntries" onchange="DisplayAddress()"><label for="CleanDuplicateEntries"><abbr title="Any lines that are identical copies are ignored and not flagged as an overlap.">Ignore duplicates</abbr></label><br>
+<input type="checkbox" id="EscapeHTMLTagsAndEscapes" onchange="DisplayAddress()"><label for="EscapeHTMLTagsAndEscapes">Escape html tags and escape characters for table description (this prevents potential invalid opening/closing HTML tags from breaking the table).</label><br><br>
+
 
 Sort by:<br>
 <input type="radio" id="AllRAM_StartAddressOrder" name="AllRAM_Sort" onchange="DisplayAddress()" checked><label for="AllRAM_StartAddressOrder">Starting address</label><br>
@@ -405,7 +408,12 @@ Filter:<br>
 											Output += "</td>"
 										//Description
 											Output += "<td bgcolor='" + TableBGColorStatus(ListOfUsedAddress[Index_WhichEntry][3]) + "'>"
-											Output += ListOfUsedAddress[Index_WhichEntry][2] + "</td>"
+											if (document.getElementById("EscapeHTMLTagsAndEscapes").checked == false) {
+												Output += ListOfUsedAddress[Index_WhichEntry][2]
+											} else {
+												Output += escapeHTMLChars(ListOfUsedAddress[Index_WhichEntry][2])
+											}
+											Output += "</td>"
 										//Debug display
 											if (DebugDisplay) {
 												//indicator in relation to previous address
@@ -570,5 +578,12 @@ Filter:<br>
 				index1++
 			}
 			return OutputArray
+		}
+		function escapeHTMLChars(string) {
+			//Should the user's input contains "<", ">", and "&", prevent the innerHTML from treating these as HTML tags/escapes
+				string = string.replaceAll("&", "&amp;") //This must be done first, to avoid replacing already-replaced symbol's ampersand character.
+				string = string.replaceAll("<", "&lt;")
+				string = string.replaceAll(">", "&gt;")
+				return string
 		}
 </script>

@@ -75,9 +75,9 @@ Filter:<br>
 <dt>Output plaintext format:</dt>
 <dl>
 <dt>Size/end address format:</dt>
-<dd><input type="radio" checked id="PlaintextFormat_EndAddress" onchange="DisplayAddress()" name="PlaintextFormat"><label for="PlaintextFormat_EndAddress">Ending address</label></dd>
+<dd><input type="radio" id="PlaintextFormat_EndAddress" onchange="DisplayAddress()" name="PlaintextFormat"><label for="PlaintextFormat_EndAddress">Ending address</label></dd>
 <dd><input type="radio" id="PlaintextFormat_Size" onchange="DisplayAddress()" name="PlaintextFormat"><label for="PlaintextFormat_Size">Size</label></dd>
-<dd><input type="radio" id="PlaintextFormat_Both" onchange="DisplayAddress()" name="PlaintextFormat"><label for="PlaintextFormat_Both">Both (<kbd>&lt;Size&gt;/&lt;EndingAddress&gt;</kbd>)</label></dd><br>
+<dd><input type="radio" checked id="PlaintextFormat_Both" onchange="DisplayAddress()" name="PlaintextFormat"><label for="PlaintextFormat_Both">Both (<kbd>&lt;Size&gt;/&lt;EndingAddress&gt;</kbd>)</label></dd><br>
 <dt>Show status</dt>
 <dd><input type="checkbox" checked id="PlaintextFormat_ShowStatus" onchange="DisplayAddress()"><label for="PlaintextFormat_ShowStatus">Show status of Nonoverlap/overlap/gap</label></dd>
 </dl>
@@ -131,8 +131,8 @@ Filter:<br>
 	}
 //Main functions
 	function Filter_Checks_CheckAll() {
-		var FilterListSettings = document.getElementsByClassName("Filter_Checks")
-		var Index = 0
+		let FilterListSettings = document.getElementsByClassName("Filter_Checks")
+		let Index = 0
 		while (Index < FilterListSettings.length) {
 			FilterListSettings[Index].checked = true
 			Index++
@@ -140,8 +140,8 @@ Filter:<br>
 		DisplayAddress()
 	}
 	function Filter_Checks_UncheckAll() {
-		var FilterListSettings = document.getElementsByClassName("Filter_Checks")
-		var Index = 0
+		let FilterListSettings = document.getElementsByClassName("Filter_Checks")
+		let Index = 0
 		while (Index < FilterListSettings.length) {
 			FilterListSettings[Index].checked = false
 			Index++
@@ -149,8 +149,8 @@ Filter:<br>
 		DisplayAddress()
 	}
 	function Filter_Checks_InvertAll() {
-		var FilterListSettings = document.getElementsByClassName("Filter_Checks")
-		var Index = 0
+		let FilterListSettings = document.getElementsByClassName("Filter_Checks")
+		let Index = 0
 		while (Index < FilterListSettings.length) {
 			FilterListSettings[Index].checked = (FilterListSettings[Index].checked ^ 1)
 			Index++
@@ -161,23 +161,19 @@ Filter:<br>
 		//Debug stuff
 			const DebugDisplay = false	//For developer - set this to true to display various info.
 		//Handle output
-			var Output = ""
+			let Output = ""
 		//Obtain each list of items (without any blank lines)
-			var ListOfUsedAddress = RemoveBlankOrSpacesEntry((document.getElementById("UserInputList").value).split('\n'))
-			//If the user wanted the system to ignore duplicates
-			if (document.getElementById("CleanDuplicateEntries").checked) {
-				ListOfUsedAddress = RemoveItemsInTableFaggedAsDuplicates(RemoveDuplicatesFromList(ListOfUsedAddress))
-			}
+			let ListOfUsedAddress = RemoveBlankOrSpacesEntry((document.getElementById("UserInputList").value).split('\n'))
 		//Counters, needed to display how many stuff were detected found to overlap, gaps, and how many ranges were entered.
 		//Note: I made them use bigint just in case of E-notation.
-			var Count_NumberOfRangesEntered = 0n
-			var Count_Overlaps = 0n
-			var Count_Gaps = 0n
+			let Count_NumberOfRangesEntered = 0n
+			let Count_Overlaps = 0n
+			let Count_Gaps = 0n
 		//Check if all lines are valid format.
-			var Index_ErrorLine = 0
-			var AllLinesValid = true
-			var NumberOfBytesValid = true
-			var HighestEndAddressGapDetect = 0n
+			let Index_ErrorLine = 0
+			let AllLinesValid = true
+			let NumberOfBytesValid = true
+			let HighestEndAddressGapDetect = 0n
 				//^Needed in case if we have multiple overlapping address. When having multiple overlapping addresses, the ending address
 				// of the last range processed is NOT always the last byte, if we had (1st) one address, and then another (2nd) but shorter range,
 				// we wouldn't want to use the ending address of 2nd because we look at the address after the last byte of whoever is the longest.
@@ -186,25 +182,25 @@ Filter:<br>
 				//  7E0061-7E0062	;>Second
 				// 7E0063 is what we assume the last byte, not 7E0062. Essentially, HighestEndAddressGapDetect holds the highest ending address
 				// currently processed that overlaps.
-			var GapAddressCount = 0
-			var HighestEndAddressOverlapDetect = 0n
+			let GapAddressCount = 0
+			let HighestEndAddressOverlapDetect = 0n
 				//^Same as HighestEndAddressGapDetect, multiple address, but we need the ending of the highest address, else the information is
 				// displayed wrong.
-			var GapArray = new Array(0).fill()
-			var ListOfGaps = new Array(0).fill()
+			let GapArray = new Array(0).fill()
+			let ListOfGaps = new Array(0).fill()
 			while ((Index_ErrorLine < (ListOfUsedAddress.length))&&(AllLinesValid == true)) {
 				if ((/^\$?[0-9a-fA-F]+?\t(\d+?|-\$?[0-9a-fA-F]+?)(\t[^\t]*?)?$/.test(ListOfUsedAddress[Index_ErrorLine])) == false) {
 					//If any text is wrong, flag it false. Later in the code will inform the user that there is something wrong.
 						AllLinesValid = false
 				}
 				if ((/^\$?[0-9a-fA-F]+?\t(\d+?|-\$?[0-9a-fA-F]+?)?$/.test(ListOfUsedAddress[Index_ErrorLine])) == true) {
-					//If the user does not have the tab character after the NumbBytes/EndAddress, add it so that the split-to-array does not skip this.
+					//If the user does not have the tab character after the NumbBytes/EndAddress, add it so that the split-to-array does not skip this (treat it as if the user placed a tab character after the number of bytes).
 						ListOfUsedAddress[Index_ErrorLine] += "\t"
 				}
 				//Next
 					Index_ErrorLine++
 			}
-		//Process each line.
+		//Process each line
 			if (AllLinesValid == true) {
 				//Each line is split into a sub-array
 				//After this, we have:
@@ -214,7 +210,9 @@ Filter:<br>
 				//ListOfUsedAddress[Index_WhichEntry][3] = NotOverlap/Overlap/Gap indicator.
 				//ListOfUsedAddress[Index_WhichEntry][4] = (internal, mainly debug) Adjacent/Gap indicator in relation to previous address.
 				//ListOfUsedAddress[Index_WhichEntry][5] = (internal) determine if this is a user-entered range or a gap.
-					var Index_WhichEntry = 0
+				
+				//These convert the info given by the user into manageable data.
+					let Index_WhichEntry = 0
 					while (Index_WhichEntry < ListOfUsedAddress.length) {
 						//Split each item in a row into separate elements.
 							ListOfUsedAddress[Index_WhichEntry] = ListOfUsedAddress[Index_WhichEntry].split('\t')
@@ -236,7 +234,8 @@ Filter:<br>
 										//Remove the $ symbol
 											ListOfUsedAddress[Index_WhichEntry][1] = (ListOfUsedAddress[Index_WhichEntry][1]).substring(1)
 									}
-									ListOfUsedAddress[Index_WhichEntry][1] = BigInt("0x" + ListOfUsedAddress[Index_WhichEntry][1]) - ListOfUsedAddress[Index_WhichEntry][0] + 1n
+									//Convert from ending address to size.
+										ListOfUsedAddress[Index_WhichEntry][1] = BigInt("0x" + ListOfUsedAddress[Index_WhichEntry][1]) - ListOfUsedAddress[Index_WhichEntry][0] + 1n
 							}
 							//Break out if the number of bytes is 0 or negative.
 								if (ListOfUsedAddress[Index_WhichEntry][1] < 1n) {
@@ -247,11 +246,15 @@ Filter:<br>
 						//Next
 							Index_WhichEntry++
 					}
+				//Ignore duplicates when the user wants it to.
+					if (document.getElementById("CleanDuplicateEntries").checked) {
+						ListOfUsedAddress = RemoveItemsInTableFaggedAsDuplicates(FlagDuplicatesFromList(ListOfUsedAddress))
+					}
 				if ((NumberOfBytesValid == true)&&(AllLinesValid == true)) {
 					//Sort each main item (each line; each entry containing address, number of bytes, and description) by address, ascending
 					//initially so that we can easily check each address afterwards if they overlap or gapped.
 						ListOfUsedAddress.sort(SortByStartAddr);
-					//check overlaps and gaps
+					//Figure out if there are overlaps and gaps.
 						Index_WhichEntry = 1
 						ListOfUsedAddress[0][5] = "UserEnteredRange"
 						while (Index_WhichEntry < ListOfUsedAddress.length) {
@@ -290,7 +293,7 @@ Filter:<br>
 								Index_WhichEntry++
 						}
 						//Insert generated gap entries into main list
-							var GapAddressIndex = 0
+							let GapAddressIndex = 0
 							while (GapAddressIndex < ListOfGaps.length) {
 								ListOfUsedAddress.push(ListOfGaps[GapAddressIndex])
 								//Next
@@ -474,9 +477,9 @@ Filter:<br>
 		}
 	//Other
 		function RemoveBlankOrSpacesEntry(InputArray) {
-			var OutputArray = new Array()
-			var index1 = 0
-			var index2 = 0
+			let OutputArray = new Array()
+			let index1 = 0
+			let index2 = 0
 			while (index1 < InputArray.length) {
 				if ((/^(\s*)$|^()$|^(\s*;+.*)$/).test(InputArray[index1]) == false) {
 					OutputArray.push(InputArray[index1])
@@ -503,15 +506,15 @@ Filter:<br>
 			//InputArray[Index][4] = (internal, mainly debug) Adjacent/Gap indicator in relation to previous address.
 			//InputArray[Index][5] = (internal) determine if this is a user-entered range or a gap.
 			//
-			var IsIncludedInFilter = false
-			var OutputArray = new Array()
+			let IsIncludedInFilter = false
+			let OutputArray = new Array()
 			//IndicatorList[Index2][0] = Indicator
 			//IndicatorList[Index2][1] = True/false state
-			var IndicatorList = [["NotOverlap", document.getElementById("Filter_NotOverlap").checked],
+			let IndicatorList = [["NotOverlap", document.getElementById("Filter_NotOverlap").checked],
 			["Overlap", document.getElementById("Filter_Overlaps").checked],
 			["Gap", document.getElementById("Filter_Gaps").checked]]
-			var Index = 0
-			var Index2 = 0
+			let Index = 0
+			let Index2 = 0
 			while (Index < InputArray.length) {
 				Index2 = 0
 				IsIncludedInFilter = false
@@ -527,7 +530,7 @@ Filter:<br>
 			return OutputArray
 		}
 		function TableBGColorStatus(StatusNameString) {
-			var ColorCode = "Blue"
+			let ColorCode = "Blue"
 			if (StatusNameString == "NotOverlap") {
 				ColorCode = "#00c000"
 			} else if (StatusNameString == "Overlap") {
@@ -539,36 +542,40 @@ Filter:<br>
 		}
 
 
-		function RemoveDuplicatesFromList(ArrayList) {
+		function FlagDuplicatesFromList(ArrayList) {
 			//This returns a 2D array: [[Item, DuplicateFlag], [Item, DuplicateFlag]]
-			var index1 = 0
-			var index2 = 0
-			var OutputTableDuplicateFlags = new Array(ArrayList.length)
-			while (index1 < ArrayList.length) {
-				OutputTableDuplicateFlags[index1] = Array(ArrayList[index1], false)
-				index1++
-			}
-			index1 = 0
-			while (index1 < ArrayList.length) {
-				index2 = index1 + 1
-				while (index2 < ArrayList.length) {
-					if (ArrayList[index1] == ArrayList[index2]) {
-						OutputTableDuplicateFlags[index2][1] = true
-					}
-					index2++
+			
+			let index1 = 0
+			let index2 = 0
+			//Label duplicate false by default
+				let OutputTableDuplicateFlags = new Array(ArrayList.length)
+				while (index1 < ArrayList.length) {
+					OutputTableDuplicateFlags[index1] = Array(ArrayList[index1], false)
+					index1++
 				}
-				index1++
-			}
+			//Check a pair of items in the list for duplicates
+				index1 = 0
+				while (index1 < ArrayList.length) {
+					index2 = index1 + 1
+					while (index2 < ArrayList.length) {
+						if ((ArrayList[index1][0] == ArrayList[index2][0])&&(ArrayList[index1][1] == ArrayList[index2][1])&&(ArrayList[index1][2] == ArrayList[index2][2])) {
+							OutputTableDuplicateFlags[index2][1] = true
+						}
+						index2++
+					}
+					index1++
+				}
+			//And done.
 			return OutputTableDuplicateFlags
 		}
 		function RemoveItemsInTableFaggedAsDuplicates(TableFlaggingDups) {
-			//Extracts whatever outputted by RemoveDuplicatesFromList
+			//Extracts whatever outputted by FlagDuplicatesFromList
 			//that aren't duplicates, without gaps.
 			//Input: [[Item, DuplicateFlag], [Item, DuplicateFlag]]
 			//Output: [Item, Item, Item]
-			var index1 = 0
-			var index2 = 0
-			var OutputArray = new Array()
+			let index1 = 0
+			let index2 = 0
+			let OutputArray = new Array()
 			while (index1 < TableFlaggingDups.length) {
 				if (TableFlaggingDups[index1][1] == false) {
 					OutputArray.push(TableFlaggingDups[index1][0])

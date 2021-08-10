@@ -361,7 +361,7 @@ Filter:<br>
 											}
 											Output += "\t"
 										//Description
-											Output += ListOfUsedAddress[Index_WhichEntry][2]
+											Output += escapeHTMLChars(ListOfUsedAddress[Index_WhichEntry][2])
 											if (document.getElementById("PlaintextFormat_ShowStatus").checked) {
 												//Status indicator added after description
 													if (ListOfUsedAddress[Index_WhichEntry][2] != "") {

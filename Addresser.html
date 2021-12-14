@@ -60,10 +60,8 @@ Paste your data here:<br>
 
 
 Sort by:<br>
-<input type="radio" id="AllRAM_StartAddressOrder" name="AllRAM_Sort" onchange="DisplayAddress()" checked><label for="AllRAM_StartAddressOrder">Starting address</label><br>
-<input type="radio" id="AllRAM_SizeOrder" name="AllRAM_Sort" onchange="DisplayAddress()"><label for="AllRAM_SizeOrder">Size</label><br><br>
-
-<input type="checkbox" id="Address_Descending" onchange="DisplayAddress()"><label for="Address_Descending">descending order</label><br><br>
+<label><input type="radio" id="AllRAM_StartAddressOrder" name="AllRAM_Sort" onchange="DisplayAddress()" checked>Starting address</label> (<label><input type="radio" id="AllRAM_StartAddressOrder_Reverse" name="AllRAM_Sort" onchange="DisplayAddress()">Reverse</label>)<br>
+<label><input type="radio" id="AllRAM_SizeOrder" name="AllRAM_Sort" onchange="DisplayAddress()">Size</label> (<label><input type="radio" id="AllRAM_SizeOrder_Reverse" name="AllRAM_Sort" onchange="DisplayAddress()">Reverse</label>)<br><br>
 
 Filter:<br>
 <button onclick="Filter_Checks_CheckAll()">Check All</button><button onclick="Filter_Checks_UncheckAll()">Uncheck All</button><button onclick="Filter_Checks_InvertAll()">Invert</button><br>
@@ -317,17 +315,13 @@ Filter:<br>
 						ListOfUsedAddress = FilterStatusTypes(ListOfUsedAddress)
 					//Sort based on user's preference
 						if (document.getElementById("AllRAM_StartAddressOrder").checked) {
-							if (document.getElementById("Address_Descending").checked == false) {
-								ListOfUsedAddress.sort(SortByStartAddr);
-							} else {
-								ListOfUsedAddress.sort(SortByStartAddrRev);
-							}
+							ListOfUsedAddress.sort(SortByStartAddr);
+						} else if (document.getElementById("AllRAM_StartAddressOrder_Reverse").checked) {
+							ListOfUsedAddress.sort(SortByStartAddrRev);
 						} else if (document.getElementById("AllRAM_SizeOrder").checked) {
-							if (document.getElementById("Address_Descending").checked == false) {
-								ListOfUsedAddress.sort(SortBySizeOrder);
-							} else {
-								ListOfUsedAddress.sort(SortBySizeOrderRev);
-							}
+							ListOfUsedAddress.sort(SortBySizeOrder);
+						} else if (document.getElementById("AllRAM_SizeOrder_Reverse").checked) {
+							ListOfUsedAddress.sort(SortBySizeOrderRev);
 						}
 					//Display output
 						//Show the last byte before the lowest entered range.

@@ -1,0 +1,216 @@
+<html>
+	<head>
+		<style>
+			html {
+			background-color: black;
+			color: white;
+			font-family: sans-serif;
+			}
+			
+			table, th, td {
+			border: 1px solid white;
+			border-collapse: collapse;
+			}
+			
+			span.NoLineBreak {
+				white-space: nowrap;
+			}
+		</style>
+	</head>
+<body>
+	<h1 style="text-align: center;">Byte by byte viewer</h1><br>
+	
+<p>This lets you view information in a byte-by-byte format (shows each consecutive neighboring addresses) and how they are used</p>
+
+<p>Format to paste the text to view it is the same as <kbd>Addresser.html</kbd>.</p>
+
+<textarea id="UserInputList" cols="75" rows="30" oninput="MainCode()"></textarea><br><br>
+<input type="checkbox" checked id="CleanDuplicateEntries" onchange="DisplayAddress()"><label for="CleanDuplicateEntries"><abbr title="Any lines that are identical copies are ignored and not flagged as an overlap.">Ignore duplicates</abbr></label><br>
+<input type="checkbox" id="EscapeHTMLTagsAndEscapes" onchange="DisplayAddress()"><label for="EscapeHTMLTagsAndEscapes">Escape html tags and escape characters for table description (this prevents potential invalid opening/closing HTML tags from breaking the table).</label><br><br>
+<hr>
+<span id="OutputSpanTag"></span>
+<script>
+//Tab key to make it not switch the focus and actually insert a tab character.
+	window.onload = function(){    
+		var addressList = document.getElementById("UserInputList");
+		if(addressList.addEventListener ) {
+			addressList.addEventListener('keydown',this.keyHandler,false);
+		} else if(addressList.attachEvent ) {
+			addressList.attachEvent('onkeydown',this.keyHandler);
+		}
+	}
+
+	function keyHandler(e) {
+
+		var target;
+		if (!e) var e = window.event;
+		if (e.target) target = e.target;
+		else if (e.srcElement) target = e.srcElement;
+
+		if(e.keyCode == 9) {
+			if (document.selection) {
+				target.focus();
+				sel = document.selection.createRange();
+				sel.text = '\t';
+			} else if (target.selectionStart || target.selectionStart === 0) {
+				var startPos = target.selectionStart;
+				var endPos = target.selectionEnd;
+				target.value = target.value.substring(0, startPos) + '\t' + target.value.substring(endPos, target.value.length);
+				MainCode()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
+
+				target.selectionStart = startPos + 1;
+				target.selectionEnd = startPos + 1;
+
+			} else {
+				target.value += '\t';
+			}
+
+			if(e.preventDefault) {
+				e.preventDefault();
+				MainCode()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
+			}
+			return false;
+		}
+	}
+//Regex stuff
+	String2Regex_CorrectLine = "^\\$?[0-9A-Fa-f]+\\t(\\d+|-\\$?[0-9A-Fa-f]+)(\\t[^\\t]*?)?$"
+	String2Regex_GetStartingAddress = "(?<=^\\$?)[0-9A-Fa-f]+"
+	String2Regex_GetNumberOfBytesOrEndingAddress = "(?<=^\\$?[0-9A-Fa-f]+\\t)(\\d+|-\\$?[0-9A-Fa-f]+)"
+	String2Regex_GetDiscription = "(?<=^[^\\t]+\\t[^\\t]+\\t)[^\\t]+$"
+//Main functions
+	function MainCode() {
+		let OutputHTML = ""
+		let ListOfAddress = new Array()
+	//Get each line of text, will ignore items with just spaces, or spaces followed by comma.
+		let UserInputList = RemoveBlankCommentOrSpacesEntry(document.getElementById("UserInputList").value.split('\n'))
+	//Check if all lines are correct.
+		let IsAllStringsValid = true
+		for (let Index = 0; Index < UserInputList.length; Index++) {
+			if (!(RegExp(String2Regex_CorrectLine).test(UserInputList[Index]))) {
+				IsAllStringsValid = false
+			}
+		}
+		if (IsAllStringsValid) {
+			//Verify that the number of bytes/ending address are correct.
+			//Number of bytes should be at least 1, and ending address not to be less than the starting address.
+			//Easy way is to have them all be number of bytes.
+			
+			//However, we need to convert the first two columns, the address and the number of bytes or ending address
+			//first.
+				for (let Index = 0; Index < UserInputList.length; Index++) {
+					let StartAddress = BigInt("0x" + UserInputList[Index].match(RegExp(String2Regex_GetStartingAddress))[0])
+					let NumbOfBytesOrEndAddress_String = UserInputList[Index].match(RegExp(String2Regex_GetNumberOfBytesOrEndingAddress))[0]
+					let NumberOfBytes = 0n
+					if ((/^\d$/).test(NumbOfBytesOrEndAddress_String)) {
+						NumberOfBytes = BigInt(NumbOfBytesOrEndAddress_String)
+					} else {
+						let EndingAddressString = NumbOfBytesOrEndAddress_String.replace(/-\$?/, "")
+						NumberOfBytes = BigInt("0x" + EndingAddressString) - StartAddress + 1n
+					}
+					let Description = ""
+					if ((RegExp(String2Regex_GetDiscription)).test(UserInputList[Index])) {
+						Description += UserInputList[Index].match(RegExp(String2Regex_GetDiscription))[0]
+					}
+					ListOfAddress.push([StartAddress, NumberOfBytes, Description, [], Index])
+					let a = 0
+				}
+			//ListOfAddress[Index] now contains an array:
+			//ListOfAddress[Index][0] = starting address
+			//ListOfAddress[Index][1] = number of bytes
+			//ListOfAddress[Index][2] = description
+			//ListOfAddress[Index][3] = sub-array listing any overlaps (will contain a list of index numbers). If none, array is empty with length of 0.
+			//ListOfAddress[Index][4] = Item number, an ID number in the order of the user entering the list of used RAM. Starts at 0.
+			//
+			//Let's check if any had wrong number of bytes or ending address
+				let IsNumberOfBytesCorrectOnAll = true
+				for (let Index = 0; (Index < ListOfAddress.length&& IsNumberOfBytesCorrectOnAll == true); Index++) {
+					if (ListOfAddress[Index][1] < 1n) {
+						IsNumberOfBytesCorrectOnAll = false
+					}
+				}
+			//If all number of bytes are valid
+				if (IsNumberOfBytesCorrectOnAll) {
+					//Check if any address overlaps another
+						for (let Index = 0; Index < ListOfAddress.length; Index++) {
+							for (Index2 = Index + 1; Index2 < ListOfAddress.length; Index2++) {
+								if (CheckOverlap(ListOfAddress[Index][0], ListOfAddress[Index][0] + ListOfAddress[Index][1] -1n, ListOfAddress[Index2][0], ListOfAddress[Index2][0] + ListOfAddress[Index2][1] -1n)) {
+									//Write each other's overlap list
+										ListOfAddress[Index][3].push(ListOfAddress[Index2][4])
+										ListOfAddress[Index2][3].push(ListOfAddress[Index][4])
+								}
+							}
+						}
+					//Now display it
+						OutputHTML += "<table>"
+						OutputHTML += "<tr><th>Item number</th><th>Starting address</th><th>Number of bytes(/Ending address)</th><th>Description</th><th>List of item numbers overlaps with</th></tr>"
+						for (let Index = 0; Index < ListOfAddress.length; Index++) {
+							OutputHTML += "<tr>"
+							//Item number
+								OutputHTML += "<td><kbd>AddressTrackerItem_"+ BigInt(ListOfAddress[Index][4]).toString(10) + "</kbd></td>"
+							//Start address
+								OutputHTML += "<td><kbd>$" + ListOfAddress[Index][0].toString(16).toUpperCase() + "</kbd></td>"
+							//Number of bytes/ending address
+								OutputHTML += "<td>"
+								OutputHTML += "<kbd>" + ListOfAddress[Index][1].toString(10) + "</kbd>"
+								if (ListOfAddress[Index][1] > 1n) {
+									OutputHTML += "/<kbd>$" + (ListOfAddress[Index][0] + ListOfAddress[Index][1] - 1n).toString(16).toUpperCase() + "</kbd>"
+								}
+								OutputHTML += "</td>"
+							//Description
+								OutputHTML += "<td>"
+								OutputHTML += ListOfAddress[Index][2]
+								OutputHTML += "</td>"
+							//Overlaps
+								OutputHTML += "<td>"
+								if (ListOfAddress[Index][3].length == 0) {
+									OutputHTML += "No overlaps."
+								} else {
+									OutputHTML += "Conflicts with: "
+									for (Index2 = 0; Index2 < ListOfAddress[Index][3].length; Index2++) {
+										OutputHTML += "<kbd>" + BigInt(ListOfAddress[Index][3][Index2]).toString(10) + "</kbd>"
+										if (Index2 != ListOfAddress[Index][3].length -1) {
+											OutputHTML += ", "
+										}
+									}
+								}
+								OutputHTML += "</td>"
+							OutputHTML += "</tr>"
+						}
+						OutputHTML += "</table>"
+				} else {
+					OutputHTML += "<kbd>Error: One or more of the lines have invalid number of bytes or ending address.</kbd>"
+				}
+		} else {
+			OutputHTML += "<kbd>Error: One or more of the lines have invalid information.</kbd>"
+		}
+		document.getElementById("OutputSpanTag").innerHTML = OutputHTML
+	}
+//Other subfunctions
+	//Duplicate remover
+		function RemoveBlankCommentOrSpacesEntry(InputArray) {
+			let OutputArray = new Array()
+			let index1 = 0
+			let index2 = 0
+			while (index1 < InputArray.length) {
+				if ((/^(\s*)$|^()$|^(\s*;+.*)$/).test(InputArray[index1]) == false) {
+					OutputArray.push(InputArray[index1])
+					index2++
+				}
+				index1++
+			}
+			return OutputArray
+		}
+	//Check if two ranges overlap.
+	//Given 2 ranges:
+	//Range_A: A_Start and A_End
+	//Range_B: B_Start and B_End
+	//If B_End is touching A_Start, then Range_B is at the lowest position (or Range_A at the highest position) that would count as an overlap
+	//If B_Start is touching A_End, then Range_B is at the highest position (or Range_A is at the lowest position) that would count as an overlap
+		function CheckOverlap(A_Start, A_End, B_Start, B_End) {
+			if (B_End >= A_Start&&B_Start <= A_End) {
+				return true
+			} else {
+				return false
+			}
+		}
+</script>

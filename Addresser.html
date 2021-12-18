@@ -161,7 +161,7 @@ Filter:<br>
 		//Handle output
 			let Output = ""
 		//Obtain each list of items (without any blank lines)
-			let ListOfUsedAddress = RemoveBlankOrSpacesEntry((document.getElementById("UserInputList").value).split('\n'))
+			let ListOfUsedAddress = RemoveBlankCommentOrSpacesEntry((document.getElementById("UserInputList").value).split('\n'))
 		//Counters, needed to display how many stuff were detected found to overlap, gaps, and how many ranges were entered.
 		//Note: I made them use bigint just in case of E-notation.
 			let Count_NumberOfRangesEntered = 0n
@@ -470,7 +470,7 @@ Filter:<br>
 			}
 		}
 	//Other
-		function RemoveBlankOrSpacesEntry(InputArray) {
+		function RemoveBlankCommentOrSpacesEntry(InputArray) {
 			let OutputArray = new Array()
 			let index1 = 0
 			let index2 = 0

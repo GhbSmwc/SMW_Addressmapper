@@ -25,8 +25,18 @@
 <p>Format to paste the text to view it is the same as <kbd>Addresser.html</kbd>.</p>
 
 <textarea id="UserInputList" cols="75" rows="30" oninput="MainCode()"></textarea><br><br>
-<input type="checkbox" checked id="CleanDuplicateEntries" onchange="DisplayAddress()"><label for="CleanDuplicateEntries"><abbr title="Any lines that are identical copies are ignored and not flagged as an overlap.">Ignore duplicates</abbr></label><br>
-<input type="checkbox" id="EscapeHTMLTagsAndEscapes" onchange="DisplayAddress()"><label for="EscapeHTMLTagsAndEscapes">Escape html tags and escape characters for table description (this prevents potential invalid opening/closing HTML tags from breaking the table).</label><br><br>
+
+<label><input type="checkbox" checked id="CleanDuplicateEntries" onchange="MainCode()"><abbr title="Any lines that are identical copies are ignored and not flagged as an overlap.">Ignore duplicates</abbr></label><br>
+<label><input type="checkbox" id="EscapeHTMLTagsAndEscapes" onchange="MainCode()">Escape html tags and escape characters for table description (this prevents potential invalid opening/closing HTML tags from breaking the table).</label><br><br>
+
+sort by (for table only):<br>
+<label><input type="radio" onchange="MainCode()" name="Sorter" id="Sort_None" checked>Keep order you sent</label><br>
+<label><input type="radio" onchange="MainCode()" name="Sorter" id="Sort_StartAddress">Starting address</label> (<label><input type="radio" name="Sorter" id="Sort_StartAddress_Reverse" onchange="MainCode()">reverse</label>)<br>
+<label><input type="radio" onchange="MainCode()" name="Sorter" id="Sort_Size">Size</label> (<label><input type="radio" name="Sorter" id="Sort_Size_Reverse" onchange="MainCode()">reverse</label>)<br>
+<label><input type="radio" onchange="MainCode()" name="Sorter" id="Sort_Description">Description</label> (<label><input type="radio" name="Sorter" id="Sort_Description_Reverse" onchange="MainCode()">reverse</label>)<br>
+<label><input type="radio" onchange="MainCode()" name="Sorter" id="Sort_HowManyOverlaps">How many overlaps</label> (<label><input type="radio" name="Sorter" id="Sort_HowManyOverlaps_Reverse" onchange="MainCode()">reverse</label>)<br>
+
+
 <hr>
 <span id="OutputSpanTag"></span>
 <script>
@@ -101,7 +111,7 @@
 					let StartAddress = BigInt("0x" + UserInputList[Index].match(RegExp(String2Regex_GetStartingAddress))[0])
 					let NumbOfBytesOrEndAddress_String = UserInputList[Index].match(RegExp(String2Regex_GetNumberOfBytesOrEndingAddress))[0]
 					let NumberOfBytes = 0n
-					if ((/^\d$/).test(NumbOfBytesOrEndAddress_String)) {
+					if ((/^\d+$/).test(NumbOfBytesOrEndAddress_String)) {
 						NumberOfBytes = BigInt(NumbOfBytesOrEndAddress_String)
 					} else {
 						let EndingAddressString = NumbOfBytesOrEndAddress_String.replace(/-\$?/, "")
@@ -111,8 +121,15 @@
 					if ((RegExp(String2Regex_GetDiscription)).test(UserInputList[Index])) {
 						Description += UserInputList[Index].match(RegExp(String2Regex_GetDiscription))[0]
 					}
-					ListOfAddress.push([StartAddress, NumberOfBytes, Description, [], Index])
-					let a = 0
+					ListOfAddress.push([StartAddress, NumberOfBytes, Description, [], -1])
+				}
+			//Clean duplicates
+				if (document.getElementById("CleanDuplicateEntries").checked) {
+					ListOfAddress = RemoveDuplicateAddressEntry(ListOfAddress)
+				}
+			//Number the items (excluding duplicates when that checkbox is checked)
+				for (let Index = 0; Index < ListOfAddress.length; Index++) {
+					ListOfAddress[Index][4] = Index
 				}
 			//ListOfAddress[Index] now contains an array:
 			//ListOfAddress[Index][0] = starting address
@@ -140,6 +157,24 @@
 								}
 							}
 						}
+					//Sort it
+						if (document.getElementById("Sort_StartAddress").checked) {
+							ListOfAddress.sort(SortByStartAddr)
+						} else if (document.getElementById("Sort_StartAddress_Reverse").checked) {
+							ListOfAddress.sort(SortByStartAddrRev)
+						} else if (document.getElementById("Sort_Size").checked) {
+							ListOfAddress.sort(SortBySize)
+						} else if (document.getElementById("Sort_Size_Reverse").checked) {
+							ListOfAddress.sort(SortBySizeRev)
+						} else if (document.getElementById("Sort_Description").checked) {
+							ListOfAddress.sort(SortByDescription)
+						} else if (document.getElementById("Sort_Description_Reverse").checked) {
+							ListOfAddress.sort(SortByDescriptionRev)
+						} else if (document.getElementById("Sort_HowManyOverlaps").checked) {
+							ListOfAddress.sort(SortByOverlapCount)
+						} else if (document.getElementById("Sort_HowManyOverlaps_Reverse").checked) {
+							ListOfAddress.sort(SortByOverlapCountRev)
+						}
 					//Now display it
 						OutputHTML += "<table>"
 						OutputHTML += "<tr><th>Item number</th><th>Starting address</th><th>Number of bytes(/Ending address)</th><th>Description</th><th>List of item numbers overlaps with</th></tr>"
@@ -158,20 +193,25 @@
 								OutputHTML += "</td>"
 							//Description
 								OutputHTML += "<td>"
-								OutputHTML += ListOfAddress[Index][2]
+								if (document.getElementById("EscapeHTMLTagsAndEscapes").checked) {
+									OutputHTML += escapeHTMLChars(ListOfAddress[Index][2])
+								} else {
+									OutputHTML += ListOfAddress[Index][2]
+								}
 								OutputHTML += "</td>"
 							//Overlaps
 								OutputHTML += "<td>"
 								if (ListOfAddress[Index][3].length == 0) {
 									OutputHTML += "No overlaps."
 								} else {
-									OutputHTML += "Conflicts with: "
+									OutputHTML += "Conflicts with item number(s) "
 									for (Index2 = 0; Index2 < ListOfAddress[Index][3].length; Index2++) {
 										OutputHTML += "<kbd>" + BigInt(ListOfAddress[Index][3][Index2]).toString(10) + "</kbd>"
 										if (Index2 != ListOfAddress[Index][3].length -1) {
 											OutputHTML += ", "
 										}
 									}
+									OutputHTML += " (Number of stuff it conflicted: " + BigInt(ListOfAddress[Index][3].length).toString(10) + ")"
 								}
 								OutputHTML += "</td>"
 							OutputHTML += "</tr>"
@@ -185,8 +225,48 @@
 		}
 		document.getElementById("OutputSpanTag").innerHTML = OutputHTML
 	}
+	//remove duplicate entries
+		function RemoveDuplicateAddressEntry(ArrayWithAddresses) {
+			//ArrayWithAddresses[Index] contains an array:
+			//ArrayWithAddresses[Index][0] = starting address
+			//ArrayWithAddresses[Index][1] = number of bytes
+			//ArrayWithAddresses[Index][2] = description
+			//ArrayWithAddresses[Index][3] = sub-array listing any overlaps (will contain a list of index numbers). If none, array is empty with length of 0.
+			//ArrayWithAddresses[Index][4] = Item number, an ID number in the order of the user entering the list of used RAM. Starts at 0.
+			
+			//Add a flag mode for each item
+				let DuplicateFlagArray = new Array()
+				for (let Index = 0; Index < ArrayWithAddresses.length; Index++) {
+					DuplicateFlagArray.push([ArrayWithAddresses[Index], false])
+				}
+				//DuplicateFlagArray[Index][0]: The original array:
+				//DuplicateFlagArray[Index][0][0] = starting address
+				//DuplicateFlagArray[Index][0][1] = number of bytes
+				//DuplicateFlagArray[Index][0][2] = description
+				//DuplicateFlagArray[Index][0][3] = sub-array listing any overlaps (will contain a list of index numbers). If none, array is empty with length of 0.
+				//DuplicateFlagArray[Index][0][4] = Item number, an ID number in the order of the user entering the list of used RAM. Starts at 0.
+				//DuplicateFlagArray[Index][1]: duplicate flag
+			//Now start flagging them
+				for (let Index = 0; Index < DuplicateFlagArray.length; Index++) {
+					if (DuplicateFlagArray[Index][1] != true) {
+						for (let Index2 = Index + 1; Index2 < DuplicateFlagArray.length; Index2++) {
+							if ((DuplicateFlagArray[Index][0][0] == DuplicateFlagArray[Index2][0][0])&&(DuplicateFlagArray[Index][0][1] == DuplicateFlagArray[Index2][0][1])&&(DuplicateFlagArray[Index][0][2] == DuplicateFlagArray[Index2][0][2])) {
+								DuplicateFlagArray[Index2][1] = true
+							}
+						}
+					}
+				}
+			//Now remove ones flagged dups
+				let OutputData = new Array()
+				for (let Index = 0; Index < DuplicateFlagArray.length; Index++) {
+					if (DuplicateFlagArray[Index][1] == false) {
+						OutputData.push(DuplicateFlagArray[Index][0])
+					}
+				}
+			return OutputData
+		}
 //Other subfunctions
-	//Duplicate remover
+	//Remove stuff that is not address data
 		function RemoveBlankCommentOrSpacesEntry(InputArray) {
 			let OutputArray = new Array()
 			let index1 = 0
@@ -213,4 +293,73 @@
 				return false
 			}
 		}
+	//Escape
+		function escapeHTMLChars(string) {
+			//Should the user's input contains "<", ">", and "&", prevent the innerHTML from treating these as HTML tags/escapes
+				string = string.replaceAll("&", "&amp;") //This must be done first, to avoid replacing already-replaced symbol's ampersand character.
+				string = string.replaceAll("<", "&lt;")
+				string = string.replaceAll(">", "&gt;")
+				return string
+		}
+	//Sort functions
+		//Start address
+			function SortByStartAddr(a, b) {
+				if (a[0] === b[0]) {
+					return 0;
+				} else {
+					return (a[0] < b[0]) ? -1 : 1;
+				}
+			}
+			function SortByStartAddrRev(a, b) {
+				if (a[0] === b[0]) {
+					return 0;
+				} else {
+					return (a[0] < b[0]) ? 1 : -1;
+				}
+			}
+		//Size
+			function SortBySize(a, b) {
+				if (a[1] === b[1]) {
+					return 0;
+				} else {
+					return (a[1] < b[1]) ? -1 : 1;
+				}
+			}
+			function SortBySizeRev(a, b) {
+				if (a[1] === b[1]) {
+					return 0;
+				} else {
+					return (a[1] < b[1]) ? 1 : -1;
+				}
+			}
+		//Description
+			function SortByDescription(a, b) {
+				if (a[2] === b[2]) {
+					return 0;
+				} else {
+					return (a[2] < b[2]) ? -1 : 1;
+				}
+			}
+			function SortByDescriptionRev(a, b) {
+				if (a[2] === b[2]) {
+					return 0;
+				} else {
+					return (a[2] < b[2]) ? 1 : -1;
+				}
+			}
+		//How many overlaps
+			function SortByOverlapCount(a, b) {
+				if (a[3].length === b[3].length) {
+					return 0;
+				} else {
+					return (a[3].length < b[3].length) ? -1 : 1;
+				}
+			}
+			function SortByOverlapCountRev(a, b) {
+				if (a[3].length === b[3].length) {
+					return 0;
+				} else {
+					return (a[3].length < b[3].length) ? 1 : -1;
+				}
+			}
 </script>

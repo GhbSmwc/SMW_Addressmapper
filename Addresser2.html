@@ -64,16 +64,16 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 <script>
 //Tab key
 	window.onload = function(){    
-		UpDownArrowKeysIncrement()
 		var addressList = document.getElementById("UserInputList");
 		if(addressList.addEventListener ) {
-			addressList.addEventListener('keydown',this.keyHandler,false);
+			addressList.addEventListener('keydown',this.keyHandler_Tab,false);
 		} else if(addressList.attachEvent ) {
-			addressList.attachEvent('onkeydown',this.keyHandler);
+			addressList.attachEvent('onkeydown',this.keyHandler_Tab);
 		}
+		UpDownArrowKeysIncrement()
 	}
 
-	function keyHandler(e) {
+	function keyHandler_Tab(e) {
 
 		var target;
 		if (!e) var e = window.event;
@@ -81,6 +81,7 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 		else if (e.srcElement) target = e.srcElement;
 
 		if(e.keyCode == 9) {
+			e.preventDefault()
 			if (document.selection) {
 				target.focus();
 				sel = document.selection.createRange();
@@ -595,13 +596,13 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 		function UpDownArrowKeysIncrement() {
 			let FocusedElement = document.activeElement;
 			if(FocusedElement.addEventListener ) {
-				FocusedElement.addEventListener('keydown',this.keyHandler,false);
+				FocusedElement.addEventListener('keydown',this.keyHandler_ArrowKeys,false);
 			} else if(FocusedElement.attachEvent ) {
-				FocusedElement.attachEvent('onkeydown',this.keyHandler);
+				FocusedElement.attachEvent('onkeydown',this.keyHandler_ArrowKeys);
 			}
 		}
 	
-		function keyHandler(e) {
+		function keyHandler_ArrowKeys(e) {
 			if (((e.code == "ArrowUp")||e.code == "ArrowDown")&&((/(^|\s.*?)AnyRadixNumberInput($|\s.*?)/).test(document.activeElement.className))) {
 				let target;
 				//Handle radix.

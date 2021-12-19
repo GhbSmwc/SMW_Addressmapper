@@ -37,7 +37,10 @@
 
 <textarea id="UserInputList" cols="75" rows="30" oninput="MainCode()"></textarea><br><br>
 <table>
-<tr><th><label><input type="radio" name="ViewMode" id="ViewMode_TableRangeMode" onchange="MainCode()" checked>Table range view</label></th><th><label><input type="radio" name="ViewMode" id="ViewMode_ByteByByte" onchange="MainCode()">Byte by byte address view</label></th></tr>
+<tr>
+<th><label><input type="radio" name="ViewMode" id="ViewMode_TableRangeMode" onchange="MainCode()" checked>Table range view</label></th>
+<th><label><input type="radio" name="ViewMode" id="ViewMode_ByteByByte" onchange="MainCode()">Byte by byte address view</label></th>
+</tr>
 <tr>
 <td>
 <label><input type="checkbox" checked id="CleanDuplicateEntries" onchange="MainCode()"><abbr title="Any lines that are identical copies are ignored and not flagged as an overlap.">Ignore duplicates</abbr></label><br>
@@ -49,12 +52,18 @@ Sort by:<br>
 <label><input type="radio" onchange="MainCode()" name="Sorter" id="Sort_Size">Size</label> (<label><input type="radio" name="Sorter" id="Sort_Size_Reverse" onchange="MainCode()">reverse</label>)<br>
 <label><input type="radio" onchange="MainCode()" name="Sorter" id="Sort_Description">Description</label> (<label><input type="radio" name="Sorter" id="Sort_Description_Reverse" onchange="MainCode()">reverse</label>)<br>
 <label><input type="radio" onchange="MainCode()" name="Sorter" id="Sort_Type">Gap/No overlap/Overlap</label> (<label><input type="radio" name="Sorter" id="Sort_Type_Reverse" onchange="MainCode()">reverse</label>)<br>
-<label><input type="radio" onchange="MainCode()" name="Sorter" id="Sort_HowManyOverlaps">How many overlaps</label> (<label><input type="radio" name="Sorter" id="Sort_HowManyOverlaps_Reverse" onchange="MainCode()">reverse</label>)<br>
+<label><input type="radio" onchange="MainCode()" name="Sorter" id="Sort_HowManyOverlaps">How many overlaps</label> (<label><input type="radio" name="Sorter" id="Sort_HowManyOverlaps_Reverse" onchange="MainCode()">reverse</label>)<br><br>
 
 Filter: <button onclick="CheckAllFilters(); MainCode()">Check All</button><button onclick="UncheckAllFilters(); MainCode()">Uncheck All</button><button onclick="InvertAllFilters(); MainCode()">Invert</button><br>
 <label><input type="checkbox" onchange="MainCode()" class="AddressFilter" data-filter_status="Gap" checked>Unused gaps</label><br>
 <label><input type="checkbox" onchange="MainCode()" class="AddressFilter" data-filter_status="NoOverlap" checked>Used addresses that didn't overlap</label><br>
-<label><input type="checkbox" onchange="MainCode()" class="AddressFilter" data-filter_status="Overlap" checked>Addresses that overlap</label><br>
+<label><input type="checkbox" onchange="MainCode()" class="AddressFilter" data-filter_status="Overlap" checked>Addresses that overlap</label><br><br>
+
+Plantext size/ending address mode display:<br>
+<label><input type="radio" name="SizeEndingAddress" onchange="MainCode()" id="SizeEnding_Size"checked>Size</label><br>
+<label><input type="radio" name="SizeEndingAddress" onchange="MainCode()" id="SizeEnding_Ending">Ending</label><br>
+<label><input type="radio" name="SizeEndingAddress" onchange="MainCode()" id="SizeEnding_Both">Size and ending (<kbd>&lt;size&gt;/-&lt;ending_address&gt;</kbd>)</label><br>
+<label><input type="checkbox" onchange="MainCode()" id="ShowStatusOfData">Show status of ram usage (gap, overlap, and no-overlaps)</label>
 </td>
 <td>
 Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_number_radix="16" id="ByteByByteViewStartingAddress" onchange="MainCode()" value="7E0000">
@@ -66,14 +75,15 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 <span id="OutputSpanTag"></span>
 <script>
 //Tab key
+//Tab key to make it not switch the focus and actually insert a tab character.
 	window.onload = function(){    
+		UpDownArrowKeysIncrement()
 		var addressList = document.getElementById("UserInputList");
 		if(addressList.addEventListener ) {
 			addressList.addEventListener('keydown',this.keyHandler_Tab,false);
 		} else if(addressList.attachEvent ) {
 			addressList.attachEvent('onkeydown',this.keyHandler_Tab);
 		}
-		UpDownArrowKeysIncrement()
 	}
 
 	function keyHandler_Tab(e) {
@@ -84,27 +94,29 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 		else if (e.srcElement) target = e.srcElement;
 
 		if(e.keyCode == 9) {
-			e.preventDefault()
 			if (document.selection) {
+				e.preventDefault()
 				target.focus();
 				sel = document.selection.createRange();
 				sel.text = '\t';
 			} else if (target.selectionStart || target.selectionStart === 0) {
+				e.preventDefault()
 				var startPos = target.selectionStart;
 				var endPos = target.selectionEnd;
 				target.value = target.value.substring(0, startPos) + '\t' + target.value.substring(endPos, target.value.length);
-				DisplayAddress()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
+				MainCode()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
 
 				target.selectionStart = startPos + 1;
 				target.selectionEnd = startPos + 1;
 
 			} else {
+				e.preventDefault()
 				target.value += '\t';
 			}
 
 			if(e.preventDefault) {
 				e.preventDefault();
-				DisplayAddress()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
+				MainCode()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
 			}
 			return false;
 		}
@@ -264,9 +276,9 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 								Count_NoOverlap++
 							}
 						}
-					//Filter
-						ListOfAddress = FilterAddress(ListOfAddress)
 						if (document.getElementById("ViewMode_TableRangeMode").checked) {
+							//Filter
+								ListOfAddress = FilterAddress(ListOfAddress)
 							//Sort it
 								if (document.getElementById("Sort_StartAddress").checked) {
 									ListOfAddress.sort(SortByStartAddr)
@@ -290,65 +302,102 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 									ListOfAddress.sort(SortByOverlapCountRev)
 								}
 							//Now display it
-								OutputHTML += "<ul>"
-								OutputHTML += "<li><kbd>Total number of ranges found (including gaps): " + BigInt(Count_TotalNumberOfRanges_PriorFilter).toString(10) + "</kbd></li>"
-								OutputHTML += "<ul>"
-								OutputHTML += "<li><kbd style='color: #00FF00'>Number of used RAM ranges not overlapping: " + BigInt(Count_NoOverlap).toString(10) + "</kbd></li>"
-								OutputHTML += "<li><kbd style='color: #FF0000'>Number of used RAM ranges overlapping: " + BigInt(Count_Overlap).toString(10) + "</kbd></li>"
-								OutputHTML += "<li><kbd style='color: #808080'>Number of gaps: " + BigInt(Count_Gap).toString(10) + "</kbd></li>"
-								OutputHTML += "</ul>"
-								OutputHTML += "</ul><br><br>"
-								
-								OutputHTML += "<kbd>Number of ranges shown: " + BigInt(ListOfAddress.length).toString(10) + "</kbd>"
-								OutputHTML += "<table>"
-								OutputHTML += "<tr><th>Item number</th><th>Starting address</th><th>Number of bytes(/Ending address)</th><th>Description</th><th>List of item numbers overlaps with</th></tr>"
-								for (let Index = 0; Index < ListOfAddress.length; Index++) {
-									OutputHTML += "<tr>"
-									//Item number
-										OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
-										if (ListOfAddress[Index][4] != -1n) {
-											OutputHTML += "<kbd>AddressTrackerItem_"+ BigInt(ListOfAddress[Index][4]).toString(10) + "</kbd>"
-										} else {
-											OutputHTML += "<kbd>Not by user.</kbd>"
+								//Statistics
+									OutputHTML += "<ul>"
+									OutputHTML += "<li><kbd>Total number of ranges found (including gaps): " + BigInt(Count_TotalNumberOfRanges_PriorFilter).toString(10) + "</kbd></li>"
+									OutputHTML += "<ul>"
+									OutputHTML += "<li><kbd style='color: #00FF00'>Number of used RAM ranges not overlapping: " + BigInt(Count_NoOverlap).toString(10) + "</kbd></li>"
+									OutputHTML += "<li><kbd style='color: #FF0000'>Number of used RAM ranges overlapping: " + BigInt(Count_Overlap).toString(10) + "</kbd></li>"
+									OutputHTML += "<li><kbd style='color: #808080'>Number of gaps: " + BigInt(Count_Gap).toString(10) + "</kbd></li>"
+									OutputHTML += "</ul>"
+									OutputHTML += "</ul><br><br>"
+								//how many shown
+									OutputHTML += "<kbd>Number of ranges shown: " + BigInt(ListOfAddress.length).toString(10) + "</kbd><br>"
+								//Plaintext
+									OutputHTML += "<textarea readonly cols='75' rows='30'>"
+									for (let Index = 0; Index < ListOfAddress.length; Index++) {
+										OutputHTML += "$" + ListOfAddress[Index][0].toString(16).toUpperCase() + "\t"
+										if (document.getElementById("SizeEnding_Size").checked) {
+											OutputHTML += ListOfAddress[Index][1].toString(10)
+										} else if (document.getElementById("SizeEnding_Ending").checked) {
+											OutputHTML += "-$" + (ListOfAddress[Index][0] + ListOfAddress[Index][1] -1n).toString(16).toUpperCase()
+										} else if (document.getElementById("SizeEnding_Both").checked) {
+											OutputHTML += ListOfAddress[Index][1].toString(10) + "/$" + (ListOfAddress[Index][0] + ListOfAddress[Index][1] -1n).toString(16).toUpperCase()
 										}
-										OutputHTML += "</td>"
-									//Start address
-										OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
-										OutputHTML += "<kbd>$" + ListOfAddress[Index][0].toString(16).toUpperCase() + "</kbd>"
-										OutputHTML += "</td>"
-									//Number of bytes/ending address
-										OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
-										OutputHTML += "<kbd>" + ListOfAddress[Index][1].toString(10) + "</kbd>"
-										if (ListOfAddress[Index][1] > 1n) {
-											OutputHTML += "/<kbd>$" + (ListOfAddress[Index][0] + ListOfAddress[Index][1] - 1n).toString(16).toUpperCase() + "</kbd>"
-										}
-										OutputHTML += "</td>"
-									//Description
-										OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
-										if (document.getElementById("EscapeHTMLTagsAndEscapes").checked) {
-											OutputHTML += escapeHTMLChars(ListOfAddress[Index][2])
-										} else {
-											OutputHTML += ListOfAddress[Index][2]
-										}
-										OutputHTML += "</td>"
-									//Overlaps
-										OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
-										if (ListOfAddress[Index][3].length == 0) {
-											OutputHTML += ""
-										} else {
-											OutputHTML += "Conflicts with item number(s) "
-											for (let Index2 = 0; Index2 < ListOfAddress[Index][3].length; Index2++) {
-												OutputHTML += "<kbd>" + BigInt(ListOfAddress[Index][3][Index2]).toString(10) + "</kbd>"
-												if (Index2 != ListOfAddress[Index][3].length -1) {
-													OutputHTML += ", "
+										OutputHTML += "\t" + ListOfAddress[Index][2]
+										if (document.getElementById("ShowStatusOfData").checked) {
+											OutputHTML += " ["
+											OutputHTML += "Status: " + ListOfAddress[Index][5] + ", "
+											if (ListOfAddress[Index][3].length != 0) {
+												OutputHTML += "Overlaps: "
+												for (let Index2 = 0; Index2 < ListOfAddress[Index][3].length; Index2++) {
+													OutputHTML += ListOfAddress[Index][3][Index2].toString(10)
+													if (Index2 != ListOfAddress[Index][3].length -1) {
+														OutputHTML += ","
+													}
+													OutputHTML += " "
 												}
+												OutputHTML += "| "
 											}
-											OutputHTML += " (Number of stuff it conflicted: " + BigInt(ListOfAddress[Index][3].length).toString(10) + ")"
+											if (ListOfAddress[Index][4] != -1) {
+												OutputHTML += "This is AddressTrackerItem_" + BigInt(ListOfAddress[Index][4]).toString(10)
+											}
+											OutputHTML += "]"
 										}
-										OutputHTML += "</td>"
-									OutputHTML += "</tr>"
-								}
-								OutputHTML += "</table>"
+										if (Index != ListOfAddress.length -1)
+										OutputHTML += "\n"
+									}
+									OutputHTML += "</textarea>"
+								//HTML table
+									OutputHTML += "<table>"
+									OutputHTML += "<tr><th>Item number</th><th>Starting address</th><th>Number of bytes(/Ending address)</th><th>Description</th><th>List of item numbers overlaps with</th></tr>"
+									for (let Index = 0; Index < ListOfAddress.length; Index++) {
+										OutputHTML += "<tr>"
+										//Item number
+											OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
+											if (ListOfAddress[Index][4] != -1n) {
+												OutputHTML += "<kbd>AddressTrackerItem_"+ BigInt(ListOfAddress[Index][4]).toString(10) + "</kbd>"
+											} else {
+												OutputHTML += "<kbd>Not by user.</kbd>"
+											}
+											OutputHTML += "</td>"
+										//Start address
+											OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
+											OutputHTML += "<kbd>$" + ListOfAddress[Index][0].toString(16).toUpperCase() + "</kbd>"
+											OutputHTML += "</td>"
+										//Number of bytes/ending address
+											OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
+											OutputHTML += "<kbd>" + ListOfAddress[Index][1].toString(10) + "</kbd>"
+											if (ListOfAddress[Index][1] > 1n) {
+												OutputHTML += "/<kbd>$" + (ListOfAddress[Index][0] + ListOfAddress[Index][1] - 1n).toString(16).toUpperCase() + "</kbd>"
+											}
+											OutputHTML += "</td>"
+										//Description
+											OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
+											if (document.getElementById("EscapeHTMLTagsAndEscapes").checked) {
+												OutputHTML += escapeHTMLChars(ListOfAddress[Index][2])
+											} else {
+												OutputHTML += ListOfAddress[Index][2]
+											}
+											OutputHTML += "</td>"
+										//Overlaps
+											OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
+											if (ListOfAddress[Index][3].length == 0) {
+												OutputHTML += ""
+											} else {
+												OutputHTML += "Conflicts with item number(s) "
+												for (let Index2 = 0; Index2 < ListOfAddress[Index][3].length; Index2++) {
+													OutputHTML += "<kbd>" + BigInt(ListOfAddress[Index][3][Index2]).toString(10) + "</kbd>"
+													if (Index2 != ListOfAddress[Index][3].length -1) {
+														OutputHTML += ", "
+													}
+												}
+												OutputHTML += " (Number of stuff it conflicted: " + BigInt(ListOfAddress[Index][3].length).toString(10) + ")"
+											}
+											OutputHTML += "</td>"
+										OutputHTML += "</tr>"
+									}
+									OutputHTML += "</table>"
 						} else if (document.getElementById("ViewMode_ByteByByte").checked) {
 							//Byte by byte mode
 								//Calculate where the bars will be placed horizontally towards the right when they overlap with another.
@@ -356,8 +405,10 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 									if (ListOfAddress.length > 1) {
 										for (let Index = 0; Index < ListOfAddress.length; Index++) {
 											for (let Index2 = Index + 1; Index2 < ListOfAddress.length; Index2++) {
-												if (CheckOverlap(ListOfAddress[Index][0], ListOfAddress[Index][0] + ListOfAddress[Index][1] -1n, ListOfAddress[Index2][0], ListOfAddress[Index2][0] + ListOfAddress[Index2][1] -1n)&&(ListOfAddress[Index][6] == ListOfAddress[Index2][6])) {
-													ListOfAddress[Index2][6]++
+												if (CheckOverlap(ListOfAddress[Index][0], ListOfAddress[Index][0] + ListOfAddress[Index][1] -1n, ListOfAddress[Index2][0], ListOfAddress[Index2][0] + ListOfAddress[Index2][1] -1n)) {
+													while (ListOfAddress[Index][6] == ListOfAddress[Index2][6]) {
+														ListOfAddress[Index2][6]++
+													}
 												}
 											}
 										}

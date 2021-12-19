@@ -7,6 +7,11 @@
 			font-family: sans-serif;
 			}
 			
+			svg {
+			fill: white;
+			font-family: monospace;
+			}
+			
 			table, th, td {
 			border: 1px solid white;
 			border-collapse: collapse;
@@ -15,6 +20,9 @@
 			span.NoLineBreak {
 				white-space: nowrap;
 			}
+			
+			input[type='text'] { font-family: monospace;}
+			input[type='number'] { font-family: monospace;}
 		</style>
 	</head>
 <body>
@@ -25,11 +33,14 @@
 <p>Format to paste the text to view it is the same as <kbd>Addresser.html</kbd>.</p>
 
 <textarea id="UserInputList" cols="75" rows="30" oninput="MainCode()"></textarea><br><br>
-
+<table>
+<tr><th><label><input type="radio" name="ViewMode" id="ViewMode_TableRangeMode" onchange="MainCode()">Table range view</label></th><th><label><input type="radio" name="ViewMode" id="ViewMode_ByteByByte" onchange="MainCode()">Byte by byte address view</label></th></tr>
+<tr>
+<td>
 <label><input type="checkbox" checked id="CleanDuplicateEntries" onchange="MainCode()"><abbr title="Any lines that are identical copies are ignored and not flagged as an overlap.">Ignore duplicates</abbr></label><br>
 <label><input type="checkbox" id="EscapeHTMLTagsAndEscapes" onchange="MainCode()">Escape html tags and escape characters for table description (this prevents potential invalid opening/closing HTML tags from breaking the table).</label><br><br>
 
-Sort by (for table only):<br>
+Sort by:<br>
 <label><input type="radio" onchange="MainCode()" name="Sorter" id="Sort_None">Keep order you sent</label><br>
 <label><input type="radio" onchange="MainCode()" name="Sorter" id="Sort_StartAddress" checked>Starting address</label> (<label><input type="radio" name="Sorter" id="Sort_StartAddress_Reverse" onchange="MainCode()">reverse</label>)<br>
 <label><input type="radio" onchange="MainCode()" name="Sorter" id="Sort_Size">Size</label> (<label><input type="radio" name="Sorter" id="Sort_Size_Reverse" onchange="MainCode()">reverse</label>)<br>
@@ -41,12 +52,19 @@ Filter: <button onclick="CheckAllFilters(); MainCode()">Check All</button><butto
 <label><input type="checkbox" onchange="MainCode()" class="AddressFilter" data-filter_status="Gap" checked>Unused gaps</label><br>
 <label><input type="checkbox" onchange="MainCode()" class="AddressFilter" data-filter_status="NoOverlap" checked>Used addresses that didn't overlap</label><br>
 <label><input type="checkbox" onchange="MainCode()" class="AddressFilter" data-filter_status="Overlap" checked>Addresses that overlap</label><br>
-
+</td>
+<td>
+Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_number_radix="16" id="ByteByByteViewStartingAddress" onchange="MainCode()">
+</td>
+</tr>
+</table>
 <hr>
+<br><br>
 <span id="OutputSpanTag"></span>
 <script>
 //Tab key to make it not switch the focus and actually insert a tab character.
 	window.onload = function(){    
+		UpDownArrowKeysIncrement()
 		var addressList = document.getElementById("UserInputList");
 		if(addressList.addEventListener ) {
 			addressList.addEventListener('keydown',this.keyHandler,false);
@@ -106,6 +124,10 @@ Filter: <button onclick="CheckAllFilters(); MainCode()">Check All</button><butto
 			ListOfFilters[Index].checked = ListOfFilters[Index].checked ^ 1
 		}
 	}
+//Settings (akin to defines settings)
+	const Setting_ByteView_SVGGridSizeFactor = 16n
+	const Setting_ByteView_NumberOfRows = 100n
+	const Setting_ByteView_NumberOfColumns = 100n
 //Regex stuff
 	String2Regex_CorrectLine = "^\\$?[0-9A-Fa-f]+\\t(\\d+|-\\$?[0-9A-Fa-f]+)(\\t[^\\t]*?)?$"
 	String2Regex_GetStartingAddress = "(?<=^\\$?)[0-9A-Fa-f]+"
@@ -231,88 +253,105 @@ Filter: <button onclick="CheckAllFilters(); MainCode()">Check All</button><butto
 						}
 					//Filter
 						ListOfAddress = FilterAddress(ListOfAddress)
-					//Sort it
-						if (document.getElementById("Sort_StartAddress").checked) {
-							ListOfAddress.sort(SortByStartAddr)
-						} else if (document.getElementById("Sort_StartAddress_Reverse").checked) {
-							ListOfAddress.sort(SortByStartAddrRev)
-						} else if (document.getElementById("Sort_Size").checked) {
-							ListOfAddress.sort(SortBySize)
-						} else if (document.getElementById("Sort_Size_Reverse").checked) {
-							ListOfAddress.sort(SortBySizeRev)
-						} else if (document.getElementById("Sort_Description").checked) {
-							ListOfAddress.sort(SortByDescription)
-						} else if (document.getElementById("Sort_Type").checked) {
-							ListOfAddress.sort(SortByStatus)
-						} else if (document.getElementById("Sort_Type_Reverse").checked) {
-							ListOfAddress.sort(SortByStatusRev)
-						} else if (document.getElementById("Sort_Description_Reverse").checked) {
-							ListOfAddress.sort(SortByDescriptionRev)
-						} else if (document.getElementById("Sort_HowManyOverlaps").checked) {
-							ListOfAddress.sort(SortByOverlapCount)
-						} else if (document.getElementById("Sort_HowManyOverlaps_Reverse").checked) {
-							ListOfAddress.sort(SortByOverlapCountRev)
-						}
-					//Now display it
-						OutputHTML += "<ul>"
-						OutputHTML += "<li><kbd>Total number of ranges found (including gaps): " + BigInt(Count_TotalNumberOfRanges_PriorFilter).toString(10) + "</kbd></li>"
-						OutputHTML += "<ul>"
-						OutputHTML += "<li><kbd style='color: #00FF00'>Number of used RAM ranges not overlapping: " + BigInt(Count_NoOverlap).toString(10) + "</kbd></li>"
-						OutputHTML += "<li><kbd style='color: #FF0000'>Number of used RAM ranges overlapping: " + BigInt(Count_Overlap).toString(10) + "</kbd></li>"
-						OutputHTML += "<li><kbd style='color: #808080'>Number of gaps: " + BigInt(Count_Gap).toString(10) + "</kbd></li>"
-						OutputHTML += "</ul>"
-						OutputHTML += "</ul><br><br>"
-						
-						OutputHTML += "<kbd>Number of ranges shown: " + BigInt(ListOfAddress.length).toString(10) + "</kbd>"
-						OutputHTML += "<table>"
-						OutputHTML += "<tr><th>Item number</th><th>Starting address</th><th>Number of bytes(/Ending address)</th><th>Description</th><th>List of item numbers overlaps with</th></tr>"
-						for (let Index = 0; Index < ListOfAddress.length; Index++) {
-							OutputHTML += "<tr>"
-							//Item number
-								OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
-								if (ListOfAddress[Index][4] != -1n) {
-									OutputHTML += "<kbd>AddressTrackerItem_"+ BigInt(ListOfAddress[Index][4]).toString(10) + "</kbd>"
-								} else {
-									OutputHTML += "<kbd>Not by user.</kbd>"
+						if (document.getElementById("ViewMode_TableRangeMode").checked) {
+							//Sort it
+								if (document.getElementById("Sort_StartAddress").checked) {
+									ListOfAddress.sort(SortByStartAddr)
+								} else if (document.getElementById("Sort_StartAddress_Reverse").checked) {
+									ListOfAddress.sort(SortByStartAddrRev)
+								} else if (document.getElementById("Sort_Size").checked) {
+									ListOfAddress.sort(SortBySize)
+								} else if (document.getElementById("Sort_Size_Reverse").checked) {
+									ListOfAddress.sort(SortBySizeRev)
+								} else if (document.getElementById("Sort_Description").checked) {
+									ListOfAddress.sort(SortByDescription)
+								} else if (document.getElementById("Sort_Type").checked) {
+									ListOfAddress.sort(SortByStatus)
+								} else if (document.getElementById("Sort_Type_Reverse").checked) {
+									ListOfAddress.sort(SortByStatusRev)
+								} else if (document.getElementById("Sort_Description_Reverse").checked) {
+									ListOfAddress.sort(SortByDescriptionRev)
+								} else if (document.getElementById("Sort_HowManyOverlaps").checked) {
+									ListOfAddress.sort(SortByOverlapCount)
+								} else if (document.getElementById("Sort_HowManyOverlaps_Reverse").checked) {
+									ListOfAddress.sort(SortByOverlapCountRev)
 								}
-								OutputHTML += "</td>"
-							//Start address
-								OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
-								OutputHTML += "<kbd>$" + ListOfAddress[Index][0].toString(16).toUpperCase() + "</kbd>"
-								OutputHTML += "</td>"
-							//Number of bytes/ending address
-								OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
-								OutputHTML += "<kbd>" + ListOfAddress[Index][1].toString(10) + "</kbd>"
-								if (ListOfAddress[Index][1] > 1n) {
-									OutputHTML += "/<kbd>$" + (ListOfAddress[Index][0] + ListOfAddress[Index][1] - 1n).toString(16).toUpperCase() + "</kbd>"
-								}
-								OutputHTML += "</td>"
-							//Description
-								OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
-								if (document.getElementById("EscapeHTMLTagsAndEscapes").checked) {
-									OutputHTML += escapeHTMLChars(ListOfAddress[Index][2])
-								} else {
-									OutputHTML += ListOfAddress[Index][2]
-								}
-								OutputHTML += "</td>"
-							//Overlaps
-								OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
-								if (ListOfAddress[Index][3].length == 0) {
-									OutputHTML += ""
-								} else {
-									OutputHTML += "Conflicts with item number(s) "
-									for (let Index2 = 0; Index2 < ListOfAddress[Index][3].length; Index2++) {
-										OutputHTML += "<kbd>" + BigInt(ListOfAddress[Index][3][Index2]).toString(10) + "</kbd>"
-										if (Index2 != ListOfAddress[Index][3].length -1) {
-											OutputHTML += ", "
+							//Now display it
+								OutputHTML += "<ul>"
+								OutputHTML += "<li><kbd>Total number of ranges found (including gaps): " + BigInt(Count_TotalNumberOfRanges_PriorFilter).toString(10) + "</kbd></li>"
+								OutputHTML += "<ul>"
+								OutputHTML += "<li><kbd style='color: #00FF00'>Number of used RAM ranges not overlapping: " + BigInt(Count_NoOverlap).toString(10) + "</kbd></li>"
+								OutputHTML += "<li><kbd style='color: #FF0000'>Number of used RAM ranges overlapping: " + BigInt(Count_Overlap).toString(10) + "</kbd></li>"
+								OutputHTML += "<li><kbd style='color: #808080'>Number of gaps: " + BigInt(Count_Gap).toString(10) + "</kbd></li>"
+								OutputHTML += "</ul>"
+								OutputHTML += "</ul><br><br>"
+								
+								OutputHTML += "<kbd>Number of ranges shown: " + BigInt(ListOfAddress.length).toString(10) + "</kbd>"
+								OutputHTML += "<table>"
+								OutputHTML += "<tr><th>Item number</th><th>Starting address</th><th>Number of bytes(/Ending address)</th><th>Description</th><th>List of item numbers overlaps with</th></tr>"
+								for (let Index = 0; Index < ListOfAddress.length; Index++) {
+									OutputHTML += "<tr>"
+									//Item number
+										OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
+										if (ListOfAddress[Index][4] != -1n) {
+											OutputHTML += "<kbd>AddressTrackerItem_"+ BigInt(ListOfAddress[Index][4]).toString(10) + "</kbd>"
+										} else {
+											OutputHTML += "<kbd>Not by user.</kbd>"
 										}
-									}
-									OutputHTML += " (Number of stuff it conflicted: " + BigInt(ListOfAddress[Index][3].length).toString(10) + ")"
+										OutputHTML += "</td>"
+									//Start address
+										OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
+										OutputHTML += "<kbd>$" + ListOfAddress[Index][0].toString(16).toUpperCase() + "</kbd>"
+										OutputHTML += "</td>"
+									//Number of bytes/ending address
+										OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
+										OutputHTML += "<kbd>" + ListOfAddress[Index][1].toString(10) + "</kbd>"
+										if (ListOfAddress[Index][1] > 1n) {
+											OutputHTML += "/<kbd>$" + (ListOfAddress[Index][0] + ListOfAddress[Index][1] - 1n).toString(16).toUpperCase() + "</kbd>"
+										}
+										OutputHTML += "</td>"
+									//Description
+										OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
+										if (document.getElementById("EscapeHTMLTagsAndEscapes").checked) {
+											OutputHTML += escapeHTMLChars(ListOfAddress[Index][2])
+										} else {
+											OutputHTML += ListOfAddress[Index][2]
+										}
+										OutputHTML += "</td>"
+									//Overlaps
+										OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
+										if (ListOfAddress[Index][3].length == 0) {
+											OutputHTML += ""
+										} else {
+											OutputHTML += "Conflicts with item number(s) "
+											for (let Index2 = 0; Index2 < ListOfAddress[Index][3].length; Index2++) {
+												OutputHTML += "<kbd>" + BigInt(ListOfAddress[Index][3][Index2]).toString(10) + "</kbd>"
+												if (Index2 != ListOfAddress[Index][3].length -1) {
+													OutputHTML += ", "
+												}
+											}
+											OutputHTML += " (Number of stuff it conflicted: " + BigInt(ListOfAddress[Index][3].length).toString(10) + ")"
+										}
+										OutputHTML += "</td>"
+									OutputHTML += "</tr>"
 								}
-								OutputHTML += "</td>"
-							OutputHTML += "</tr>"
+								OutputHTML += "</table>"
+						} else if (document.getElementById("ViewMode_ByteByByte").checked) {
+							//Byte by byte mode
+								let StartAddressView = ParseBigIntValue(document.getElementById("ByteByByteViewStartingAddress").value, 16)
+								if (StartAddressView < 0n) {
+									StartAddressView = 0
+								}
+								document.getElementById("ByteByByteViewStartingAddress").value = StartAddressView.toString(16).toUpperCase()
+								OutputHTML += "<table><tr><td>"
+								OutputHTML += "<svg width='" + (Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_NumberOfColumns).toString(10) + "' height='" + (Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_NumberOfRows).toString(10)+ "'>"
+								for (let Index = 0n; Index < Setting_ByteView_NumberOfRows; Index++) {
+									OutputHTML += "<text text-anchor='end' alignment-baseline='hanging' alignment-baseline x='50' y='" + (Setting_ByteView_SVGGridSizeFactor*Index).toString(10) + "'>$" + (StartAddressView+Index).toString(16).toUpperCase() + "</text>"
+									OutputHTML += "<line stroke='white' x1='0' y1='" + (Setting_ByteView_SVGGridSizeFactor*Index).toString(10) + "' x2='"+(Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_NumberOfColumns).toString(10)+"' y2='" + (Setting_ByteView_SVGGridSizeFactor*Index).toString(10) + "'></line>"
+								}
+								OutputHTML += "</svg>"
+								OutputHTML += "</td></tr></table>"
 						}
-						OutputHTML += "</table>"
 				} else {
 					OutputHTML += "<kbd>Error: One or more of the lines have invalid number of bytes or ending address.</kbd>"
 				}
@@ -506,4 +545,82 @@ Filter: <button onclick="CheckAllFilters(); MainCode()">Check All</button><butto
 			}
 			return OutputArray
 		}
+//Other
+	//These makes input text act like a number input, pressing UP/DOWN on the arrow keys to increment/decrement it, but with any radixes.
+	//In order for this to apply, have these on the number input:
+	//- Make sure the class contains "AnyRadixNumberInput"
+	//- Specify what radix it is, have the custom attribute [data-input_number_radix="x"] where x
+	//  is a radix number that can be any number 2-36. Examples include: 2 = binary, 10 = decimal (default), 16 = hexadecimal.
+	//To get this to apply, use this:
+	// window.onload = function(){ //Upon loading, apply the function to execute when the up/down arrow keys are pressed.
+	//  UpDownArrowKeysIncrement()
+	// }
+		function UpDownArrowKeysIncrement() {
+			let FocusedElement = document.activeElement;
+			if(FocusedElement.addEventListener ) {
+				FocusedElement.addEventListener('keydown',this.keyHandler,false);
+			} else if(FocusedElement.attachEvent ) {
+				FocusedElement.attachEvent('onkeydown',this.keyHandler);
+			}
+		}
+	
+		function keyHandler(e) {
+			if (((e.code == "ArrowUp")||e.code == "ArrowDown")&&((/(^|\s.*?)AnyRadixNumberInput($|\s.*?)/).test(document.activeElement.className))) {
+				let target;
+				//Handle radix.
+					let Radix = 10
+					if ((/^\d+$/).test(document.activeElement.dataset.input_number_radix)) {
+						Radix = parseInt(document.activeElement.dataset.input_number_radix)
+					}
+				let InputNumber = ParseBigIntValue(document.activeElement.value, Radix) //This gets the number
+				if (!e) var e = window.event;
+				if (e.target) target = e.target;
+				else if (e.srcElement) target = e.srcElement;
+				
+				if(e.code == "ArrowUp") {
+					InputNumber++
+					e.preventDefault()	//Prevents the caret (blinking text cursor) from being placed at the beginning of the line.
+				} else if(e.code == "ArrowDown") {
+					InputNumber--
+				}
+				document.activeElement.value = InputNumber.toString(Radix).toUpperCase()
+				document.activeElement.setSelectionRange(document.activeElement.value.length, document.activeElement.value.length)
+				document.activeElement.onchange()
+			}
+		}
+	function ParseBigIntValue(string, radix) {
+		//Acts more closely to parseInt, unlike other methods (other functions, like CorrectBinBigIntValue)
+		//this works with bigInt.
+		let Output = 0n
+		let NegativeNumber = 1n
+		if ((/^-/).test(string)) {
+			NegativeNumber = -1n
+		}
+		let DigitPart = string.substring((string.search(/[0-9a-zA-Z]/)))
+		switch (radix) {
+			//decimal
+				default:
+				if ((/^-?\d+$/).test(string)) {
+					Output = BigInt(string)
+				}
+				break
+			//Hexadecimal
+				case 16:
+				case "0x":
+				case "0X":
+				if ((/^-?[0-9A-Fa-f]+$/).test(string)) {
+					Output = BigInt("0x" + DigitPart) * NegativeNumber
+				}
+				break
+			//Binary
+				case 2:
+				case "0b":
+				case "0B":
+				if ((/^-?[01]+$/).test(string)) {
+					Output = BigInt("0b" + DigitPart) * NegativeNumber
+				}
+		
+		}
+		return Output
+	}
 </script>

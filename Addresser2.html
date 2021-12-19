@@ -54,7 +54,7 @@ Filter: <button onclick="CheckAllFilters(); MainCode()">Check All</button><butto
 <label><input type="checkbox" onchange="MainCode()" class="AddressFilter" data-filter_status="Overlap" checked>Addresses that overlap</label><br>
 </td>
 <td>
-Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_number_radix="16" id="ByteByByteViewStartingAddress" onchange="MainCode()">
+Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_number_radix="16" id="ByteByByteViewStartingAddress" onchange="MainCode()" value="7E0000">
 </td>
 </tr>
 </table>
@@ -127,9 +127,10 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 	}
 //Settings (akin to defines settings)
 	const Setting_ByteView_SVGGridSizeFactor = 16n
+	const Setting_ByteView_AddressColumnPosition = 5n		//Note: right-aligned, from text-anchor, position of the right edge of text
+	const Setting_ByteView_BarsXPosStart = 5n			//Note: left-aligned, position from left edge.
 	const Setting_ByteView_NumberOfRows = 100n
-	const Setting_ByteView_NumberOfColumns = 100n
-	const Setting_ByteView_BarsXPosStart = 100n
+	const Setting_ByteView_NumberOfColumns = 20n			//Width of viewbox, that, multiplied by Setting_ByteView_SVGGridSizeFactor
 //Regex stuff
 	String2Regex_CorrectLine = "^\\$?[0-9A-Fa-f]+\\t(\\d+|-\\$?[0-9A-Fa-f]+)(\\t[^\\t]*?)?$"
 	String2Regex_GetStartingAddress = "(?<=^\\$?)[0-9A-Fa-f]+"
@@ -371,20 +372,29 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 									}
 								OutputHTML += "<table><tr><td>"
 								OutputHTML += "<svg width='" + (Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_NumberOfColumns).toString(10) + "' height='" + (Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_NumberOfRows).toString(10)+ "'>"
-								//Display the address and the lines separating each
+								//Display the column of address and the lines separating each
 									for (let Index = 0n; Index < Setting_ByteView_NumberOfRows; Index++) {
-										OutputHTML += "<text text-anchor='end' dominant-baseline='hanging' alignment-baseline x='50' y='" + (Setting_ByteView_SVGGridSizeFactor*Index).toString(10) + "'>$" + (StartAddressView+Index).toString(16).toUpperCase() + "</text>"
+										OutputHTML += "<text text-anchor='end' dominant-baseline='hanging' x='" + (Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_AddressColumnPosition).toString(10) + "' y='" + (Setting_ByteView_SVGGridSizeFactor*Index).toString(10) + "'>$" + (StartAddressView+Index).toString(16).toUpperCase() + "</text>"
 										OutputHTML += "<line stroke='white' x1='0' y1='" + (Setting_ByteView_SVGGridSizeFactor*Index).toString(10) + "' x2='"+(Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_NumberOfColumns).toString(10)+"' y2='" + (Setting_ByteView_SVGGridSizeFactor*Index).toString(10) + "'></line>"
 									}
 								//Now display the bars.
 									for (let Index = 0; Index < ListOfShownAddress.length; Index++) {
 										//Positions cannot be way too far outside the view display as that could result in precision issues, since SVG uses double-precision floating point.
 										//The top and left are the origin of the rectangle.
-										let BarTopYPos = BigintClamp(ListOfShownAddress[Index][0] - StartAddressView, -1n*Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfRows+1n)*Setting_ByteView_SVGGridSizeFactor)
+										let BarTopYPos = BigintClamp(ListOfShownAddress[Index][0] - StartAddressView, -1n, (Setting_ByteView_NumberOfRows+1n)*Setting_ByteView_SVGGridSizeFactor)
 										let BarBottomYPos = BigintClamp(ListOfShownAddress[Index][0] + ListOfShownAddress[Index][1] - StartAddressView, -1n*Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfRows+1n)*Setting_ByteView_SVGGridSizeFactor)
 										let BarHeight = BarBottomYPos - BarTopYPos
-										OutputHTML += "<g color='" + ColorStatus(ListOfShownAddress[Index][5]) + "'>"
-										OutputHTML += "<rect x='" + (Setting_ByteView_BarsXPosStart + (ListOfShownAddress[Index][6] * Setting_ByteView_SVGGridSizeFactor)).toString(10) + "' y='" + (BarTopYPos*Setting_ByteView_SVGGridSizeFactor).toString(10) + "' width='" + Setting_ByteView_SVGGridSizeFactor.toString(10) + "' height='" + (BarHeight*Setting_ByteView_SVGGridSizeFactor).toString(10) + "' rx='5' ry='5'/>"
+										OutputHTML += "<g fill='" + ColorStatus(ListOfShownAddress[Index][5]) + "'>"
+										OutputHTML += "<rect x='" + (Setting_ByteView_BarsXPosStart*Setting_ByteView_SVGGridSizeFactor + (ListOfShownAddress[Index][6] * Setting_ByteView_SVGGridSizeFactor)).toString(10) + "' y='" + (BarTopYPos*Setting_ByteView_SVGGridSizeFactor).toString(10) + "' width='" + Setting_ByteView_SVGGridSizeFactor.toString(10) + "' height='" + (BarHeight*Setting_ByteView_SVGGridSizeFactor).toString(10) + "' rx='7' ry='7'>"
+										OutputHTML += "<title>$" + ListOfShownAddress[Index][0].toString(16).toUpperCase() + ", " + ListOfShownAddress[Index][1].toString(10) + " byte"
+										if (ListOfShownAddress[Index][1] > 1n) {
+											OutputHTML += "s (ends at $" + ( ListOfShownAddress[Index][0] + ListOfShownAddress[Index][1] -1n).toString(16).toUpperCase() + "), "
+										} else {
+											OutputHTML += ", "
+										}
+										OutputHTML += escapeHTMLChars(ListOfShownAddress[Index][2])
+										OutputHTML += "</title>"
+										OutputHTML += "</rect>"
 										OutputHTML += "</g>"
 									}
 								OutputHTML += "</svg>"

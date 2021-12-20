@@ -400,17 +400,25 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 									OutputHTML += "</table>"
 						} else if (document.getElementById("ViewMode_ByteByByte").checked) {
 							//Byte by byte mode
-								//Calculate where the bars will be placed horizontally towards the right when they overlap with another.
+								//Easier if this is sorted, since the visual display is in increasing order.
 									ListOfAddress.sort(SortByStartAddr)
+								//Calculate where the bars will be placed horizontally towards the right when they overlap with another.
+								//(CheckOverlap(ListOfAddress[Index][0], ListOfAddress[Index][0] + ListOfAddress[Index][1] -1n, ListOfAddress[Index2][0], ListOfAddress[Index2][0] + ListOfAddress[Index2][1] -1n)&& ListOfAddress[Index][6] == ListOfAddress[Index2][6]) will check
+								//ListOfAddress[Index][6]++ means shift to the right
 									if (ListOfAddress.length > 1) {
-										for (let Index = 0; Index < ListOfAddress.length; Index++) {
-											for (let Index2 = Index + 1; Index2 < ListOfAddress.length; Index2++) {
-												if (CheckOverlap(ListOfAddress[Index][0], ListOfAddress[Index][0] + ListOfAddress[Index][1] -1n, ListOfAddress[Index2][0], ListOfAddress[Index2][0] + ListOfAddress[Index2][1] -1n)) {
-													while (ListOfAddress[Index][6] == ListOfAddress[Index2][6]) {
-														ListOfAddress[Index2][6]++
+										for (let Index = 1; Index < ListOfAddress.length; Index++) {
+											let IsOverlappingXY = false
+											do {
+												IsOverlappingXY = false
+												for (let Index2 = 0; (Index2 < Index&&IsOverlappingXY == false); Index2++) {
+													if (CheckOverlap(ListOfAddress[Index][0], ListOfAddress[Index][0] + ListOfAddress[Index][1] -1n, ListOfAddress[Index2][0], ListOfAddress[Index2][0] + ListOfAddress[Index2][1] -1n)&& ListOfAddress[Index][6] == ListOfAddress[Index2][6]) {
+														IsOverlappingXY = true
 													}
 												}
-											}
+												if (IsOverlappingXY) {
+													ListOfAddress[Index][6]++
+												}
+											} while (IsOverlappingXY)
 										}
 									}
 								//Get only ranges that overlaps the range that is going to be displayed

@@ -454,9 +454,12 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 								//Now display the bars.
 									for (let Index = 0; Index < ListOfShownAddress.length; Index++) {
 										//Positions cannot be way too far outside the view display as that could result in precision issues, since SVG uses double-precision floating point.
+										//They are clamped between -1 and Setting_ByteView_NumberOfRows+1 (1 row OUTSIDE the display) instead of 0 to Setting_ByteView_NumberOfRows so that
+										//if either endpoints happens to be outside the view display, the rounded corners would not be misleadingly be displayed at the top and bottom of
+										//the display, which avoids giving the user the impression their start and end position would be there when they actually extend beyond it.
 										//The top and left are the origin of the rectangle.
-										let BarTopYPos = BigintClamp(ListOfShownAddress[Index][0] - StartAddressView, -1n, (Setting_ByteView_NumberOfRows+1n)*Setting_ByteView_SVGGridSizeFactor)
-										let BarBottomYPos = BigintClamp(ListOfShownAddress[Index][0] + ListOfShownAddress[Index][1] - StartAddressView, -1n*Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfRows+1n)*Setting_ByteView_SVGGridSizeFactor)
+										let BarTopYPos = BigintClamp(ListOfShownAddress[Index][0] - StartAddressView, -1n, (Setting_ByteView_NumberOfRows*Setting_ByteView_SVGGridSizeFactor)+(Setting_ByteView_NumberOfRows))
+										let BarBottomYPos = BigintClamp(ListOfShownAddress[Index][0] + ListOfShownAddress[Index][1] - StartAddressView, -1n*Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfRows*Setting_ByteView_SVGGridSizeFactor)+(Setting_ByteView_NumberOfRows))
 										let BarHeight = BarBottomYPos - BarTopYPos
 										OutputHTML += "<g fill='" + ColorStatus(ListOfShownAddress[Index][5]) + "'>"
 										OutputHTML += "<rect x='" + (Setting_ByteView_BarsXPosStart*Setting_ByteView_SVGGridSizeFactor + (ListOfShownAddress[Index][6] * Setting_ByteView_SVGGridSizeFactor)).toString(10) + "' y='" + (BarTopYPos*Setting_ByteView_SVGGridSizeFactor).toString(10) + "' width='" + Setting_ByteView_SVGGridSizeFactor.toString(10) + "' height='" + (BarHeight*Setting_ByteView_SVGGridSizeFactor).toString(10) + "' rx='7' ry='7'>"

@@ -448,7 +448,7 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 								OutputHTML += "<svg width='" + (Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_NumberOfColumns).toString(10) + "' height='" + (Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_NumberOfRows).toString(10)+ "'>"
 								//Display the column of address and the lines separating each
 									for (let Index = 0n; Index < Setting_ByteView_NumberOfRows; Index++) {
-										OutputHTML += "<text text-anchor='end' dominant-baseline='hanging' x='" + (Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_AddressColumnPosition).toString(10) + "' y='" + (Setting_ByteView_SVGGridSizeFactor*Index).toString(10) + "'>$" + (StartAddressView+Index).toString(16).toUpperCase() + "</text>"
+										OutputHTML += "<text text-anchor='end' dominant-baseline='middle' x='" + (Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_AddressColumnPosition).toString(10) + "' y='" + (Setting_ByteView_SVGGridSizeFactor*Index + Setting_ByteView_SVGGridSizeFactor/2n).toString(10) + "'>$" + (StartAddressView+Index).toString(16).toUpperCase() + "</text>"
 										OutputHTML += "<line stroke='white' x1='0' y1='" + (Setting_ByteView_SVGGridSizeFactor*Index).toString(10) + "' x2='"+(Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_NumberOfColumns).toString(10)+"' y2='" + (Setting_ByteView_SVGGridSizeFactor*Index).toString(10) + "'></line>"
 									}
 								//Now display the bars.
@@ -458,8 +458,8 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 										//if either endpoints happens to be outside the view display, the rounded corners would not be misleadingly be displayed at the top and bottom of
 										//the display, which avoids giving the user the impression their start and end position would be there when they actually extend beyond it.
 										//The top and left are the origin of the rectangle.
-										let BarTopYPos = BigintClamp(ListOfShownAddress[Index][0] - StartAddressView, -1n, (Setting_ByteView_NumberOfRows*Setting_ByteView_SVGGridSizeFactor)+(Setting_ByteView_NumberOfRows))
-										let BarBottomYPos = BigintClamp(ListOfShownAddress[Index][0] + ListOfShownAddress[Index][1] - StartAddressView, -1n*Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfRows*Setting_ByteView_SVGGridSizeFactor)+(Setting_ByteView_NumberOfRows))
+										let BarTopYPos = BigintClamp(ListOfShownAddress[Index][0] - StartAddressView, -1n, Setting_ByteView_NumberOfRows+1n)
+										let BarBottomYPos = BigintClamp(ListOfShownAddress[Index][0] + ListOfShownAddress[Index][1] - StartAddressView, -1n*Setting_ByteView_SVGGridSizeFactor, Setting_ByteView_NumberOfRows+1n)
 										let BarHeight = BarBottomYPos - BarTopYPos
 										OutputHTML += "<g fill='" + ColorStatus(ListOfShownAddress[Index][5]) + "'>"
 										OutputHTML += "<rect x='" + (Setting_ByteView_BarsXPosStart*Setting_ByteView_SVGGridSizeFactor + (ListOfShownAddress[Index][6] * Setting_ByteView_SVGGridSizeFactor)).toString(10) + "' y='" + (BarTopYPos*Setting_ByteView_SVGGridSizeFactor).toString(10) + "' width='" + Setting_ByteView_SVGGridSizeFactor.toString(10) + "' height='" + (BarHeight*Setting_ByteView_SVGGridSizeFactor).toString(10) + "' rx='7' ry='7'>"
@@ -500,7 +500,7 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 			OutputHTML += "<kbd>Error: these lines have invalid information:</kbd><br>"
 			let ListOfInvalidLines = new Array()
 			for (let Index = 0; Index < UserInputList.length; Index++) {
-				if (!(RegExp(String2Regex_CorrectLine).test(UserInputList[Index]))) {
+				if (!(RegExp(String2Regex_CorrectLine).test(UserInputList[Index][0]))) {
 					ListOfInvalidLines.push(UserInputList[Index])
 				}
 			}

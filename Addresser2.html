@@ -622,11 +622,9 @@ Useful tips using this feature:
 	//Remove stuff that is not address data
 		function RemoveBlankCommentOrSpacesEntry(InputArray) {
 			let OutputArray = new Array()
-			let index2 = 0
 			for (index1 = 0; index1 < InputArray.length; index1++) {
 				if ((/^(\s*)$|^()$|^(\s*;+.*)$/).test(InputArray[index1][0]) == false) {
 					OutputArray.push(InputArray[index1])
-					index2++
 				}
 			}
 			return OutputArray

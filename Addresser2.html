@@ -39,7 +39,7 @@
 <table>
 <tr>
 <th><label><input type="radio" name="ViewMode" id="ViewMode_TableRangeMode" onchange="MainCode()" checked>Table range view</label></th>
-<th><label><input type="radio" name="ViewMode" id="ViewMode_ByteByByte" onchange="MainCode()">Byte by byte address view</label></th>
+<th><label><input type="radio" name="ViewMode" id="ViewMode_ByteByByte" onchange="MainCode(); EnableScrollSVG()">Byte by byte address view</label></th>
 </tr>
 <tr>
 <td>
@@ -409,7 +409,7 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 									}
 									OutputHTML += "</table>"
 						} else if (document.getElementById("ViewMode_ByteByByte").checked) {
-							//Byte by byte mode
+							//Byte by byte mode (SVG graph)
 								//Easier if this is sorted, since the visual display is in increasing order.
 									ListOfAddress.sort(SortByStartAddr)
 								//Calculate where the bars will be placed horizontally towards the right when they overlap with another.
@@ -445,7 +445,7 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 								OutputHTML += "<table>"
 								OutputHTML += "<tr><th>Viewing $" + StartAddressView.toString(16).toUpperCase() + "-$" + (StartAddressView+Setting_ByteView_NumberOfRows-1n).toString(16).toUpperCase() + "</th></tr>"
 								OutputHTML += "<tr><td>"
-								OutputHTML += "<svg width='" + (Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_NumberOfColumns).toString(10) + "' height='" + (Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_NumberOfRows).toString(10)+ "'>"
+								OutputHTML += "<svg id='ScrollableSVG' width='" + (Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_NumberOfColumns).toString(10) + "' height='" + (Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_NumberOfRows).toString(10)+ "'>"
 								//Display the column of address and the lines separating each
 									for (let Index = 0n; Index < Setting_ByteView_NumberOfRows; Index++) {
 										OutputHTML += "<text text-anchor='end' dominant-baseline='middle' x='" + (Setting_ByteView_SVGGridSizeFactor*Setting_ByteView_AddressColumnPosition).toString(10) + "' y='" + (Setting_ByteView_SVGGridSizeFactor*Index + Setting_ByteView_SVGGridSizeFactor/2n).toString(10) + "'>$" + (StartAddressView+Index).toString(16).toUpperCase() + "</text>"
@@ -457,7 +457,7 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 										//They are clamped between -1 and Setting_ByteView_NumberOfRows+1 (1 row OUTSIDE the display) instead of 0 to Setting_ByteView_NumberOfRows so that
 										//if either endpoints happens to be outside the view display, the rounded corners would not be misleadingly be displayed at the top and bottom of
 										//the display, which avoids giving the user the impression their start and end position would be there when they actually extend beyond it.
-										//The top and left are the origin of the rectangle.
+										//The top and left are the origin of the rectangle, which is why it is calculated using BottomPos - TopPos.
 										let BarTopYPos = BigintClamp(ListOfShownAddress[Index][0] - StartAddressView, -1n, Setting_ByteView_NumberOfRows+1n)
 										let BarBottomYPos = BigintClamp(ListOfShownAddress[Index][0] + ListOfShownAddress[Index][1] - StartAddressView, -1n*Setting_ByteView_SVGGridSizeFactor, Setting_ByteView_NumberOfRows+1n)
 										let BarHeight = BarBottomYPos - BarTopYPos
@@ -514,6 +514,9 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 			OutputHTML += "</textarea>"
 		}
 		document.getElementById("OutputSpanTag").innerHTML = OutputHTML
+		if (document.getElementById("ViewMode_ByteByByte").checked) {
+			EnableScrollSVG()
+		}
 	}
 	//remove duplicate entries
 		function RemoveDuplicateAddressEntry(ArrayWithAddresses) {
@@ -782,4 +785,25 @@ Address to view: $<input type="text" class="AnyRadixNumberInput" data-input_numb
 		//Restrict a number within a specified range, bigInt edition.
 			return num <= min ? min : num >= max ? max : num;
 	}
+	function ScrollSVGGraph(event) {
+		//if (instanceOfKeyboardEvent.shiftKey) {
+			let StartAddressView = ParseBigIntValue(document.getElementById("ByteByByteViewStartingAddress").value, 16)
+			event.preventDefault()
+			if (event.deltaY > 0) {
+				StartAddressView++
+			} else if (event.deltaY < 0) {
+				if (StartAddressView > 0n) {
+					StartAddressView--
+				}
+			}
+			document.getElementById("ByteByByteViewStartingAddress").value = StartAddressView.toString(16).toUpperCase()
+			MainCode()
+			EnableScrollSVG() //When this innerHTML element gets altered, like deleted and then generated, resets this event (removes it) that was attached to.
+		//}
+	}
+	function EnableScrollSVG() {
+		Element_ScrollSVGGraph = document.getElementById("ScrollableSVG")
+		Element_ScrollSVGGraph.onwheel = ScrollSVGGraph
+	}
+
 </script>

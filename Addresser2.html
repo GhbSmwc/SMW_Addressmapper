@@ -31,9 +31,39 @@
 <body>
 	<h1 style="text-align: center;">Byte by byte viewer</h1><br>
 	
-<p>This lets you view information in a byte-by-byte format (shows each consecutive neighboring addresses) and how they are used</p>
+Enter a list of RAM addresses in the text area below. It must be formatted like this:
+<table><tr><td><pre>&lt;Address&gt;	&lt;Size_in_bytes_Or_EndAddress&gt;	&lt;Description&gt;
+&lt;Address&gt;	&lt;Size_in_bytes_Or_EndAddress&gt;	&lt;Description&gt;
+&lt;Address&gt;	&lt;Size_in_bytes_Or_EndAddress&gt;	&lt;Description&gt;</pre></td></tr></table><br>
+Make sure the format is:
+<ul>
+	<li>No additional tabs, meaning multiple tabs that are used to align columns in text editors is not allowed. The tab character is reserved for <a href="https://en.wikipedia.org/wiki/Tab-separated_values">tab-separated values</a>.</li>
+</ul>
 
-<p>Format to paste the text to view it is the same as <kbd>Addresser.html</kbd>.</p>
+Notes:
+	<ul>
+		<li>Lines that are blank or composed of just any whitespace characters are ignored. It will also ignore any lines that start with either a semicolon or a space (0 or more), followed by a semicolon (therefore ASM-styled comments are allowed).</li>
+		<li>Whitespace shown above is a TAB character, not a literal space character.</li>
+		<li>This does not take in account of addressing mirroring (a shorthand <kbd>$00</kbd> instead of <kbd>$7E0000</kbd>), so I strongly recommend putting the full address numbers here. Furthermore, it does not detect what type of memory map it is,
+		things like negative address (only shown on &ldquo;<kbd>Potential ending address before the starting byte of all the ranges</kbd>&rdquo;), address pointing beyond the last byte of the entire memory map, and so on.</li>
+		<li>This tool could be applied to other systems (beyond the SNES), since it merely check ranges.</li>
+	</ul>
+
+Where:
+<ul>
+	<li><kbd>&lt;Address&gt;</kbd> is the starting address, in hex. <kbd>$</kbd> prefix is optional.</li>
+	<li><kbd>&lt;Size_in_bytes_Or_EndAddress&gt;</kbd> can either be the number of bytes starting from <kbd>Address</kbd> and ending at <kbd>Address + Size_in_bytes - 1</kbd> or the ending address:
+		<ul>
+			<li><kbd>&lt;Decimal_Number&gt;</kbd> - number of bytes, in decimal. Don't use commas to separate digit grouping.</li>
+			<li><kbd>-&lt;Hexidecimal_EndAddress&gt;</kbd> - the ending address (note the hyphen to denote a range), in hex. Also <kbd>$</kbd> prefix is optional (must be placed after
+			the hyphen and before the hexadecimal address number (example: <kbd>$-10</kbd> is wrong, <kbd>-$10</kbd> is correct)).</li>
+		</ul>
+	</li>
+	<li><kbd>&lt;Description&gt;</kbd> (optional) is a brief description. Note: HTML tags, elements and other reserved symbols apply on the description, and improper opening and closing/ending tags could <abbr title="For example: having only the opening tag or closing/ending tag, if you end the table tag (&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;), before you start it (&lt;table&gt;&lt;tr&gt;&lt;td&gt;), it would mess up the outer table's content after the invalid HTML setup.">break the table</abbr>!
+	If you want to view the table with invalid tag setup and have it not be broken, check the box labeled &ldquo;Escape html tags and escape characters for table description&rdquo;, and it will cancel out the HTML effects (they're <a href="https://en.wikipedia.org/wiki/Character_encodings_in_HTML#XML_character_references">escaped</a>) within the description field.</li>
+</ul>
+If there are re-used addresses on multiple entries, they will display as a row colored red with the text &ldquo;Overlap detected!&rdquo; written next to their starting address being affected. If there are gaps between two closest ranges, will insert
+a grey entry stating a gap.<br><br>
 
 <textarea id="UserInputList" cols="75" rows="30" oninput="MainCode()"></textarea><br><br>
 <table>
@@ -283,7 +313,7 @@ Useful tips using this feature:
 								// currently processed that overlaps.
 									let HighestEndAddressGapDetect = -1n
 									let GapAddressList = new Array()
-								let ArrayCopyButSortedForGapFinding = ListOfAddress
+								let ArrayCopyButSortedForGapFinding = [...ListOfAddress]
 								ArrayCopyButSortedForGapFinding.sort(SortByStartAddr)
 								for (let Index = 1; Index < ArrayCopyButSortedForGapFinding.length; Index++) {
 									//If the highest index exceeds HighestEndAddressGapDetect, replace it with the higher number
@@ -427,6 +457,7 @@ Useful tips using this feature:
 										//Overlaps
 											OutputHTML += "<td style='background-color: " + ColorStatus(ListOfAddress[Index][5]) + "'>"
 											if (ListOfAddress[Index][3].length == 0) {
+												if (ListOfAddress[Index][5] != "Gap")
 												OutputHTML += "No Overlaps"
 											} else {
 												OutputHTML += "Conflicts with item number(s) "

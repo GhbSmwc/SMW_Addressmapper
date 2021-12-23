@@ -44,8 +44,10 @@ Where:
 <li><kbd>ASM_resource_name</kbd> is the name of an ASM resource</li>
 <li><kbd>!RAM_Define</kbd> is the define used in the ASM file that represents a RAM to use</li>
 <li><kbd>Number_of_bytes</kbd> is how many bytes the RAM it requires. Must be at least 1.</li>
-<li><kbd>Optional_min</kbd> and <kbd>Optional_max</kbd> are optional. These are addresses not to be below minimum and the last byte of freeram not to exceed the maximum, therefore conditioning the search in limited area. This is very useful for looking
-for RAM that should or shouldn't reset during loading screens.</li>
+<li>
+	<kbd>Optional_min</kbd> and <kbd>Optional_max</kbd> are optional (use a hyphen &ldquo;-&rdquo; on each of them you want them to not applied, tab rule still applies). These are
+	addresses so that the starting byte of a freeram are not to be below minimum and the last byte of freeram not to exceed the maximum, therefore conditioning
+	the search in limited area. This is very useful for looking for RAM that should or shouldn't reset during loading screens.</li>
 </ul>
 Format for list of empty RAM should be:<br>
 <table><tr><td><pre>Address	Size_or_ending_address	Optional_description
@@ -76,7 +78,7 @@ All of these ranges must NOT overlap.
 	const String2Regex_GetASMResourceName = "[^\\t]+"
 	const String2Regex_GetRAMDefine = "![^\\t]+"
 	const String2Regex_GetNumberOfBytes = "\\d+"
-	const String2Regex_GetHexAddress = "\\$?[A-Fa-f\\d]*"
+	const String2Regex_GetOptionalHexAddress = "(\\$?[A-Fa-f\\d]+|-)"
 //Tab key to make it not switch the focus and actually insert a tab character.
 	window.onload = function(){
 		var addressList = document.getElementById("ListOfFreeramDefines");
@@ -138,7 +140,7 @@ All of these ranges must NOT overlap.
 		//Verify all lines valid
 			let DefinesLinesValid = true
 			for (let Index = 0; (Index < ListOfDefines.length&&DefinesLinesValid == true); Index++) {
-				if (!(RegExp("^" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t" + String2Regex_GetNumberOfBytes + "\\t(" + String2Regex_GetHexAddress + ")?\\t" + "(" + String2Regex_GetHexAddress + ")?$").test(ListOfDefines[Index][0]))) {
+				if (!(RegExp("^" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t" + String2Regex_GetNumberOfBytes + "\\t" + String2Regex_GetOptionalHexAddress + "\\t" + String2Regex_GetOptionalHexAddress + "$").test(ListOfDefines[Index][0]))) {
 					DefinesLinesValid = false
 				}
 			}
@@ -161,15 +163,15 @@ All of these ranges must NOT overlap.
 						//Number of bytes
 							let NumberOfBytes = ParseBigIntValue(ListOfDefines[Index][0].match(RegExp("(?<=" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t)" + String2Regex_GetNumberOfBytes))[0], 10)
 						//Min address
-							let MinAddress_String = ListOfDefines[Index][0].match(RegExp("(?<=" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t" + String2Regex_GetNumberOfBytes + "\\t)" + String2Regex_GetHexAddress))[0]
+							let MinAddress_String = ListOfDefines[Index][0].match(RegExp("(?<=" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t" + String2Regex_GetNumberOfBytes + "\\t)" + String2Regex_GetOptionalHexAddress))[0]
 							let MinAddress_BigInt = -1n
-							if (MinAddress_String != "") {
+							if (MinAddress_String != "-") {
 								MinAddress_BigInt = ParseBigIntValue(MinAddress_String.replace(/^\$/, ""), 16)
 							}
 						//Max address
-							let MaxAddress_String = ListOfDefines[Index][0].match(RegExp("(?<=" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t" + String2Regex_GetNumberOfBytes + "\\t" + String2Regex_GetHexAddress + "\\t)" + String2Regex_GetHexAddress))[0]
+							let MaxAddress_String = ListOfDefines[Index][0].match(RegExp("(?<=" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t" + String2Regex_GetNumberOfBytes + "\\t" + String2Regex_GetOptionalHexAddress + "\\t)" + String2Regex_GetOptionalHexAddress))[0]
 							let MaxAddress_BigInt = -1n
-							if (MaxAddress_String != "") {
+							if (MaxAddress_String != "-") {
 								MaxAddress_BigInt = ParseBigIntValue(MaxAddress_String.replace(/^\$/, ""), 16)
 							}
 						//Done
@@ -221,7 +223,7 @@ All of these ranges must NOT overlap.
 			} else {
 				let ListOfInvalidLines = new Array()
 				for (let Index = 0; Index < ListOfDefines.length; Index++) {
-					if (!(RegExp("^" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t" + String2Regex_GetNumberOfBytes + "\\t(" + String2Regex_GetHexAddress + ")?\\t" + "(" + String2Regex_GetHexAddress + ")?$").test(ListOfDefines[Index][0]))) {
+					if (!(RegExp("^" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t" + String2Regex_GetNumberOfBytes + "\\t(" + String2Regex_GetOptionalHexAddress + ")?\\t" + "(" + String2Regex_GetOptionalHexAddress + ")?$").test(ListOfDefines[Index][0]))) {
 						ListOfInvalidLines.push(ListOfDefines[Index])
 					}
 				}

@@ -32,9 +32,9 @@
 	<h1 style="text-align: center;">Byte by byte viewer</h1><br>
 	
 Enter a list of RAM addresses in the text area below. It must be formatted like this:
-<table><tr><td><pre>&lt;Address&gt;	&lt;Size_in_bytes_Or_EndAddress&gt;	&lt;Description&gt;
-&lt;Address&gt;	&lt;Size_in_bytes_Or_EndAddress&gt;	&lt;Description&gt;
-&lt;Address&gt;	&lt;Size_in_bytes_Or_EndAddress&gt;	&lt;Description&gt;</pre></td></tr></table><br>
+<table><tr><td><pre>Address	Size_in_bytes_Or_EndAddress	Description
+Address	Size_in_bytes_Or_EndAddress	Description
+Address	Size_in_bytes_Or_EndAddress	Description</pre></td></tr></table><br>
 Make sure the format is:
 <ul>
 	<li>No additional tabs, meaning multiple tabs that are used to align columns in text editors is not allowed. The tab character is reserved for <a href="https://en.wikipedia.org/wiki/Tab-separated_values">tab-separated values</a>.</li>
@@ -51,15 +51,15 @@ Notes:
 
 Where:
 <ul>
-	<li><kbd>&lt;Address&gt;</kbd> is the starting address, in hex. <kbd>$</kbd> prefix is optional.</li>
-	<li><kbd>&lt;Size_in_bytes_Or_EndAddress&gt;</kbd> can either be the number of bytes starting from <kbd>Address</kbd> and ending at <kbd>Address + Size_in_bytes - 1</kbd> or the ending address:
+	<li><kbd>Address</kbd> is the starting address, in hex. <kbd>$</kbd> prefix is optional.</li>
+	<li><kbd>Size_in_bytes_Or_EndAddress</kbd> can either be the number of bytes starting from <kbd>Address</kbd> and ending at <kbd>Address + Size_in_bytes - 1</kbd> or the ending address:
 		<ul>
-			<li><kbd>&lt;Decimal_Number&gt;</kbd> - number of bytes, in decimal. Don't use commas to separate digit grouping.</li>
-			<li><kbd>-&lt;Hexidecimal_EndAddress&gt;</kbd> - the ending address (note the hyphen to denote a range), in hex. Also <kbd>$</kbd> prefix is optional (must be placed after
+			<li><kbd>Decimal_Number</kbd> - number of bytes, in decimal. Don't use commas to separate digit grouping.</li>
+			<li><kbd>-Hexidecimal_EndAddress</kbd> - the ending address (note the hyphen to denote a range), in hex. Also <kbd>$</kbd> prefix is optional (must be placed after
 			the hyphen and before the hexadecimal address number (example: <kbd>$-10</kbd> is wrong, <kbd>-$10</kbd> is correct)).</li>
 		</ul>
 	</li>
-	<li><kbd>&lt;Description&gt;</kbd> (optional) is a brief description. Note: HTML tags, elements and other reserved symbols apply on the description, and improper opening and closing/ending tags could <abbr title="For example: having only the opening tag or closing/ending tag, if you end the table tag (&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;), before you start it (&lt;table&gt;&lt;tr&gt;&lt;td&gt;), it would mess up the outer table's content after the invalid HTML setup.">break the table</abbr>!
+	<li><kbd>Description</kbd> (optional) is a brief description. Note: HTML tags, elements and other reserved symbols apply on the description, and improper opening and closing/ending tags could <abbr title="For example: having only the opening tag or closing/ending tag, if you end the table tag (/td/tr/table), before you start it (tabletrtd), it would mess up the outer table's content after the invalid HTML setup.">break the table</abbr>!
 	If you want to view the table with invalid tag setup and have it not be broken, check the box labeled &ldquo;Escape html tags and escape characters for table description&rdquo;, and it will cancel out the HTML effects (they're <a href="https://en.wikipedia.org/wiki/Character_encodings_in_HTML#XML_character_references">escaped</a>) within the description field.</li>
 </ul>
 If there are re-used addresses on multiple entries, they will display as a row colored red with the text &ldquo;Overlap detected!&rdquo; written next to their starting address being affected. If there are gaps between two closest ranges, will insert
@@ -226,13 +226,13 @@ Useful tips using this feature:
 		for (let Index = 0 ; Index < document.getElementById("UserInputList").value.split('\n').length; Index++) {
 			UserInputList.push([document.getElementById("UserInputList").value.split('\n')[Index], Index])
 		}
-	//Remove lines that are just usless (just blanks, spaces, comments)
+	//Remove lines that are just useless (just blanks, spaces, comments)
 		UserInputList = RemoveBlankCommentOrSpacesEntry(UserInputList)
 		//UserInputList[Index][0] = the line of a text
 		//UserInputList[Index][1] = the page number, minus 1.
 	//Check if all lines are correct.
 		let IsAllStringsValid = true
-		for (let Index = 0; Index < UserInputList.length; Index++) {
+		for (let Index = 0; (Index < UserInputList.length&&IsAllStringsValid == true); Index++) {
 			if (!(RegExp(String2Regex_CorrectLine).test(UserInputList[Index][0]))) {
 				IsAllStringsValid = false
 			}
@@ -313,24 +313,24 @@ Useful tips using this feature:
 								// currently processed that overlaps.
 									let HighestEndAddressGapDetect = -1n
 									let GapAddressList = new Array()
-								let ArrayCopyButSortedForGapFinding = [...ListOfAddress]
-								ArrayCopyButSortedForGapFinding.sort(SortByStartAddr)
-								for (let Index = 1; Index < ArrayCopyButSortedForGapFinding.length; Index++) {
-									//If the highest index exceeds HighestEndAddressGapDetect, replace it with the higher number
-										if (ArrayCopyButSortedForGapFinding[Index - 1][0] + ArrayCopyButSortedForGapFinding[Index - 1][1] - 1n > HighestEndAddressGapDetect) {
-											HighestEndAddressGapDetect = ArrayCopyButSortedForGapFinding[Index - 1][0] + ArrayCopyButSortedForGapFinding[Index - 1][1] - 1n
-										}
-										if (ArrayCopyButSortedForGapFinding[Index][0] > HighestEndAddressGapDetect + 1n) {
-											//Create an array containing between-range gap addresses.
-												GapAddressList.push([(HighestEndAddressGapDetect + 1n), (ArrayCopyButSortedForGapFinding[Index][0] - HighestEndAddressGapDetect - 1n), "Gap", [], -1n, "Gap", 0n])
-												//ListOfGaps.push(GapArray)
-										}
-										
-								}
-								for (let Index = 0; Index < GapAddressList.length; Index++) {
-									ListOfAddress.push(GapAddressList[Index])
-								}
-								Count_Gap = GapAddressList.length
+									let ArrayCopyButSortedForGapFinding = [...ListOfAddress]
+									ArrayCopyButSortedForGapFinding.sort(SortByStartAddr)
+									for (let Index = 1; Index < ArrayCopyButSortedForGapFinding.length; Index++) {
+										//If the highest index exceeds HighestEndAddressGapDetect, replace it with the higher number
+											if (ArrayCopyButSortedForGapFinding[Index - 1][0] + ArrayCopyButSortedForGapFinding[Index - 1][1] - 1n > HighestEndAddressGapDetect) {
+												HighestEndAddressGapDetect = ArrayCopyButSortedForGapFinding[Index - 1][0] + ArrayCopyButSortedForGapFinding[Index - 1][1] - 1n
+											}
+											if (ArrayCopyButSortedForGapFinding[Index][0] > HighestEndAddressGapDetect + 1n) {
+												//Create an array containing between-range gap addresses.
+													GapAddressList.push([(HighestEndAddressGapDetect + 1n), (ArrayCopyButSortedForGapFinding[Index][0] - HighestEndAddressGapDetect - 1n), "Gap", [], -1n, "Gap", 0n])
+													//ListOfGaps.push(GapArray)
+											}
+											
+									}
+									for (let Index = 0; Index < GapAddressList.length; Index++) {
+										ListOfAddress.push(GapAddressList[Index])
+									}
+									Count_Gap = GapAddressList.length
 							}
 					//Statistics
 						let Count_TotalNumberOfRanges_PriorFilter = ListOfAddress.length
@@ -622,14 +622,12 @@ Useful tips using this feature:
 	//Remove stuff that is not address data
 		function RemoveBlankCommentOrSpacesEntry(InputArray) {
 			let OutputArray = new Array()
-			let index1 = 0
 			let index2 = 0
-			while (index1 < InputArray.length) {
+			for (index1 = 0; index1 < InputArray.length; index1++) {
 				if ((/^(\s*)$|^()$|^(\s*;+.*)$/).test(InputArray[index1][0]) == false) {
 					OutputArray.push(InputArray[index1])
 					index2++
 				}
-				index1++
 			}
 			return OutputArray
 		}

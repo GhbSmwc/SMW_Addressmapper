@@ -1,0 +1,288 @@
+<html>
+	<head>
+		<style>
+			html {
+			background-color: black;
+			color: white;
+			font-family: sans-serif;
+			}
+			
+			svg {
+				fill: white;
+				font-family: monospace;
+			}
+			rect:hover {
+				fill: blue
+			}
+			
+			table, th, td {
+			border: 1px solid white;
+			border-collapse: collapse;
+			}
+			
+			span.NoLineBreak {
+				white-space: nowrap;
+			}
+			
+			input[type='text'] { font-family: monospace;}
+			input[type='number'] { font-family: monospace;}
+		</style>
+	</head>
+<body>
+
+<p>This tool will take the provided freeram defines, and the list of unused RAM, and automatically find freeram and will assign each freeram defines to which address to use.</p>
+
+<p>Make sure the supplied RAMs do not overlap.</p>
+
+Format for freeram should be:<br>
+<table><tr><td><pre>ASM_resource_name	!RAM_Define	Number_of_bytes	Optional_min	Optional_max
+ASM_resource_name	!RAM_Define	Number_of_bytes	Optional_min	Optional_max
+ASM_resource_name	!RAM_Define	Number_of_bytes	Optional_min	Optional_max</pre></td></tr></table>
+
+Where:
+<ul>
+<li><kbd>ASM_resource_name</kbd> is the name of an ASM resource</li>
+<li><kbd>!RAM_Define</kbd> is the define used in the ASM file that represents a RAM to use</li>
+<li><kbd>Number_of_bytes</kbd> is how many bytes the RAM it requires. Must be at least 1.</li>
+<li><kbd>Optional_min</kbd> and <kbd>Optional_max</kbd> are optional. These are addresses not to be below minimum and the last byte of freeram not to exceed the maximum, therefore conditioning the search in limited area. This is very useful for looking
+for RAM that should or shouldn't reset during loading screens.</li>
+</ul>
+Format for list of empty RAM should be:<br>
+<table><tr><td><pre>Address	Size_or_ending_address	Optional_description
+Address	Size_or_ending_address	Optional_description
+Address	Size_or_ending_address	Optional_description</pre></td></tr></table><br>
+All of these ranges must NOT overlap.
+<ul>
+<li><kbd>Address</kbd> is the starting address</li>
+<li><kbd>Size_or_ending_address</kbd> is the size or ending addresses (enter a decimal number results in number of bytes, and typing hyphen, before a hexadecimal number denotes a range (dollar sign &ldquo;$&rdquo; is optional))</li>
+<li><kbd>Optional_description</kbd> is optional, will not be checked by this javascript at all. However, tabs are still required.</li>
+</ul>
+<table>
+	<tr>
+		<th>Enter your list of ASM resource freeram defines here.</th>
+		<th>Enter your list of empty RAMs here.</th>
+	</tr>
+	<tr>
+		<td><textarea id="ListOfFreeramDefines" cols="75" rows="30" oninput="MainCode()"></textarea></td>
+		<td><textarea id="ListOfUnusedRam" cols="75" rows="30" oninput="MainCode()"></textarea></td>
+	</tr>
+</table>
+
+<hr>
+<textarea readonly id="Output_AssignedRAMs" cols="150" rows="30" hidden></textarea>
+
+
+<script>
+	const String2Regex_GetASMResourceName = "[^\\t]+"
+	const String2Regex_GetRAMDefine = "![^\\t]+"
+	const String2Regex_GetNumberOfBytes = "\\d+"
+	const String2Regex_GetHexAddress = "\\$?[A-Fa-f\\d]*"
+//Tab key to make it not switch the focus and actually insert a tab character.
+	window.onload = function(){
+		var addressList = document.getElementById("ListOfFreeramDefines");
+		if(addressList.addEventListener ) {
+			addressList.addEventListener('keydown',this.keyHandler_Tab,false);
+		} else if(addressList.attachEvent ) {
+			addressList.attachEvent('onkeydown',this.keyHandler_Tab);
+		}
+	}
+
+	function keyHandler_Tab(e) {
+
+		var target;
+		if (!e) var e = window.event;
+		if (e.target) target = e.target;
+		else if (e.srcElement) target = e.srcElement;
+
+		if(e.keyCode == 9) {
+			if (document.selection) {
+				e.preventDefault()
+				target.focus();
+				sel = document.selection.createRange();
+				sel.text = '\t';
+			} else if (target.selectionStart || target.selectionStart === 0) {
+				e.preventDefault()
+				var startPos = target.selectionStart;
+				var endPos = target.selectionEnd;
+				target.value = target.value.substring(0, startPos) + '\t' + target.value.substring(endPos, target.value.length);
+				MainCode()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
+
+				target.selectionStart = startPos + 1;
+				target.selectionEnd = startPos + 1;
+
+			} else {
+				e.preventDefault()
+				target.value += '\t';
+			}
+
+			if(e.preventDefault) {
+				e.preventDefault();
+				MainCode()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
+			}
+			return false;
+		}
+	}
+	
+	function MainCode() {
+		document.getElementById("Output_AssignedRAMs").hidden = true
+		let OutputString = ""
+		//ListOfDefines[Index]:
+		//ListOfDefines[Index][0]: String
+		//ListOfDefines[Index][2]: line number
+		let ListOfDefines = new Array()
+		for (let Index = 0; Index < document.getElementById("ListOfFreeramDefines").value.split("\n").length; Index++) {
+			ListOfDefines.push([document.getElementById("ListOfFreeramDefines").value.split("\n")[Index], Index])
+		}
+		//Remove lines that contain useless data
+			ListOfDefines = RemoveBlankCommentOrSpacesEntry(ListOfDefines)
+		//Verify all lines valid
+			let DefinesLinesValid = true
+			for (let Index = 0; (Index < ListOfDefines.length&&DefinesLinesValid == true); Index++) {
+				if (!(RegExp("^" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t" + String2Regex_GetNumberOfBytes + "\\t(" + String2Regex_GetHexAddress + ")?\\t" + "(" + String2Regex_GetHexAddress + ")?$").test(ListOfDefines[Index][0]))) {
+					DefinesLinesValid = false
+				}
+			}
+			if (DefinesLinesValid) {
+				//Parse data
+					//ListOfParsedDefinesData[Index]:
+					//ListOfParsedDefinesData[Index][0]: Resource name
+					//ListOfParsedDefinesData[Index][1]: Define
+					//ListOfParsedDefinesData[Index][2]: Size/number of bytes
+					//ListOfParsedDefinesData[Index][3]: Minimum address. -1n = not specified
+					//ListOfParsedDefinesData[Index][4]: Maximum address (last byte of freeram not to exceed this). -1n = not specified
+					//ListOfParsedDefinesData[Index][5]: Line number extracted from. Used when invalid number of bytes were given, or if the max address is less than the min address
+					//ListOfParsedDefinesData[Index][6]: Invalid number of bytes/min and max value flag. If 0 bytes on size, or both min and max supplied but max being <= min, this is true, otherwise false.
+					let ListOfParsedDefinesData = new Array()
+					for (let Index = 0; Index < ListOfDefines.length; Index++) {
+						//Resource
+							let ResourceName = ListOfDefines[Index][0].match(RegExp(String2Regex_GetASMResourceName))[0]
+						//Define
+							let Define = ListOfDefines[Index][0].match(RegExp("(?<=" + String2Regex_GetASMResourceName + "\\t)" + String2Regex_GetRAMDefine))[0]
+						//Number of bytes
+							let NumberOfBytes = ParseBigIntValue(ListOfDefines[Index][0].match(RegExp("(?<=" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t)" + String2Regex_GetNumberOfBytes))[0], 10)
+						//Min address
+							let MinAddress_String = ListOfDefines[Index][0].match(RegExp("(?<=" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t" + String2Regex_GetNumberOfBytes + "\\t)" + String2Regex_GetHexAddress))[0]
+							let MinAddress_BigInt = -1n
+							if (MinAddress_String != "") {
+								MinAddress_BigInt = ParseBigIntValue(MinAddress_String.replace(/^\$/, ""), 16)
+							}
+						//Max address
+							let MaxAddress_String = ListOfDefines[Index][0].match(RegExp("(?<=" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t" + String2Regex_GetNumberOfBytes + "\\t" + String2Regex_GetHexAddress + "\\t)" + String2Regex_GetHexAddress))[0]
+							let MaxAddress_BigInt = -1n
+							if (MaxAddress_String != "") {
+								MaxAddress_BigInt = ParseBigIntValue(MaxAddress_String.replace(/^\$/, ""), 16)
+							}
+						//Done
+							ListOfParsedDefinesData.push([ResourceName, Define, NumberOfBytes, MinAddress_BigInt, MaxAddress_BigInt, ListOfDefines[Index][1], false])
+					}
+				//Verify number of bytes, min and max being correct
+					let NumberOfBytesAndMinMaxIsValidOnAll = true
+					for (let Index = 0; Index < ListOfParsedDefinesData.length; Index++) {
+						if (ListOfParsedDefinesData[Index][2] < 1n) {
+							NumberOfBytesAndMinMaxIsValidOnAll = false
+							ListOfParsedDefinesData[Index][6] = true
+						}
+						if (ListOfParsedDefinesData[Index][3] != -1n && ListOfParsedDefinesData[Index][4] != -1n) {
+							if (ListOfParsedDefinesData[Index][4] <= ListOfParsedDefinesData[Index][3]) {
+								NumberOfBytesAndMinMaxIsValidOnAll = false
+								ListOfParsedDefinesData[Index][6] = true
+							}
+						}
+					}
+					if (NumberOfBytesAndMinMaxIsValidOnAll) {
+					
+					} else {
+						let ListOfInvalidBytesOrRange = new Array()
+						for (let Index = 0; Index < ListOfParsedDefinesData.length; Index++) {
+							if (ListOfParsedDefinesData[Index][6]) {
+								ListOfInvalidBytesOrRange.push(ListOfParsedDefinesData[Index])
+							}
+						}
+						OutputString += "Error: These contain invalid number of bytes or have max address lower than or equal to min:\n"
+						for (let Index = 0; Index < ListOfInvalidBytesOrRange.length; Index++) {
+							OutputString += "ListOfDefines_Line " + BigInt(ListOfInvalidBytesOrRange[Index][5] + 1).toString(10) + ": [" + ListOfInvalidBytesOrRange[Index][0] + "\t" + ListOfInvalidBytesOrRange[Index][1] + "\t" + ListOfInvalidBytesOrRange[Index][2] + "\t"
+							if (ListOfInvalidBytesOrRange[Index][3] != -1n) {
+								OutputString += "$" + ListOfInvalidBytesOrRange[Index][3].toString(16).toUpperCase()
+							} else {
+								OutputString += "NoMinProvided"
+							}
+							OutputString += "\t"
+							if (ListOfInvalidBytesOrRange[Index][4] != -1n) {
+								OutputString += "$" + ListOfInvalidBytesOrRange[Index][4].toString(16).toUpperCase()
+							} else {
+								OutputString += "NoMaxProvided"
+							}
+							OutputString += "]"
+							if (Index != ListOfInvalidBytesOrRange.length -1) {
+								OutputString += "\n"
+							}
+						}
+					}
+			} else {
+				let ListOfInvalidLines = new Array()
+				for (let Index = 0; Index < ListOfDefines.length; Index++) {
+					if (!(RegExp("^" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t" + String2Regex_GetNumberOfBytes + "\\t(" + String2Regex_GetHexAddress + ")?\\t" + "(" + String2Regex_GetHexAddress + ")?$").test(ListOfDefines[Index][0]))) {
+						ListOfInvalidLines.push(ListOfDefines[Index])
+					}
+				}
+				OutputString += "Error: These contain invalid information:\n"
+				for (let Index = 0; Index < ListOfInvalidLines.length; Index++) {
+					OutputString += "ListOfDefines_Line " + BigInt(ListOfInvalidLines[Index][1] + 1).toString(10) + ": [" + ListOfInvalidLines[Index][0] + "]"
+					if (Index != ListOfInvalidLines.length -1) {
+						OutputString += "\n"
+					}
+				}
+			}
+		document.getElementById("Output_AssignedRAMs").hidden = false
+		document.getElementById("Output_AssignedRAMs").value = OutputString
+	}
+	//Other functions
+		//Remove stuff that is not address data
+			function RemoveBlankCommentOrSpacesEntry(InputArray) {
+				let OutputArray = new Array()
+				let index1 = 0
+				let index2 = 0
+				for (index1 = 0; index1 < InputArray.length; index1++) {
+					if ((/^(\s*)$|^()$|^(\s*;+.*)$/).test(InputArray[index1][0]) == false) {
+						OutputArray.push(InputArray[index1])
+						index2++
+					}
+				}
+				return OutputArray
+			}
+		function ParseBigIntValue(string, radix) {
+			//Acts more closely to parseInt, unlike other methods (other functions, like CorrectBinBigIntValue)
+			//this works with bigInt.
+			let Output = 0n
+			let NegativeNumber = 1n
+			if ((/^-/).test(string)) {
+				NegativeNumber = -1n
+			}
+			let DigitPart = string.substring((string.search(/[0-9a-zA-Z]/)))
+			switch (radix) {
+				//decimal
+					default:
+					if ((/^-?\d+$/).test(string)) {
+						Output = BigInt(string)
+					}
+					break
+				//Hexadecimal
+					case 16:
+					case "0x":
+					case "0X":
+					if ((/^-?[0-9A-Fa-f]+$/).test(string)) {
+						Output = BigInt("0x" + DigitPart) * NegativeNumber
+					}
+					break
+				//Binary
+					case 2:
+					case "0b":
+					case "0B":
+					if ((/^-?[01]+$/).test(string)) {
+						Output = BigInt("0b" + DigitPart) * NegativeNumber
+					}
+			
+			}
+			return Output
+		}
+</script>

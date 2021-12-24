@@ -313,7 +313,7 @@ Useful tips using this feature:
 								// currently processed that overlaps.
 									let HighestEndAddressGapDetect = -1n
 									let GapAddressList = new Array()
-									let ArrayCopyButSortedForGapFinding = [...ListOfAddress]
+									let ArrayCopyButSortedForGapFinding = [...ListOfAddress] //thanks to https://www.samanthaming.com/tidbits/35-es6-way-to-clone-an-array/
 									ArrayCopyButSortedForGapFinding.sort(SortByStartAddr)
 									for (let Index = 1; Index < ArrayCopyButSortedForGapFinding.length; Index++) {
 										//If the highest index exceeds HighestEndAddressGapDetect, replace it with the higher number

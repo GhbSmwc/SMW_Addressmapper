@@ -26,6 +26,8 @@
 			
 			input[type='text'] { font-family: monospace;}
 			input[type='number'] { font-family: monospace;}
+			
+			abbr{cursor: help;}
 		</style>
 	</head>
 <body>
@@ -69,7 +71,11 @@ All of these ranges must NOT overlap.
 		<td><textarea id="ListOfUnusedRam" cols="75" rows="30" oninput="MainCode()"></textarea></td>
 	</tr>
 </table>
-
+Sort:<br>
+<label><input onchange="MainCode()" type="radio" name="SortSetting_Output" id="Sort_None">Keep the same order of your defines</label><br>
+<label><input onchange="MainCode()" type="radio" name="SortSetting_Output" id="Sort_ByResourceName" checked>By Resource name</label> (<label><input onchange="MainCode()" type="radio" name="SortSetting_Output" id="Sort_ByResourceName_Reverse">Reverse</label>)<br>
+<label><input onchange="MainCode()" type="radio" name="SortSetting_Output" id="Sort_ByAddress" >By address and out-of-RAM state</label> (<label><input onchange="MainCode()" type="radio" name="SortSetting_Output" id="Sort_ByAddress_Reverse">Reverse</label>)<br>
+<label><input onchange="MainCode()" type="radio" name="SortSetting_Output" id="Sort_BySize" >By number of bytes</label> (<label><input onchange="MainCode()" type="radio" name="SortSetting_Output" id="Sort_BySize_Reverse">Reverse</label>)<br>
 <hr>
 <textarea readonly id="Output_AssignedRAMs" cols="150" rows="30" hidden></textarea>
 
@@ -163,6 +169,7 @@ All of these ranges must NOT overlap.
 					//ListOfParsedDefinesData[Index][4]: Maximum address (last byte of freeram not to exceed this). -1n = not specified
 					//ListOfParsedDefinesData[Index][5]: Line number extracted from. Used when invalid number of bytes were given, or if the max address is less than the min address
 					//ListOfParsedDefinesData[Index][6]: Invalid number of bytes/min and max value flag. If 0 bytes on size, or both min and max supplied but max being <= min, this is true, otherwise false.
+					//ListOfParsedDefinesData[Index][7]: Starting address to use, initially -1n, but will later, if it finds a space, will be a non-negative number.
 					let ListOfParsedDefinesData = new Array()
 					for (let Index = 0; Index < ListOfDefines.length; Index++) {
 						//Resource
@@ -184,7 +191,7 @@ All of these ranges must NOT overlap.
 								MaxAddress_BigInt = ParseBigIntValue(MaxAddress_String.replace(/^\$/, ""), 16)
 							}
 						//Done
-							ListOfParsedDefinesData.push([ResourceName, Define, NumberOfBytes, MinAddress_BigInt, MaxAddress_BigInt, ListOfDefines[Index][1], false])
+							ListOfParsedDefinesData.push([ResourceName, Define, NumberOfBytes, MinAddress_BigInt, MaxAddress_BigInt, ListOfDefines[Index][1], false, -1n])
 					}
 				//Verify number of bytes, min and max being correct
 					let NumberOfBytesAndMinMaxIsValidOnAll = true
@@ -257,7 +264,94 @@ All of these ranges must NOT overlap.
 													}
 												}
 												if (IsEmptyRAMsNotOverlapping) {
-													//Code here to assign each define into their RAMs.
+													//Sort, this makes it consistent that bytes will be used from low to high addresses when one define have multiple suitable ranges.
+														ListOfProcessedEmptyRams.sort(SortByStartAddr)
+													//Now we assign each define.
+													//ListOfParsedDefinesData[Index]:
+													//ListOfParsedDefinesData[Index][0]: Resource name
+													//ListOfParsedDefinesData[Index][1]: Define
+													//ListOfParsedDefinesData[Index][2]: Size/number of bytes
+													//ListOfParsedDefinesData[Index][3]: Minimum address. -1n = not specified
+													//ListOfParsedDefinesData[Index][4]: Maximum address (last byte of freeram not to exceed this). -1n = not specified
+													//ListOfParsedDefinesData[Index][5]: Line number extracted from. Used when invalid number of bytes were given, or if the max address is less than the min address
+													//ListOfParsedDefinesData[Index][6]: Invalid number of bytes/min and max value flag. If 0 bytes on size, or both min and max supplied but max being <= min, this is true, otherwise false.
+													//ListOfParsedDefinesData[Index][7]: Starting address to use, initially -1n, but will later, if it finds a space, will be a non-negative number.
+													//ListOfProcessedEmptyRams[Index2]:
+													//ListOfProcessedEmptyRams[Index2][0]: Starting address
+													//ListOfProcessedEmptyRams[Index2][1]: Number of bytes
+													//ListOfProcessedEmptyRams[Index2][2]: Original line number
+													//ListOfProcessedEmptyRams[Index2][3]: array containing a list of other item's index it overlaps with, if none, then array is 0-length
+														for (let Index = 0; Index < ListOfParsedDefinesData.length; Index++) {
+															let IsPlacedUsageSuccessful = false
+															for (let Index2 = 0; (Index2 < ListOfProcessedEmptyRams.length&&IsPlacedUsageSuccessful == false); Index2++) {
+																let StartPos = ListOfProcessedEmptyRams[Index2][0]
+																if (ListOfParsedDefinesData[Index][3] != -1n&& StartPos < ListOfParsedDefinesData[Index][3]) {
+																	StartPos = ListOfParsedDefinesData[Index][3]
+																}
+																let EndPos = ListOfProcessedEmptyRams[Index2][0] + ListOfProcessedEmptyRams[Index2][1] -1n
+																if (ListOfParsedDefinesData[Index][4] != -1n&& EndPos > ListOfParsedDefinesData[Index][4]) {
+																	EndPos = ListOfParsedDefinesData[Index][4]
+																}
+																let SizeAvailableSpace = EndPos - StartPos +1n
+																if (ListOfParsedDefinesData[Index][2] <= SizeAvailableSpace) { //If this can fit...
+																	ListOfParsedDefinesData[Index][7] = StartPos
+																	IsPlacedUsageSuccessful = true
+																	//modify the empty RAM array. This can potentially split the RAM range into 2 ranges.
+																		//First, find if there will be empty RAM between ListOfProcessedEmptyRams[Index2][0] and StartPos
+																			let SplittedRamBeforeStart = [ListOfProcessedEmptyRams[Index2][0], StartPos - ListOfProcessedEmptyRams[Index2][0]]
+																		//Second, find if there will be empty RAM between ListOfParsedDefinesData[Index][7] + ListOfParsedDefinesData[Index][2] and
+																		//ListOfProcessedEmptyRams[Index2][0] + ListOfProcessedEmptyRams[Index2][1] -1n
+																			let SplittedRamAfterEnd = [ListOfParsedDefinesData[Index][7] + ListOfParsedDefinesData[Index][2], ListOfProcessedEmptyRams[Index2][0] + ListOfProcessedEmptyRams[Index2][1] -1n - (ListOfParsedDefinesData[Index][7] + ListOfParsedDefinesData[Index][2] - 1n)]
+																		//and now we want to modify this range since we placed our usage there.
+																			if (SplittedRamBeforeStart[1] < 1n && SplittedRamAfterEnd[1] < 1n) { //if the start and end of usage used the entire range...
+																				ListOfProcessedEmptyRams.splice(Index2, 1)
+																			} else if (SplittedRamBeforeStart[1] >= 1n && SplittedRamAfterEnd[1] < 1n) { //if the start of usage had a gap before it but no gaps after the end of usage...
+																				ListOfProcessedEmptyRams.splice(Index2, 1, SplittedRamBeforeStart)
+																			} else if (SplittedRamBeforeStart[1] < 1n && SplittedRamAfterEnd[1] >= 1n) { //if the start of usage had no gap before it, but a gap after the end
+																				ListOfProcessedEmptyRams.splice(Index2, 1, SplittedRamAfterEnd)
+																			} else if (SplittedRamBeforeStart[1] >= 1n && SplittedRamAfterEnd[1] >= 1n) { //if both before the start of usage and after the end of usage had a gap, the range is split into 2.
+																				ListOfProcessedEmptyRams.splice(Index2, 1, SplittedRamBeforeStart, SplittedRamAfterEnd)
+																			}
+																}
+															}
+														}
+														let Statistics_RAMAssign_Success = 0
+														let Statistics_RAMAssign_Failed = 0
+														for (let Index = 0; Index < ListOfParsedDefinesData.length; Index++) {
+															if (ListOfParsedDefinesData[Index][7] != -1n) {
+																Statistics_RAMAssign_Success++
+															} else {
+																Statistics_RAMAssign_Failed++
+															}
+														}
+														//Sorter
+															if (document.getElementById("Sort_ByResourceName").checked) {
+																ListOfParsedDefinesData.sort(Func_Sort_ResourceName)
+															} else if (document.getElementById("Sort_ByResourceName_Reverse").checked) {
+																ListOfParsedDefinesData.sort(Func_Sort_ResourceName_Rev)
+															} else if (document.getElementById("Sort_ByAddress").checked) {
+																ListOfParsedDefinesData.sort(Func_Sort_AssignedAddress)
+															} else if (document.getElementById("Sort_ByAddress_Reverse").checked) {
+																ListOfParsedDefinesData.sort(Func_Sort_AssignedAddress_Rev)
+															} else if (document.getElementById("Sort_BySize").checked) {
+																ListOfParsedDefinesData.sort(Func_Sort_Size)
+															} else if (document.getElementById("Sort_BySize_Reverse").checked) {
+																ListOfParsedDefinesData.sort(Func_Sort_Size_Rev)
+															}
+														//Output
+															ListOfProcessedEmptyRams.sort()
+															OutputString += "Total defines: " + BigInt(ListOfParsedDefinesData.length).toString(10) + "\n"
+															OutputString += "Defines that were successfully placed: " + BigInt(Statistics_RAMAssign_Success).toString(10) + "\n"
+															OutputString += "Defines that failed to be placed: " + BigInt(Statistics_RAMAssign_Failed).toString(10) + "\n"
+															OutputString += "----------------------------------------------------------------------------------------\n"
+															for (let Index = 0; Index < ListOfParsedDefinesData.length; Index++) {
+																if (ListOfParsedDefinesData[Index][7] != -1n) {
+																	OutputString += ListOfParsedDefinesData[Index][1] + " = $" + ListOfParsedDefinesData[Index][7].toString(16).toUpperCase() + " ;>" + ListOfParsedDefinesData[Index][0] + ", " + ListOfParsedDefinesData[Index][2].toString(10) + " byte(s)"
+																} else {
+																	OutputString += ListOfParsedDefinesData[Index][1] + " = No sufficent space found. (" + ListOfParsedDefinesData[Index][0] + ", " + ListOfParsedDefinesData[Index][2].toString(10) + " byte(s))"
+																}
+																OutputString += "\n"
+															}
 												} else {
 													let ListOfOverlappingEmptyRams = new Array()
 													for (let Index = 0; Index < ListOfProcessedEmptyRams.length; Index++) {
@@ -266,10 +360,10 @@ All of these ranges must NOT overlap.
 														}
 													}
 													OutputString += "Error: The list of empty RAMs have overlapped with another:\n"
-													for (Index = 0; Index < ListOfOverlappingEmptyRams.length; Index++) {
+													for (let Index = 0; Index < ListOfOverlappingEmptyRams.length; Index++) {
 														OutputString += "ListOfOpenRAMs_Line " + BigInt(ListOfProcessedEmptyRams[Index][2] + 1).toString(10) + ": Address $" + ListOfProcessedEmptyRams[Index][0].toString(16).toUpperCase() + ", " + ListOfProcessedEmptyRams[Index][1].toString(10) + " byte(s) (ends: $" + (ListOfProcessedEmptyRams[Index][0] + ListOfProcessedEmptyRams[Index][1] -1n).toString(16).toUpperCase() + "). "
 														OutputString += "Line number(s) it conflicts with: "
-														for (Index2 = 0; Index2 < ListOfProcessedEmptyRams[Index][3].length; Index2++) {
+														for (let Index2 = 0; Index2 < ListOfProcessedEmptyRams[Index][3].length; Index2++) {
 															OutputString += BigInt(ListOfOverlappingEmptyRams[ListOfOverlappingEmptyRams[Index][3][Index2]][2] + 1).toString(10)
 															if (Index2 != ListOfProcessedEmptyRams[Index][3].length -1) {
 																OutputString += ", "
@@ -412,6 +506,57 @@ All of these ranges must NOT overlap.
 				return true
 			} else {
 				return false
+			}
+		}
+	//Sort (for empty RAM)
+		function SortByStartAddr(a, b) {
+			if (a[0] === b[0]) {
+				return 0;
+			} else {
+				return (a[0] < b[0]) ? -1 : 1;
+			}
+		}
+	//Output-based sort
+		function Func_Sort_ResourceName(a, b) {
+			if (a[0] === b[0]) {
+				return 0;
+			} else {
+				return (a[0] < b[0]) ? -1 : 1;
+			}
+		}
+		function Func_Sort_ResourceName_Rev(a, b) {
+			if (a[0] === b[0]) {
+				return 0;
+			} else {
+				return (a[0] < b[0]) ? 1 : -1;
+			}
+		}
+		function Func_Sort_AssignedAddress(a, b) {
+			if (a[7] === b[7]) {
+				return 0;
+			} else {
+				return (a[7] < b[7]) ? -1 : 1;
+			}
+		}
+		function Func_Sort_AssignedAddress_Rev(a, b) {
+			if (a[7] === b[7]) {
+				return 0;
+			} else {
+				return (a[7] < b[7]) ? -1 : 1;
+			}
+		}
+		function Func_Sort_Size(a, b) {
+			if (a[2] === b[2]) {
+				return 0;
+			} else {
+				return (a[2] < b[2]) ? -1 : 1;
+			}
+		}
+		function Func_Sort_Size_Rev(a, b) {
+			if (a[2] === b[2]) {
+				return 0;
+			} else {
+				return (a[2] < b[2]) ? -1 : 1;
 			}
 		}
 </script>

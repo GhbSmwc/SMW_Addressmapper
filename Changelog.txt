@@ -41,3 +41,19 @@
 	  escape character itself (the ampersand), when enabled,
 	  will disable the HTML effects, which prevents breaking
 	  the table.
+2021-12-24 v4.0
+	-Redid the entire code and optimizations and other functions
+	 for Addresser2.html and small changes to the original.
+	 (kept the original in case someone still wants it)
+	-what's new for Addresser2.html 
+	--It has a better overlap detection no longer requiring a
+	  sort-increasing-address (uses a 1-dimensional “axis-aligned
+	  bounding box” check). You can maintain the same order as
+	  you enter the list of used RAM
+	--When RAM usages overlap, they now have a list of things
+	  they conflict with.
+	--Graphical chart mode added (“Byte by byte address view”).
+	  This displays each byte of consecutive address with bars
+	  indicating known used address and gaps in between. It
+	  shifts to the right and colors them red when overlaps
+	  are found.

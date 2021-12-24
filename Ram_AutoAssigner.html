@@ -47,7 +47,7 @@ Where:
 <li><kbd>!RAM_Define</kbd> is the define used in the ASM file that represents a RAM to use</li>
 <li><kbd>Number_of_bytes</kbd> is how many bytes the RAM it requires. Must be at least 1.</li>
 <li>
-	<kbd>Optional_min</kbd> and <kbd>Optional_max</kbd> are optional (use a hyphen &ldquo;-&rdquo; on each of them you want them to not applied, tab rule still applies). These are
+	<kbd>Optional_min</kbd> and <kbd>Optional_max</kbd> are optional (use a hyphen &ldquo;-&rdquo; on each of them that you do not want them to apply, tab characters are still required, but no tab should exist after the last info supplied). These are
 	addresses so that the starting byte of a freeram are not to be below minimum and the last byte of freeram not to exceed the maximum, therefore conditioning
 	the search in limited area. This is very useful for looking for RAM that should or shouldn't reset during loading screens.</li>
 </ul>
@@ -57,9 +57,9 @@ Address	Size_or_ending_address	Optional_description
 Address	Size_or_ending_address	Optional_description</pre></td></tr></table><br>
 All of these ranges must NOT overlap.
 <ul>
-<li><kbd>Address</kbd> is the starting address</li>
-<li><kbd>Size_or_ending_address</kbd> is the size or ending addresses (enter a decimal number results in number of bytes, and typing hyphen, before a hexadecimal number denotes a range (dollar sign &ldquo;$&rdquo; is optional))</li>
-<li><kbd>Optional_description</kbd> is optional, will not be checked by this javascript at all. However, tabs are still required.</li>
+<li><kbd>Address</kbd> is the starting address. (dollar sign &ldquo;$&rdquo; is optional)</li>
+<li><kbd>Size_or_ending_address</kbd> is the size or ending addresses (entering a decimal number results in number of bytes, and typing hyphen &ldquo;-&rdquo;, before a hexadecimal number denotes a range (dollar sign &ldquo;$&rdquo; is optional))</li>
+<li><kbd>Optional_description</kbd> is optional, will not be checked by this javascript at all. When the remove duplicate flags is checked here, will only check the location and size/ending address.</li>
 </ul>
 <table>
 	<tr>
@@ -78,7 +78,12 @@ Sort:<br>
 <label><input onchange="MainCode()" type="radio" name="SortSetting_Output" id="Sort_BySize" >By number of bytes</label> (<label><input onchange="MainCode()" type="radio" name="SortSetting_Output"><input onchange="MainCode()" type="checkbox" id="Sort_BySize_Reverse">Reverse</label>)<br>
 Output format:<br>
 <label><input onchange="MainCode()" type="radio" name="OutputFormat" id="OutputFormat_ASM" checked>ASM format (<kbd>!Define = $XXXXXX ;&gt;Resource_Name, X byte(s)</kbd>)</label><br>
-<label><input onchange="MainCode()" type="radio" name="OutputFormat" id="OutputFormat_AddressTracker">Address tracker format (Ram, size, resource name, define)</kbd>)</label>, <label><input onchange="MainCode()" type="checkbox" id="AddressTrackerMode_SizeOrRange">Ending address mode</label>
+<label><input onchange="MainCode()" type="radio" name="OutputFormat" id="OutputFormat_AddressTracker">Address tracker format (Ram, size, resource name, define)</kbd>)</label>, <label><input onchange="MainCode()" type="checkbox" id="AddressTrackerMode_SizeOrRange">Ending address mode</label><br>
+
+Duplicate settings:<br>
+<label><input onchange="MainCode()" type="checkbox" id="IgnoreDuplicate_Defines" checked>Ignore duplicates for defines</label><br>
+<label><input onchange="MainCode()" type="checkbox" id="IgnoreDuplicate_EmptyRams" checked>Ignore duplicates for empty RAMs</label><br>
+
 <hr>
 <textarea readonly id="Output_AssignedRAMs" cols="150" rows="30" hidden></textarea>
 
@@ -211,6 +216,10 @@ Output format:<br>
 						}
 					}
 					if (NumberOfBytesAndMinMaxIsValidOnAll) {
+						//Remove duplicates
+							if (document.getElementById("IgnoreDuplicate_Defines").checked) {
+								ListOfParsedDefinesData = RemoveDuplicateDefines(ListOfParsedDefinesData)
+							}
 						//Now lets process the list of empty RAMs
 							let ListOfOpenRAMs = new Array()
 							for (let Index = 0; Index < document.getElementById("ListOfUnusedRam").value.split("\n").length; Index++) {
@@ -255,6 +264,10 @@ Output format:<br>
 											}
 										}
 										if (IsAllEmptyRamsHaveValidByteSize) {
+											//Remove duplicates
+												if (document.getElementById("IgnoreDuplicate_EmptyRams").checked) {
+													ListOfProcessedEmptyRams = RemoveDuplicateRams(ListOfProcessedEmptyRams)
+												}
 											//If byte size or end address is valid, now check if any are overlapping
 												let IsEmptyRAMsNotOverlapping = true
 												for (let Index = 0; Index < ListOfProcessedEmptyRams.length; Index++) {
@@ -578,5 +591,86 @@ Output format:<br>
 			} else {
 				return (a[2] < b[2]) ? -1 : 1;
 			}
+		}
+	//Duplicate removers
+		function RemoveDuplicateDefines(ItemList) {
+			//ListOfParsedDefinesData[Index]:
+			//ListOfParsedDefinesData[Index][0]: Resource name
+			//ListOfParsedDefinesData[Index][1]: Define
+			//ListOfParsedDefinesData[Index][2]: Size/number of bytes
+			//ListOfParsedDefinesData[Index][3]: Minimum address. -1n = not specified
+			//ListOfParsedDefinesData[Index][4]: Maximum address (last byte of freeram not to exceed this). -1n = not specified
+			//ListOfParsedDefinesData[Index][5]: Line number extracted from. Used when invalid number of bytes were given, or if the max address is less than the min address
+			//ListOfParsedDefinesData[Index][6]: Invalid number of bytes/min and max value flag. If 0 bytes on size, or both min and max supplied but max being <= min, this is true, otherwise false.
+			//ListOfParsedDefinesData[Index][7]: Starting address to use, initially -1n, but will later, if it finds a space, will be a non-negative number.
+			//We only need to check sub-arrays 0-4
+			//DupeFlagArray[Index][0]: contains ListOfParsedDefinesData
+			//DupeFlagArray[Index][0][0]: Resource name
+			//DupeFlagArray[Index][0][1]: Define
+			//DupeFlagArray[Index][0][2]: Size/number of bytes
+			//DupeFlagArray[Index][0][3]: Minimum address. -1n = not specified
+			//DupeFlagArray[Index][0][4]: Maximum address (last byte of freeram not to exceed this). -1n = not specified
+			//DupeFlagArray[Index][0][5]: Line number extracted from. Used when invalid number of bytes were given, or if the max address is less than the min address
+			//DupeFlagArray[Index][0][6]: Invalid number of bytes/min and max value flag. If 0 bytes on size, or both min and max supplied but max being <= min, this is true, otherwise false.
+			//DupeFlagArray[Index][0][7]: Starting address to use, initially -1n, but will later, if it finds a space, will be a non-negative number.
+			//DupeFlagArray[Index][1]: contains duplicate flag (true means it is a duplicate)
+			let DupeFlagArray = new Array
+			for (let Index = 0; Index < ItemList.length; Index++) {
+				DupeFlagArray.push([ItemList[Index], false])
+			}
+			//Now set their duplicate flags accordingly
+				for (let Index = 0; Index < DupeFlagArray.length; Index++) {
+					if (DupeFlagArray[Index][1] == false) {
+						for (let Index2 = Index+1; Index2 < DupeFlagArray.length; Index2++) {
+							if (DupeFlagArray[Index][0][0] == DupeFlagArray[Index2][0][0]&&DupeFlagArray[Index][0][1] == DupeFlagArray[Index2][0][1]&&DupeFlagArray[Index][0][2] == DupeFlagArray[Index2][0][2]&&DupeFlagArray[Index][0][3] == DupeFlagArray[Index2][0][3]&&ItemList[Index][4] == ItemList[Index2][4]) {
+								DupeFlagArray[Index2][1] = true
+							}
+						}
+					}
+				}
+			//Include only items with the duplicate flags being false
+				let OutputArray = new Array()
+				for (let Index = 0; Index < DupeFlagArray.length; Index++) {
+					if (DupeFlagArray[Index][1] == false) {
+						OutputArray.push(DupeFlagArray[Index][0])
+					}
+				}
+			return OutputArray
+		}
+		function RemoveDuplicateRams(ItemList) {
+			//ListOfProcessedEmptyRams[Index]:
+			//ListOfProcessedEmptyRams[Index][0]: Starting address
+			//ListOfProcessedEmptyRams[Index][1]: Number of bytes
+			//ListOfProcessedEmptyRams[Index][2]: Original line number
+			//ListOfProcessedEmptyRams[Index][3]: array containing a list of other item's index it overlaps with, if none, then array is 0-length
+			//DupeFlagArray[Index][0]: Contains ListOfProcessedEmptyRams
+			//DupeFlagArray[Index][0][0]:  Starting address
+			//DupeFlagArray[Index][0][1]:  Number of bytes
+			//DupeFlagArray[Index][0][2]:  Original line number
+			//DupeFlagArray[Index][0][3]:  array containing a list of other item's index it overlaps with, if none, then array is 0-length
+			//DupeFlagArray[Index][1]: Dupe flag
+			//We only need to check sub-arrays 0 and 1
+			let DupeFlagArray = new Array
+			for (let Index = 0; Index < ItemList.length; Index++) {
+				DupeFlagArray.push([ItemList[Index], false])
+			}
+			//Set dupe flags
+				for (let Index = 0; Index < DupeFlagArray.length; Index++) {
+					if (DupeFlagArray[Index][1] == false) {
+						for (let Index2 = Index+1; Index2 < DupeFlagArray.length; Index2++) {
+							if (DupeFlagArray[Index][0][0] == DupeFlagArray[Index2][0][0]&&DupeFlagArray[Index][0][1] == DupeFlagArray[Index2][0][1]) {
+								DupeFlagArray[Index2][1] = true
+							}
+						}
+					}
+				}
+			//Include only items with the duplicate flags being false
+				let OutputArray = new Array()
+				for (let Index = 0; Index < DupeFlagArray.length; Index++) {
+					if (DupeFlagArray[Index][1] == false) {
+						OutputArray.push(DupeFlagArray[Index][0])
+					}
+				}
+			return OutputArray
 		}
 </script>

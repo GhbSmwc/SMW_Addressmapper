@@ -1,0 +1,88 @@
+<html>
+	<head>
+		<style>
+			html {
+			background-color: black;
+			color: white;
+			font-family: sans-serif;
+			}
+			
+			svg {
+				fill: white;
+				font-family: monospace;
+			}
+			rect:hover {
+				fill: blue
+			}
+			
+			table, th, td {
+			border: 1px solid white;
+			border-collapse: collapse;
+			}
+			
+			span.NoLineBreak {
+				white-space: nowrap;
+			}
+			
+			input[type='text'] { font-family: monospace;}
+			input[type='number'] { font-family: monospace;}
+		</style>
+	</head>
+<body>
+<p>This mostly-javascript &ldquo;program&rdquo; (more like a script) allows you to manage your RAM usage easily. It came to my attention that some beginners or anyone unaware of how memory usage works
+complains that one patch breaks another often was caused by RAM conflicts when installing ASM resources (patch, blocks, sprites, uberasm, etc.). Here is an
+<a href="https://www.smwcentral.net/?p=section&a=details&id=18776">example</a> (scroll and find DTA450's comment). He probably either forgot to change the freeram define setting OR assume that no RAM
+would take that address, and N bytes after it.</p>
+
+<p>So I (re)build this script (<kbd>Addresser.html</kbd> and then <kbd>Addresser2.html</kbd>) that automates the process of finding conflicts (checks if RAM usage ranges overlaps), and most recently,
+an auto-freeram-assigner tool, <kbd>Ram_AutoAssigner.html</kbd>, which after given the list of defines asking for a RAM and the list of empty RAMs, will output the defines with their address to use being assigned/set to.</p>
+
+<p>What you need to do is keep track of what RAM is being used, both by SMW and the ASM resources. Make sure they formatted as stated in those HTML javascript files.</p>
+
+<p>To use <kbd>Addresser1.html</kbd> or <kbd>Addresser2.html</kbd>, just copy the list in <kbd>SMW_UsedAddress.txt</kbd> and paste it in the HTML's textarea, it will output a list and a table showing their
+statuses as well as discovered gaps. <kbd>Addresser2.html</kbd> have a visualizer (&ldquo;Byte by byte address view&rdquo;) that lets you see in relation to other used/unused address along with each address byte.</p>
+
+<p>To add to above, you CAN add your own used RAMs here by the ASM resource you installed.</p>
+
+<p>To use <kbd>Ram_AutoAssigner.html</kbd>:
+<ol>
+	<li>
+		Have any ASM resource that consumes freeram. For example, this <a href="https://www.smwcentral.net/?p=section&a=details&id=18720">wallkick patch</a> mentioned earlier:
+<table><tr><td><pre>!flags			= $61		; The wallkick flags. (RAM)
+!no_back_timer		= $62		; The timer for not moving back. (RAM)
+!temp_y_spd		= $63		; The temporary Y speed. (RAM)</pre></td></tr></table>
+		Now, not all ASM resources would label how much bytes they require. Normally this takes 1 or 2 bytes. If you have some ASM knowledge, when RAM is loaded in 16-bit, then it
+		is 2 bytes (assuming it doesn't zero out the high byte). If it had an index attched to it like this: <kbd>LDA !Freeram,x</kbd>, then it could take X+1 bytes where X is an
+		index value at the highest possible value. In this example, they all take 1 byte each.
+	</li><br>
+	<li>
+		Next, open <kbd>Ram_AutoAssigner.html</kbd> and write your RAM usage of the ASM resource you're dealing with into the first textarea. Make sure it's formated as stated at the top. The ASM resource name isn't really
+		much processed other than it has to exist (at least 1 character), so any name without the tab character would work, I just recommend making sure you name them in a way it is easy to locate and such. Here is using the previous example:
+<table><tr><td><pre>wallkick	!flags	1	-	-
+wallkick	!no_back_timer	1	-	-
+wallkick	!temp_y_spd	1	-	-</pre></td></tr></table>
+	</li><br>
+	<li>
+		Now obtain a list of empty RAMs. You can do this by opening <kbd>SMW_UsedAddress.txt</kbd>, copy the list, use <kbd>Addresser1.html</kbd> or <kbd>Addresser2.html</kbd>, filter only by gaps, copy the plaintext form of the output,
+		and paste it in the second textarea of <kbd>Ram_AutoAssigner.html</kbd>.
+	</li><br>
+	<li>
+		<kbd>Ram_AutoAssigner.html</kbd> will now output the assigned RAMs at the bottom, asar formatted by default. You can easily set the RAMs in those ASM files by commenting out (add semicolons &ldquo;;&rdquo; before the code)
+		the default defines (easier using notepad++ shift+alt to make your selections column mode) and paste the assigned defines you got from <kbd>Ram_AutoAssigner.html</kbd>. Don't forget you can also add that to your list of Used RAM
+		by clicking on &ldquo;Address tracker format&rdquo;, copy that format, and paste it in your list of used RAM, so that any future ASM consuming RAM will avoid conflicting with that.
+	</li>
+</ol>
+</p>
+<h2>Notes</h2>
+<ul>
+	<li>The freeram defines in the first textarea of <kbd>Ram_AutoAssigner.html</kbd> are processed from top to bottom, and the second textarea are processed from lowest to highest address. This means the first RAM define
+	will get assigned to the current lowest available address (accounting the min and max address as well as the size of it).</li>
+	<li>This entire tool does not account to bank borders, so do not assume things like a range of <kbd>$7EFFFF</kbd>-<kbd>$7F0000</kbd> that it avoids it</li>
+	<li>This tool can be used beyond smw modding, since this mostly checks address ranges and nothing more.</li>
+</ul>
+<h2>Credits</h2>
+<ul>
+	<li><a href="https://developer.mozilla.org/en-US/">Mozilla: MDN web docs</a>, for documenting various javascript stuff</li>
+	<li><a href="https://www.samanthaming.com/tidbits/35-es6-way-to-clone-an-array/">samanthaming.com</a> that the assignment operator on objects like arrays would only copy the reference.</li>
+	<li><a href="https://www.smwcentral.net/?p=profile&id=37441">dtothefourth</a> for the tab function</li>
+</ul>

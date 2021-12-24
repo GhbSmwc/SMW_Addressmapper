@@ -29,7 +29,7 @@
 		</style>
 	</head>
 <body>
-	<h1 style="text-align: center;">Byte by byte viewer</h1><br>
+	<h1 style="text-align: center;">Address tracker 4.0</h1><br>
 	
 Enter a list of RAM addresses in the text area below. It must be formatted like this:
 <table><tr><td><pre>Address	Size_in_bytes_Or_EndAddress	Description
@@ -313,7 +313,7 @@ Useful tips using this feature:
 								// currently processed that overlaps.
 									let HighestEndAddressGapDetect = -1n
 									let GapAddressList = new Array()
-									let ArrayCopyButSortedForGapFinding = [...ListOfAddress] //thanks to https://www.samanthaming.com/tidbits/35-es6-way-to-clone-an-array/
+									let ArrayCopyButSortedForGapFinding = [...ListOfAddress] //thanks to https://www.samanthaming.com/tidbits/35-es6-way-to-clone-an-array/ for telling me that the assignment operator "=" doesn't actually copy the array.
 									ArrayCopyButSortedForGapFinding.sort(SortByStartAddr)
 									for (let Index = 1; Index < ArrayCopyButSortedForGapFinding.length; Index++) {
 										//If the highest index exceeds HighestEndAddressGapDetect, replace it with the higher number
@@ -424,7 +424,7 @@ Useful tips using this feature:
 									document.getElementById("HTML_Output_PlainTextOfUsedRanges").value = OutputHTML
 								//HTML table
 									OutputHTML = ""
-									OutputHTML += "<tr><th>Item number</th><th>Starting address</th><th>Number of bytes(/Ending address)</th><th>Description</th><th>List of item numbers overlaps with</th></tr>"
+									OutputHTML += "<tr><th>Item number</th><th>Starting address</th><th>Number of bytes(/Ending address)</th><th>Description</th><th>Overlaps with</th></tr>"
 									for (let Index = 0; Index < ListOfAddress.length; Index++) {
 										OutputHTML += "<tr>"
 										//Item number
@@ -460,13 +460,22 @@ Useful tips using this feature:
 												if (ListOfAddress[Index][5] != "Gap")
 												OutputHTML += "No Overlaps"
 											} else {
-												OutputHTML += "Conflicts with item number(s) "
+												OutputHTML += "Conflicts with:<br><br>"
+												OutputHTML += "<table>"
+												OutputHTML += "<tr><th>Item number</th><th>Starting address</th><th>Number of bytes(/Ending address)</th><th>Description</th></tr>"
 												for (let Index2 = 0; Index2 < ListOfAddress[Index][3].length; Index2++) {
-													OutputHTML += "<kbd>" + BigInt(ListOfAddress[Index][3][Index2]).toString(10) + "</kbd>"
-													if (Index2 != ListOfAddress[Index][3].length -1) {
-														OutputHTML += ", "
-													}
+													OutputHTML += "<tr>"
+													//Item number
+														OutputHTML += "<td><kbd>AddressTrackerItem_" + ListOfAddress[ListOfAddress[Index][3][Index2]][4].toString(10) + "</kbd></td>"
+													//Address
+														OutputHTML += "<td><kbd>$" + (ListOfAddress[ListOfAddress[Index][3][Index2]][0]).toString(16).toUpperCase() + "</kbd></td>"
+													//size/ending address
+														OutputHTML += "<td><kbd>" + (ListOfAddress[ListOfAddress[Index][3][Index2]][1]).toString(10) + "</kbd>/<kbd>$" + (ListOfAddress[ListOfAddress[Index][3][Index2]][0] + ListOfAddress[ListOfAddress[Index][3][Index2]][1] -1n).toString(16).toUpperCase() + "</kbd></td>"
+													//Description
+														OutputHTML += "<td>" + ListOfAddress[ListOfAddress[Index][3][Index2]][2] + "</td>"
+													OutputHTML += "</tr>"
 												}
+												OutputHTML += "</table><br>"
 												OutputHTML += " (Number of stuff it conflicted: " + BigInt(ListOfAddress[Index][3].length).toString(10) + ")"
 											}
 											OutputHTML += "</td>"

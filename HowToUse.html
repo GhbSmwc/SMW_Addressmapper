@@ -37,6 +37,8 @@ would take that address, and N bytes after it.</p>
 <p>So I (re)build this script (<kbd>Addresser.html</kbd> and then <kbd>Addresser2.html</kbd>) that automates the process of finding conflicts (checks if RAM usage ranges overlaps), and most recently,
 an auto-freeram-assigner tool, <kbd>Ram_AutoAssigner.html</kbd>, which after given the list of defines asking for a RAM and the list of empty RAMs, will output the defines with their address to use being assigned/set to.</p>
 
+<p>This is especially very useful for collaboration hacks or any hacks that uses a ton of ASM resources, as manually pinpointing a problem can be especially difficult</p>
+
 <p>What you need to do is keep track of what RAM is being used, both by SMW and the ASM resources. Make sure they formatted as stated in those HTML javascript files.</p>
 
 <p>To use <kbd>Addresser1.html</kbd> or <kbd>Addresser2.html</kbd>, just copy the list in <kbd>SMW_UsedAddress.txt</kbd> and paste it in the HTML's textarea, it will output a list and a table showing their
@@ -77,8 +79,36 @@ wallkick	!temp_y_spd	1	-	-</pre></td></tr></table>
 <ul>
 	<li>The freeram defines in the first textarea of <kbd>Ram_AutoAssigner.html</kbd> are processed from top to bottom, and the second textarea are processed from lowest to highest address. This means the first RAM define
 	will get assigned to the current lowest available address (accounting the min and max address as well as the size of it).</li>
-	<li>This entire tool does not account to bank borders, so do not assume things like a range of <kbd>$7EFFFF</kbd>-<kbd>$7F0000</kbd> that it avoids it</li>
+	<li>This entire tool does not account to bank borders, so do not assume things like a range of <kbd>$7EFFFF</kbd>-<kbd>$7F0000</kbd> that it avoids it. It also does not account for RAM mirroring, so make sure you place your full address.</li>
 	<li>This tool can be used beyond smw modding, since this mostly checks address ranges and nothing more.</li>
+	<li>Some RAM may be reused for a different purpose when not used for a given specific purpose, such as reusing $60 for uberasm tool for screen scrolling pipes during a level, and for something else during overworld. If this is the case
+	then I would recommend having a list of used RAM being separated from &ldquo;local&rdquo; uses, it is only a problem if 2+ purposes are used at the same time. The same applies for custom scratch RAM besides $00-$0F.</li>
+</ul>
+<h2>Useful tips</h2>
+<ul>
+	<li>It's possible to make asar output a txt file in the format the JS accepts this, here's how to do it</li>
+	<ol>
+		<li>
+			Create an ASM defines file (example, <kbd>DefineTest.asm</kbd>), or have it in the ASM file with the code doing this:
+<table><tr><td><pre>!Freeram_test = $7E0060	;>Lets assume this takes 4 bytes.
+!Size	= 4		;>Some patches or any other ASM resource may have ram with a certain size depending on the settings.
+
+print "$", hex(!Freeram_test), "	", dec(!Size), "	Description here"</pre></td></tr></table>
+		</li>
+		<li>
+			Then create a batch file (<kbd>test.bat</kbd>), in that file to contain this text (each space is a parameter, and a newline submits the data):
+<table><tr><td><pre>[path to asar.exe] [path to game file] > [path location to create the txt file]
+pause</pre></td></tr></table>
+		</li>
+		<li>If there are spaces in the file path, wrap the whole path in quotes. Then save, run it (should open the command prompt). Example:
+<table><tr><td><pre>"C:\Users\GreenHammerBro\Desktop\smw romhacking\General Tools\asar181\asar.exe" "C:\Users\GreenHammerBro\Desktop\smw romhacking\Submission\AddresserTool\DefineTest.asm" "C:\Users\GreenHammerBro\Desktop\smw romhacking\Submission\AddresserTool\a.smc" >> "C:\Users\RedBro\Desktop\smw romhacking\Submission\AddresserTool\Output.txt"
+pause
+</pre></td></tr></table>
+		</li>
+		<li>
+			And a file should appear with the RAM info (at [path location to create the txt file]). Note: this HAS to be outputted as a text file, the command prompt will convert it into 5 regular space characters on the console window.
+		</li>
+	</ol>
 </ul>
 <h2>Credits</h2>
 <ul>

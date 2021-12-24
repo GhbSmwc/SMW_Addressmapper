@@ -57,3 +57,8 @@
 	  indicating known used address and gaps in between. It
 	  shifts to the right and colors them red when overlaps
 	  are found.
+	-Big new thing added: Ram_AutoAssigner.html This lets the
+	 user automatically assign freeram defines to any currently
+	 unused RAM. Enter a list of freeram defines and gaps generated
+	 by the addresser tools and it will output a list of defines
+	 with the RAMs to use.

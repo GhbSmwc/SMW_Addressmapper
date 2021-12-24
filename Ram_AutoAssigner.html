@@ -79,13 +79,22 @@ All of these ranges must NOT overlap.
 	const String2Regex_GetRAMDefine = "![^\\t]+"
 	const String2Regex_GetNumberOfBytes = "\\d+"
 	const String2Regex_GetOptionalHexAddress = "(\\$?[A-Fa-f\\d]+|-)"
+	const String2Regex_GetNumberOfBytesOrEnding = "(\\d+|-\\$?[A-Fa-f\\d]+)"
+	
+	const String2Regex_GetEmptyRAM_Address = "\\$?[A-Fa-f\\d]+"
 //Tab key to make it not switch the focus and actually insert a tab character.
 	window.onload = function(){
-		var addressList = document.getElementById("ListOfFreeramDefines");
-		if(addressList.addEventListener ) {
-			addressList.addEventListener('keydown',this.keyHandler_Tab,false);
-		} else if(addressList.attachEvent ) {
-			addressList.attachEvent('onkeydown',this.keyHandler_Tab);
+		var DefinesList = document.getElementById("ListOfFreeramDefines");
+		if(DefinesList.addEventListener ) {
+			DefinesList.addEventListener('keydown',this.keyHandler_Tab,false);
+		} else if(DefinesList.attachEvent ) {
+			DefinesList.attachEvent('onkeydown',this.keyHandler_Tab);
+		}
+		var EmptyRAMList = document.getElementById("ListOfUnusedRam");
+		if(EmptyRAMList.addEventListener ) {
+			EmptyRAMList.addEventListener('keydown',this.keyHandler_Tab,false);
+		} else if(EmptyRAMList.attachEvent ) {
+			EmptyRAMList.attachEvent('onkeydown',this.keyHandler_Tab);
 		}
 	}
 
@@ -139,7 +148,7 @@ All of these ranges must NOT overlap.
 			ListOfDefines = RemoveBlankCommentOrSpacesEntry(ListOfDefines)
 		//Verify all lines valid
 			let DefinesLinesValid = true
-			for (let Index = 0; (Index < ListOfDefines.length&&DefinesLinesValid == true); Index++) {
+			for (let Index = 0; (Index < ListOfDefines.length&&DefinesLinesValid); Index++) {
 				if (!(RegExp("^" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t" + String2Regex_GetNumberOfBytes + "\\t" + String2Regex_GetOptionalHexAddress + "\\t" + String2Regex_GetOptionalHexAddress + "$").test(ListOfDefines[Index][0]))) {
 					DefinesLinesValid = false
 				}
@@ -192,7 +201,115 @@ All of these ranges must NOT overlap.
 						}
 					}
 					if (NumberOfBytesAndMinMaxIsValidOnAll) {
-					
+						//Now lets process the list of empty RAMs
+							let ListOfOpenRAMs = new Array()
+							for (let Index = 0; Index < document.getElementById("ListOfUnusedRam").value.split("\n").length; Index++) {
+								ListOfOpenRAMs.push([document.getElementById("ListOfUnusedRam").value.split("\n")[Index], Index])
+							}
+							//ListOfOpenRAMs[Index]:
+							//ListOfOpenRAMs[Index][0]: String
+							//ListOfOpenRAMs[Index][1]: line number
+							//Remove useless data
+								ListOfOpenRAMs = RemoveBlankCommentOrSpacesEntry(ListOfOpenRAMs)
+							//Verify lines
+								let EmptyRamsValid = true
+								for (let Index = 0; (Index < ListOfOpenRAMs.length&&EmptyRamsValid); Index++) {
+									if (!(RegExp("^" + String2Regex_GetEmptyRAM_Address + "\\t" + String2Regex_GetNumberOfBytesOrEnding + "($|\\s)").test(ListOfOpenRAMs[Index][0]))) {
+										EmptyRamsValid = false
+									}
+								}
+								if (EmptyRamsValid) {
+									//Process it
+										let ListOfProcessedEmptyRams = new Array()
+										for (let Index = 0; Index < ListOfOpenRAMs.length; Index++) {
+											let EmptyRam_StartAddress = BigInt("0x" + ListOfOpenRAMs[Index][0].match("(?<=^\\$?)[A-Fa-f\\d]+")[0])
+											let NumberOfBytesOrEndAddress_String = ListOfOpenRAMs[Index][0].match(RegExp("(?<=" + String2Regex_GetEmptyRAM_Address + "\\t)" + String2Regex_GetNumberOfBytesOrEnding))[0]
+											let NumberOfBytes = 0n
+											if ((/^\d+$/).test(NumberOfBytesOrEndAddress_String)) {
+												NumberOfBytes = BigInt(NumberOfBytesOrEndAddress_String)
+											} else {
+												let EndingAddressString = NumberOfBytesOrEndAddress_String.replace(/-\$?/, "")
+												NumberOfBytes = BigInt("0x" + EndingAddressString) - EmptyRam_StartAddress + 1n
+											}
+											ListOfProcessedEmptyRams.push([EmptyRam_StartAddress, NumberOfBytes, ListOfOpenRAMs[Index][1], []])
+										}
+										//ListOfProcessedEmptyRams[Index]:
+										//ListOfProcessedEmptyRams[Index][0]: Starting address
+										//ListOfProcessedEmptyRams[Index][1]: Number of bytes
+										//ListOfProcessedEmptyRams[Index][2]: Original line number
+										//ListOfProcessedEmptyRams[Index][3]: array containing a list of other item's index it overlaps with, if none, then array is 0-length
+										let IsAllEmptyRamsHaveValidByteSize = true
+										for (let Index = 0; (Index < ListOfProcessedEmptyRams.length&&IsAllEmptyRamsHaveValidByteSize); Index++) {
+											if (ListOfProcessedEmptyRams[Index][1] < 1n) {
+												IsAllEmptyRamsHaveValidByteSize = false
+											}
+										}
+										if (IsAllEmptyRamsHaveValidByteSize) {
+											//If byte size or end address is valid, now check if any are overlapping
+												let IsEmptyRAMsNotOverlapping = true
+												for (let Index = 0; Index < ListOfProcessedEmptyRams.length; Index++) {
+													for (let Index2 = Index + 1; Index2 < ListOfProcessedEmptyRams.length; Index2++) {
+														if (CheckOverlap(ListOfProcessedEmptyRams[Index][0], ListOfProcessedEmptyRams[Index][0] + ListOfProcessedEmptyRams[Index][1] -1n, ListOfProcessedEmptyRams[Index2][0], ListOfProcessedEmptyRams[Index2][0] + ListOfProcessedEmptyRams[Index2][1] -1n)) {
+															IsEmptyRAMsNotOverlapping = false
+															ListOfProcessedEmptyRams[Index][3].push(Index2)
+															ListOfProcessedEmptyRams[Index2][3].push(Index)
+														}
+													}
+												}
+												if (IsEmptyRAMsNotOverlapping) {
+													//Code here to assign each define into their RAMs.
+												} else {
+													let ListOfOverlappingEmptyRams = new Array()
+													for (let Index = 0; Index < ListOfProcessedEmptyRams.length; Index++) {
+														if (ListOfProcessedEmptyRams[Index][3].length > 0) {
+															ListOfOverlappingEmptyRams.push(ListOfProcessedEmptyRams[Index])
+														}
+													}
+													OutputString += "Error: The list of empty RAMs have overlapped with another:\n"
+													for (Index = 0; Index < ListOfOverlappingEmptyRams.length; Index++) {
+														OutputString += "ListOfOpenRAMs_Line " + BigInt(ListOfProcessedEmptyRams[Index][2] + 1).toString(10) + ": Address $" + ListOfProcessedEmptyRams[Index][0].toString(16).toUpperCase() + ", " + ListOfProcessedEmptyRams[Index][1].toString(10) + " byte(s) (ends: $" + (ListOfProcessedEmptyRams[Index][0] + ListOfProcessedEmptyRams[Index][1] -1n).toString(16).toUpperCase() + "). "
+														OutputString += "Line number(s) it conflicts with: "
+														for (Index2 = 0; Index2 < ListOfProcessedEmptyRams[Index][3].length; Index2++) {
+															OutputString += BigInt(ListOfOverlappingEmptyRams[ListOfOverlappingEmptyRams[Index][3][Index2]][2] + 1).toString(10)
+															if (Index2 != ListOfProcessedEmptyRams[Index][3].length -1) {
+																OutputString += ", "
+															}
+														}
+														if (Index != ListOfOverlappingEmptyRams.length -1) {
+															OutputString += "\n"
+														}
+													}
+												}
+										} else {
+											let ListOfEmptyRamsWithWrongBytes = new Array()
+											for (let Index = 0; Index < ListOfProcessedEmptyRams.length; Index++) {
+												if (ListOfProcessedEmptyRams[Index][1] < 1n) {
+													ListOfEmptyRamsWithWrongBytes.push(ListOfProcessedEmptyRams[Index])
+												}
+											}
+											OutputString += "Error: The list of empty RAMs have incorrect number of bytes or ending address lower than the start address:\n"
+											for (let Index = 0; Index < ListOfEmptyRamsWithWrongBytes.length; Index++) {
+												OutputString += "ListOfOpenRAMs_Line " + BigInt(ListOfProcessedEmptyRams[Index][2] + 1).toString(10) + ": Address $" + ListOfProcessedEmptyRams[Index][0].toString(16).toUpperCase()
+												if (Index != ListOfEmptyRamsWithWrongBytes.length -1) {
+													OutputString += "\n"
+												}
+											}
+										}
+								} else {
+									let ListOfInvalidLines_OpenRams = new Array()
+									for (let Index = 0; Index < ListOfOpenRAMs.length; Index++) {
+										if (!(RegExp("^" + String2Regex_GetEmptyRAM_Address + "\\t" + String2Regex_GetNumberOfBytesOrEnding + "($|\\s)").test(ListOfOpenRAMs[Index][0]))) {
+											ListOfInvalidLines_OpenRams.push(ListOfOpenRAMs[Index])
+										}
+									}
+									OutputString += "Error: The list of empty RAMs have invalid information:\n"
+									for (let Index = 0; Index < ListOfInvalidLines_OpenRams.length; Index++) {
+										OutputString += "ListOfOpenRAMs_Line " + BigInt(ListOfInvalidLines_OpenRams[Index][1] + 1).toString(10) + ": [" + ListOfInvalidLines_OpenRams[Index][0] + "]"
+										if (Index != ListOfInvalidLines_OpenRams.length -1) {
+											OutputString += "\n"
+										}
+									}
+								}
 					} else {
 						let ListOfInvalidBytesOrRange = new Array()
 						for (let Index = 0; Index < ListOfParsedDefinesData.length; Index++) {
@@ -200,7 +317,7 @@ All of these ranges must NOT overlap.
 								ListOfInvalidBytesOrRange.push(ListOfParsedDefinesData[Index])
 							}
 						}
-						OutputString += "Error: These contain invalid number of bytes or have max address lower than or equal to min:\n"
+						OutputString += "Error: The list of freeram defines have invalid number of bytes or have max address lower than or equal to min:\n"
 						for (let Index = 0; Index < ListOfInvalidBytesOrRange.length; Index++) {
 							OutputString += "ListOfDefines_Line " + BigInt(ListOfInvalidBytesOrRange[Index][5] + 1).toString(10) + ": [" + ListOfInvalidBytesOrRange[Index][0] + "\t" + ListOfInvalidBytesOrRange[Index][1] + "\t" + ListOfInvalidBytesOrRange[Index][2] + "\t"
 							if (ListOfInvalidBytesOrRange[Index][3] != -1n) {
@@ -223,11 +340,11 @@ All of these ranges must NOT overlap.
 			} else {
 				let ListOfInvalidLines = new Array()
 				for (let Index = 0; Index < ListOfDefines.length; Index++) {
-					if (!(RegExp("^" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t" + String2Regex_GetNumberOfBytes + "\\t(" + String2Regex_GetOptionalHexAddress + ")?\\t" + "(" + String2Regex_GetOptionalHexAddress + ")?$").test(ListOfDefines[Index][0]))) {
+					if (!(RegExp("^" + String2Regex_GetASMResourceName + "\\t" + String2Regex_GetRAMDefine + "\\t" + String2Regex_GetNumberOfBytes + "\\t" + String2Regex_GetOptionalHexAddress + "\\t" + String2Regex_GetOptionalHexAddress + "$").test(ListOfDefines[Index][0]))) {
 						ListOfInvalidLines.push(ListOfDefines[Index])
 					}
 				}
-				OutputString += "Error: These contain invalid information:\n"
+				OutputString += "Error: The list of freeram defines have invalid information:\n"
 				for (let Index = 0; Index < ListOfInvalidLines.length; Index++) {
 					OutputString += "ListOfDefines_Line " + BigInt(ListOfInvalidLines[Index][1] + 1).toString(10) + ": [" + ListOfInvalidLines[Index][0] + "]"
 					if (Index != ListOfInvalidLines.length -1) {
@@ -242,8 +359,7 @@ All of these ranges must NOT overlap.
 		//Remove stuff that is not address data
 			function RemoveBlankCommentOrSpacesEntry(InputArray) {
 				let OutputArray = new Array()
-				let index1 = 0
-				for (index1 = 0; index1 < InputArray.length; index1++) {
+				for (let index1 = 0; index1 < InputArray.length; index1++) {
 					if ((/^(\s*)$|^()$|^(\s*;+.*)$/).test(InputArray[index1][0]) == false) {
 						OutputArray.push(InputArray[index1])
 					}
@@ -284,5 +400,18 @@ All of these ranges must NOT overlap.
 			
 			}
 			return Output
+		}
+	//Check if two ranges overlap.
+	//Given 2 ranges:
+	//Range_A: A_Start and A_End
+	//Range_B: B_Start and B_End
+	//If B_End is touching A_Start, then Range_B is at the lowest position (or Range_A at the highest position) that would count as an overlap
+	//If B_Start is touching A_End, then Range_B is at the highest position (or Range_A is at the lowest position) that would count as an overlap
+		function CheckOverlap(A_Start, A_End, B_Start, B_End) {
+			if (B_End >= A_Start&&B_Start <= A_End) {
+				return true
+			} else {
+				return false
+			}
 		}
 </script>

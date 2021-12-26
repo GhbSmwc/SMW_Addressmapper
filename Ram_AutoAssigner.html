@@ -37,29 +37,35 @@
 <p>Make sure the supplied RAMs do not overlap.</p>
 
 Format for freeram should be:<br>
-<table><tr><td><pre>ASM_resource_name	!RAM_Define	Number_of_bytes	Optional_min	Optional_max
-ASM_resource_name	!RAM_Define	Number_of_bytes	Optional_min	Optional_max
-ASM_resource_name	!RAM_Define	Number_of_bytes	Optional_min	Optional_max</pre></td></tr></table>
+<table><tr><td><pre>ASM_resource_name	!RAM_Define	Number_of_bytes_Decimal	Optional_min	Optional_max
+ASM_resource_name	!RAM_Define	Number_of_bytes_Decimal	Optional_min	Optional_max
+ASM_resource_name	!RAM_Define	Number_of_bytes_Decimal	Optional_min	Optional_max</pre></td></tr></table>
 
 Where:
 <ul>
-<li><kbd>ASM_resource_name</kbd> is the name of an ASM resource</li>
-<li><kbd>!RAM_Define</kbd> is the define used in the ASM file that represents a RAM to use</li>
-<li><kbd>Number_of_bytes</kbd> is how many bytes the RAM it requires. Must be at least 1.</li>
+<li><kbd>ASM_resource_name</kbd> is the name of an ASM resource. Can be any character but must not contain a linebreak or tab.</li>
+<li><kbd>!RAM_Define</kbd> is the define name used in the ASM file that represents a RAM to use. Just like above, no linebreaks, no tabs.</li>
+<li><kbd>Number_of_bytes_Decimal</kbd> is how many bytes the RAM it requires, in decimal. Must be at least 1.</li>
 <li>
-	<kbd>Optional_min</kbd> and <kbd>Optional_max</kbd> are optional (use a hyphen &ldquo;-&rdquo; on each of them that you do not want them to apply, tab characters are still required, but no tab should exist after the last info supplied). These are
-	addresses so that the starting byte of a freeram are not to be below minimum and the last byte of freeram not to exceed the maximum, therefore conditioning
-	the search in limited area. This is very useful for looking for RAM that should or shouldn't reset during loading screens.</li>
+	<kbd>Optional_min</kbd>: This is optional, either enter an address hex number (&ldquo;$&rdquo; is optional) or just &ldquo;-&rdquo; to nullify it. When a hex number is supplied, this forces
+	the RAM to search for a freeram define to not have its starting address location below this address. This is useful if RAMs that an ASM resource must or must not reset during loading screens (black screen).
+</li>
+<li><kbd>Optional_max</kbd>: Same as above, but forces the location of a freeram define address not to have its ending byte greater than this address. Note: when both min and max are set, max must be greater than or equal to min.</li>
 </ul>
-Format for list of empty RAM should be:<br>
+Format for list of empty RAM should be (same as the address tracker):<br>
 <table><tr><td><pre>Address	Size_or_ending_address	Optional_description
 Address	Size_or_ending_address	Optional_description
 Address	Size_or_ending_address	Optional_description</pre></td></tr></table><br>
 All of these ranges must NOT overlap.
 <ul>
 <li><kbd>Address</kbd> is the starting address. (dollar sign &ldquo;$&rdquo; is optional)</li>
-<li><kbd>Size_or_ending_address</kbd> is the size or ending addresses (entering a decimal number results in number of bytes, and typing hyphen &ldquo;-&rdquo;, before a hexadecimal number denotes a range (dollar sign &ldquo;$&rdquo; is optional))</li>
+<li><kbd>Size_or_ending_address</kbd> is the size or ending addresses (entering a decimal number results in number of bytes, and typing hyphen &ldquo;-&rdquo;, before a hexadecimal number denotes an ending address (dollar sign &ldquo;$&rdquo; is optional))</li>
 <li><kbd>Optional_description</kbd> is optional, will not be checked by this javascript at all. When the remove duplicate flags is checked here, will only check the location and size/ending address.</li>
+</ul><br><br>
+Notes:
+<ul>
+	<li>This tool will process each freeram defines from top to bottom order from the text, and the list of gaps at increasing address order. This means that the RAM at the top of the list will be assigned to the lowest address location that it can fit
+	(unless if not, will state no suitable address is found)</li>
 </ul>
 <table>
 	<tr>
@@ -209,7 +215,7 @@ Duplicate settings:<br>
 							ListOfParsedDefinesData[Index][6] = true
 						}
 						if (ListOfParsedDefinesData[Index][3] != -1n && ListOfParsedDefinesData[Index][4] != -1n) {
-							if (ListOfParsedDefinesData[Index][4] <= ListOfParsedDefinesData[Index][3]) {
+							if (ListOfParsedDefinesData[Index][4] < ListOfParsedDefinesData[Index][3]) {
 								NumberOfBytesAndMinMaxIsValidOnAll = false
 								ListOfParsedDefinesData[Index][6] = true
 							}
@@ -297,9 +303,10 @@ Duplicate settings:<br>
 													//ListOfProcessedEmptyRams[Index2][1]: Number of bytes
 													//ListOfProcessedEmptyRams[Index2][2]: Original line number
 													//ListOfProcessedEmptyRams[Index2][3]: array containing a list of other item's index it overlaps with, if none, then array is 0-length
-														for (let Index = 0; Index < ListOfParsedDefinesData.length; Index++) {
+														for (let Index = 0; Index < ListOfParsedDefinesData.length; Index++) { //Loop through each !Freeram
 															let IsPlacedUsageSuccessful = false
-															for (let Index2 = 0; (Index2 < ListOfProcessedEmptyRams.length&&IsPlacedUsageSuccessful == false); Index2++) {
+															let IsAllLaterGapsBeyondMax = false //Cuts off the loop of searching each empty RAMs if we run into the max address (we know that as we go higher up, it still be greater than max.)
+															for (let Index2 = 0; (Index2 < ListOfProcessedEmptyRams.length&&IsPlacedUsageSuccessful == false&&IsAllLaterGapsBeyondMax == false); Index2++) { //Loop through each CURRENT empty RAMs
 																let StartPos = ListOfProcessedEmptyRams[Index2][0]
 																if (ListOfParsedDefinesData[Index][3] != -1n&& StartPos < ListOfParsedDefinesData[Index][3]) {
 																	StartPos = ListOfParsedDefinesData[Index][3]
@@ -328,6 +335,12 @@ Duplicate settings:<br>
 																			} else if (SplittedRamBeforeStart[1] >= 1n && SplittedRamAfterEnd[1] >= 1n) { //if both before the start of usage and after the end of usage had a gap, the range is split into 2.
 																				ListOfProcessedEmptyRams.splice(Index2, 1, SplittedRamBeforeStart, SplittedRamAfterEnd)
 																			}
+																} else {
+																	if (ListOfParsedDefinesData[Index][4] != -1n) {
+																		if (StartPos + ListOfParsedDefinesData[Index][2] -1n > ListOfParsedDefinesData[Index][4]) {
+																			IsAllLaterGapsBeyondMax = true
+																		}
+																	}
 																}
 															}
 														}
@@ -444,7 +457,7 @@ Duplicate settings:<br>
 								ListOfInvalidBytesOrRange.push(ListOfParsedDefinesData[Index])
 							}
 						}
-						OutputString += "Error: The list of freeram defines have invalid number of bytes or have max address lower than or equal to min:\n"
+						OutputString += "Error: The list of freeram defines have invalid number of bytes or have max address lower than min:\n"
 						for (let Index = 0; Index < ListOfInvalidBytesOrRange.length; Index++) {
 							OutputString += "ListOfDefines_Line " + BigInt(ListOfInvalidBytesOrRange[Index][5] + 1).toString(10) + ": [" + ListOfInvalidBytesOrRange[Index][0] + "\t" + ListOfInvalidBytesOrRange[Index][1] + "\t" + ListOfInvalidBytesOrRange[Index][2] + "\t"
 							if (ListOfInvalidBytesOrRange[Index][3] != -1n) {

@@ -1,67 +1,68 @@
-This txt file purpose is to make it so you can track both SMW original used address and your installed patches. Some patches may free up RAM (such as my center scroll patch), thus making it even easier
-to track.
-
-
-Old stuff before the massive update came, just ignore this:
-	You may be wondering how I get this info quickly. All I did is go to the RAM map, search for empty RAM, copy the table in text format (it will try to convert it into tab-seperated values via the browser),
-	paste it in notepad++, sort lines lexicographically ascending (Edit -> Line Operations), make edits (including using find-and-replace regex functions) so that it is in a format compatible with the HTML
-	JS tool, open the HTML JS tool, paste the text. The output then displays, and all gaps between each empty RAM data should be RAM addresses used by SMW (each region in the same gap is merged, by the way).
-	I then took that gap data containing used addresses, and paste it here.
-	
-	To convert to an appropriate format for the JS tool straight from the RAM map:
-		First, search for empty RAM on smwc's ram map.
-		Copy all the text in that table.
-		Paste it in notepad++
-		Remove the word “byte” or “bytes”:
-			Do this first
-				Find what: [bytes]
-				Replace with [] (nothing)
-				hit replace all
-			and then:
-				Find what: [1 byte]
-				Replace with [] (nothing)
-				hit replace all
-			If done in the wrong order, you'll have
-			leftover “s” in the way.
-		Remove spaces after the number of bytes:
-			Find what: [ \t]
-			Replace with [\t]
-			use regular expression
-			hit replace all
-		And then to rid out the description and type that potentially have characters
-		causing the JS tool to error out:
-			Find what: [^(?'AddrNumbBytes'\$[a-zA-Z0-9]+\t\d+\t)Empty\t.+$]
-			Replace with: [$+{AddrNumbBytes}]
-			hit replace all
-		Note that some leftover description is still present due to linebreaks in the description column.
-		To extract only the RAM and number of bytes, hit CTRL+F:
-			Find what: [^\$[a-zA-Z0-9]+\t\d+\t$]
-			Hit Find All in Current Document
-		And you now should have the correct format.
-		Open the HTML JS tool, paste it, and any gaps between each empty RAM should be used-RAM you can then copy
-		that table (again, turns it into tab-separated values), and now you should have a list of used RAM. Because
-		this JS tool prints out the number of bytes and the ending addresses (if more than 1 byte it spans), you then
-		need to remove either one or the other. I did this:
-			If you want just the number of bytes:
-				Find what: [/\$[a-zA-Z0-9]+$]
-				Replace with: []
-				Hit replace all
-			If you want the ending address:
-				Find what: [\t\d+/]
-				Replace with: [\t-]
-				Hit replace all
-		And it should be in a compatible format.
-		Note that if you do this back and fourth repeatedly, you'll start losing ranges at the lowest and highest of the list of
-		RAM address. This is because this only list gaps in between the lowest and highest range.
-		Also note that not all gaps are guaranteed are freeram, so editing is required.
-New stuff:
-	I drastically updated the javascript (JS) HTML file, enables the user to filters at their own discretion, and it also outputs the list
-	in plaintext (easy to copy by selecting it, CTRL+A, CTRL+C) in the same format the JS takes it, making handling much easier, the steps above
-	on to extract used addresses is now obsolete due to this update. Just search for empty RAM on smwc, list those into the JS tool, filter by
-	gaps only, and you now have SMW's used addresses.
-
-Here is the list I got. You can copy it and paste it into the JS tool. Be careful not to have empty line(s)
-upon pasting.
+;This txt file purpose is to make it so you can track both SMW original used address and your installed patches. Some patches may free up RAM (such as my center scroll patch), thus making it even easier
+;to track.
+;
+;Since these javascript tools ignore comments (using semicolons ";"), you can copy this entire txt document (CTRL+A, then CTRL+C) and then paste it in the appropriate textarea and it will work.
+;
+;Old stuff before the massive update came, just ignore this:
+;	You may be wondering how I get this info quickly. All I did is go to the RAM map, search for empty RAM, copy the table in text format (it will try to convert it into tab-seperated values via the browser),
+;	paste it in notepad++, sort lines lexicographically ascending (Edit -> Line Operations), make edits (including using find-and-replace regex functions) so that it is in a format compatible with the HTML
+;	JS tool, open the HTML JS tool, paste the text. The output then displays, and all gaps between each empty RAM data should be RAM addresses used by SMW (each region in the same gap is merged, by the way).
+;	I then took that gap data containing used addresses, and paste it here.
+;	
+;	To convert to an appropriate format for the JS tool straight from the RAM map:
+;		First, search for empty RAM on smwc's ram map.
+;		Copy all the text in that table.
+;		Paste it in notepad++
+;		Remove the word “byte” or “bytes”:
+;			Do this first
+;				Find what: [bytes]
+;				Replace with [] (nothing)
+;				hit replace all
+;			and then:
+;				Find what: [1 byte]
+;				Replace with [] (nothing)
+;				hit replace all
+;			If done in the wrong order, you'll have
+;			leftover “s” in the way.
+;		Remove spaces after the number of bytes:
+;			Find what: [ \t]
+;			Replace with [\t]
+;			use regular expression
+;			hit replace all
+;		And then to rid out the description and type that potentially have characters
+;		causing the JS tool to error out:
+;			Find what: [^(?'AddrNumbBytes'\$[a-zA-Z0-9]+\t\d+\t)Empty\t.+$]
+;			Replace with: [$+{AddrNumbBytes}]
+;			hit replace all
+;		Note that some leftover description is still present due to linebreaks in the description column.
+;		To extract only the RAM and number of bytes, hit CTRL+F:
+;			Find what: [^\$[a-zA-Z0-9]+\t\d+\t$]
+;			Hit Find All in Current Document
+;		And you now should have the correct format.
+;		Open the HTML JS tool, paste it, and any gaps between each empty RAM should be used-RAM you can then copy
+;		that table (again, turns it into tab-separated values), and now you should have a list of used RAM. Because
+;		this JS tool prints out the number of bytes and the ending addresses (if more than 1 byte it spans), you then
+;		need to remove either one or the other. I did this:
+;			If you want just the number of bytes:
+;				Find what: [/\$[a-zA-Z0-9]+$]
+;				Replace with: []
+;				Hit replace all
+;			If you want the ending address:
+;				Find what: [\t\d+/]
+;				Replace with: [\t-]
+;				Hit replace all
+;		And it should be in a compatible format.
+;		Note that if you do this back and fourth repeatedly, you'll start losing ranges at the lowest and highest of the list of
+;		RAM address. This is because this only list gaps in between the lowest and highest range.
+;		Also note that not all gaps are guaranteed are freeram, so editing is required.
+;New stuff:
+;	I drastically updated the javascript (JS) HTML file, enables the user to filters at their own discretion, and it also outputs the list
+;	in plaintext (easy to copy by selecting it, CTRL+A, CTRL+C) in the same format the JS takes it, making handling much easier, the steps above
+;	on to extract used addresses is now obsolete due to this update. Just search for empty RAM on smwc, list those into the JS tool, filter by
+;	gaps only, and you now have SMW's used addresses.
+;
+;Here is the list I got. You can copy it and paste it into the JS tool.
+;NOTE: This may be out of date as more discovery of how RAM is being used by SMW or tools, especially if LM updates and more RAM are being used.
 $7E0000	-$7E0057	RAM used by SMW.
 $7E0059	-$7E005B	RAM used by SMW.
 $7E005D	-$7E005F	RAM used by SMW.
@@ -69,6 +70,7 @@ $7E0064	-$7E0078	RAM used by SMW.
 $7E007A	-$7E007B	RAM used by SMW.
 $7E007D	-$7E0086	RAM used by SMW.
 $7E0088	-$7E00EF	RAM used by SMW.
+7E00F0	-$7E00FF	RAM used by LM.
 $7E0100	-$7E0694	RAM used by SMW.
 $7E0695	100	Used by LM 1.70+ for VRAM modification.
 $7E0701	-$7E0AF4	RAM used by SMW.

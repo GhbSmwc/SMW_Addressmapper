@@ -102,6 +102,7 @@ Useful tips using this feature:
 <ul>
 <li>Hover your mouse over the display and roll your scroll wheel to scroll the range</li>
 <li>To scroll by an entire screen, hold SHIFT and roll your scroll wheel.</li>
+<li>You can also scroll the display by holding SHIFT and hold down left-click and then move the mouse up or down.</li>
 </ul>
 </td>
 </tr>
@@ -127,16 +128,35 @@ Useful tips using this feature:
 	</table>
 </span>
 <script>
-//Tab key
+//Settings (akin to defines settings)
+	const Setting_ByteView_SVGGridSizeFactor = 16n
+	const Setting_ByteView_AddressColumnPosition = 5n		//Note: right-aligned, from text-anchor, position of the right edge of text
+	const Setting_ByteView_BarsXPosStart = 5n			//Note: left-aligned, position from left edge.
+	const Setting_ByteView_NumberOfRows = 100n
+	const Setting_ByteView_NumberOfColumns = 20n			//Width of viewbox, that, multiplied by Setting_ByteView_SVGGridSizeFactor
+//Various variables used for dragmode
+	var DragMode_State = false
+	var MouseDragOriginX = 0
+	var MouseDragOriginY = 0
+	var CurrentNumberInputValueSelected //This prevents the input from adding by itself and accumulating. Done by saving its original value, and add by delta
+//Tab key & other event listener stuff
 //Tab key to make it not switch the focus and actually insert a tab character.
+//Also adds a onclick for drag to move the visual display
 	window.onload = function(){    
-		UpDownArrowKeysIncrement()
-		var addressList = document.getElementById("UserInputList");
+		UpDownArrowKeysIncrement()	//Arrow keys
+		var addressList = document.getElementById("UserInputList"); //Tab handler to insert tab character
 		if(addressList.addEventListener ) {
 			addressList.addEventListener('keydown',this.keyHandler_Tab,false);
 		} else if(addressList.attachEvent ) {
 			addressList.attachEvent('onkeydown',this.keyHandler_Tab);
 		}
+		//Mouse dragging function for visual display graph.
+			//Pressing down (start of drag mode)
+				document.getElementById("ViewMode_ByteByByteGraph").addEventListener('mousedown', Set_DragMode_On)
+			//Mouse moves (after pressing down on the button)
+				document.addEventListener('mousemove', DragMode_MoveSVGGraph)
+			//Mouse dragging
+				document.addEventListener('mouseup', Set_DragMode_Off)
 	}
 
 	function keyHandler_Tab(e) {
@@ -174,6 +194,37 @@ Useful tips using this feature:
 			return false;
 		}
 	}
+//Add mouse-drag-scroll feature to the visual display
+	function Set_DragMode_On(e) {
+		if (e.shiftKey&&e.button == 0) {
+			e.preventDefault()
+			DragMode_State = true
+			MouseDragOriginX = e.clientX
+			MouseDragOriginY = e.clientY
+			CurrentNumberInputValueSelected = ParseBigIntValue(document.getElementById("ByteByByteViewStartingAddress").value, 16)
+		}
+	}
+	function Set_DragMode_Off() {
+		DragMode_State = false
+		MouseDragOriginX = 0
+		MouseDragOriginY = 0
+	}
+	function DragMode_MoveSVGGraph() {
+	
+	}
+	function DragMode_MoveSVGGraph(e) { //Drag-scrolling
+		if (DragMode_State&&e.shiftKey) {
+			let MouseDeltaX = e.clientX - MouseDragOriginX
+			let MouseDeltaY = e.clientY - MouseDragOriginY
+			
+			let DeltaValueToAdjustAddress = BigInt(MouseDeltaY)
+			let StartAddressView = ParseBigIntValue(document.getElementById("ByteByByteViewStartingAddress").value, 16)
+			document.getElementById("ByteByByteViewStartingAddress").value = (CurrentNumberInputValueSelected + (DeltaValueToAdjustAddress*-1n)/Setting_ByteView_SVGGridSizeFactor).toString(16).toUpperCase()
+			MainCode()
+		} else {
+			Set_DragMode_Off() //The next time the user moves the mouse with the shift not being held down will exit out of drag-scrolling
+		}
+	}
 //Filter checkbox functions
 	function CheckAllFilters() {
 		let ListOfFilters = document.getElementsByClassName("AddressFilter")
@@ -193,12 +244,6 @@ Useful tips using this feature:
 			ListOfFilters[Index].checked = ListOfFilters[Index].checked ^ 1
 		}
 	}
-//Settings (akin to defines settings)
-	const Setting_ByteView_SVGGridSizeFactor = 16n
-	const Setting_ByteView_AddressColumnPosition = 5n		//Note: right-aligned, from text-anchor, position of the right edge of text
-	const Setting_ByteView_BarsXPosStart = 5n			//Note: left-aligned, position from left edge.
-	const Setting_ByteView_NumberOfRows = 100n
-	const Setting_ByteView_NumberOfColumns = 20n			//Width of viewbox, that, multiplied by Setting_ByteView_SVGGridSizeFactor
 //Regex stuff
 	String2Regex_CorrectLine = "^\\$?[0-9A-Fa-f]+\\t(\\d+|-\\$?[0-9A-Fa-f]+)(\\t[^\\t]*?)?$"
 	String2Regex_GetStartingAddress = "(?<=^\\$?)[0-9A-Fa-f]+"

@@ -823,9 +823,11 @@ Useful tips using this feature:
 				}
 			}
 			for (let Index = 0; Index < InputArray.length; Index++) {
-				for (let IndexFilterList = 0; IndexFilterList < FilterList.length; IndexFilterList++) {
+				let IsFilterMatchFound = false
+				for (let IndexFilterList = 0; (IndexFilterList < FilterList.length && IsFilterMatchFound == false); IndexFilterList++) {
 					if (InputArray[Index][5] == FilterList[IndexFilterList]) {
 						OutputArray.push(InputArray[Index])
+						IsFilterMatchFound = true
 					}
 				}
 			}

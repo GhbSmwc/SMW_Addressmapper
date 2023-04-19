@@ -73,8 +73,8 @@ Notes:
 		<th>Enter your list of empty RAMs here.</th>
 	</tr>
 	<tr>
-		<td><textarea id="ListOfFreeramDefines" cols="75" rows="30" oninput="MainCode()"></textarea></td>
-		<td><textarea id="ListOfUnusedRam" cols="75" rows="30" oninput="MainCode()"></textarea></td>
+		<td><textarea id="ListOfFreeramDefines" cols="75" rows="30" oninput="MainCode()" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea></td>
+		<td><textarea id="ListOfUnusedRam" cols="75" rows="30" oninput="MainCode()" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea></td>
 	</tr>
 </table>
 Sort:<br>
@@ -91,7 +91,7 @@ Duplicate settings:<br>
 <label><input onchange="MainCode()" type="checkbox" id="IgnoreDuplicate_EmptyRams" checked>Ignore duplicates for empty RAMs</label><br>
 
 <hr>
-<textarea readonly id="Output_AssignedRAMs" cols="150" rows="30" hidden></textarea>
+<textarea readonly id="Output_AssignedRAMs" cols="150" rows="30" hidden style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
 
 
 <script>

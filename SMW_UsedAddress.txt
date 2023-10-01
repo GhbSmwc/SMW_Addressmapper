@@ -70,8 +70,10 @@ $7E0064	-$7E0078	RAM used by SMW.
 $7E007A	-$7E007B	RAM used by SMW.
 $7E007D	-$7E0086	RAM used by SMW.
 $7E0088	-$7E00EF	RAM used by SMW.
-7E00F0	-$7E00FF	RAM used by LM.
-$7E0100	-$7E0694	RAM used by SMW.
+$7E00F0	-$7E00FF	RAM used by LM.
+$7E0100	-$7E049F	RAM used by SMW.
+$7E04A0	-$7E065C	RAM used by SMW. Remove if "Free $7E04A0" patch installed
+$7E065D	-$7E0694	RAM used by SMW.
 $7E0695	100	Used by LM 1.70+ for VRAM modification.
 $7E0701	-$7E0AF4	RAM used by SMW.
 $7E0AF6	-$7E0D9B	RAM used by SMW.

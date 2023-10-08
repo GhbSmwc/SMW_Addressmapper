@@ -65,7 +65,7 @@ statuses as well as discovered gaps. <kbd>Addresser2.html</kbd> have a visualize
 
 		Now, not all ASM resources would label how much bytes they require. Normally this takes 1 or 2 bytes. If you have some ASM knowledge, when RAM is loaded in 16-bit, then it
 		is 2 bytes (assuming it doesn't zero out the high byte). If it had an index attached to it like this: <kbd>LDA !Freeram,x</kbd>, then it could take X+1 bytes where X is an
-		index value at the highest possible value. In this example, wall kick patch all take 1 byte each, and the directioanl quake takes 2 bytes.
+		index value at the highest possible value. In this example, wall kick patch all take 1 byte each, and the directional quake takes 2 bytes.
 	</li><br>
 	<li>
 		Next, open <kbd>Ram_AutoAssigner.html</kbd> and write your RAM usage of the ASM resource you're dealing with into the first textarea. Make sure it's formated as stated at the top, and make sure you supply the FULL address
@@ -92,7 +92,7 @@ DirectionalQuake	!Freeram_DirQuake_Layer1XDisplacement	2	-	-</pre></td></tr></ta
 !no_back_timer = $7E005C ;&gt;WallKick, 1 byte(s)
 !temp_y_spd = $7E0060 ;&gt;WallKick, 1 byte(s)
 !flags = $7E0058 ;&gt;wallKick, 1 byte(s)</pre></td></tr></table>
-<table><tr><td><pre>;Directioanl quake
+<table><tr><td><pre>;directional quake
 ; if !sa1 == 0
 ;  !Freeram_DirQuake_Layer1XDisplacement		= $60
 ; else

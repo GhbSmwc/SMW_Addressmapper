@@ -112,7 +112,8 @@ Useful tips using this feature:
 
 <span id="OutputSpanTag" class="HideableOutputElements"></span>
 <span id="HTML_Output_Statistics" hidden class="HideableOutputElements"></span>
-<textarea id="HTML_Output_PlainTextOfUsedRanges" hidden readonly cols='75' rows='30' class="HideableOutputElements" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
+<textarea id="HTML_Output_PlainTextOfUsedRanges" hidden readonly cols='75' rows='30' class="HideableOutputElements" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea><br>
+<button onclick="setClipboard(document.getElementById('HTML_Output_PlainTextOfUsedRanges').value)" id="Button_CopyOutput" hidden>Copy to clipboard</button><span id="CopiedTextMessage"></span><br><br>
 <table id="HTML_Output_TableOfUsedRanges" hidden class="HideableOutputElements"></table>
 <span id="ViewMode_Error" hidden class="HideableOutputElements">
 	<textarea id="HTML_Output_Error" cols='75' rows='30' style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
@@ -470,6 +471,7 @@ Useful tips using this feature:
 										}
 									}
 									document.getElementById("HTML_Output_PlainTextOfUsedRanges").hidden = false
+									document.getElementById("Button_CopyOutput").hidden = false
 									document.getElementById("HTML_Output_PlainTextOfUsedRanges").value = OutputHTML
 								//HTML table
 									OutputHTML = ""
@@ -945,6 +947,30 @@ Useful tips using this feature:
 			MainCode()
 		//}
 	}
+
+	//Copy text from textarea
+		function setClipboard(String) {
+			//Credit goes to Mozilla: https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/write
+			const type = "text/plain";
+			const blob = new Blob([String], { type });
+			const data = [new ClipboardItem({ [type]: blob })];
+	
+			navigator.clipboard.write(data).then(
+				() => {
+				/* success */
+					document.getElementById("CopiedTextMessage").innerHTML = " <span style='color: #00FF00;'>Copied!</span>"
+					setTimeout(DeleteCopyMessage, 1500)
+				},
+				() => {
+				/* failure */
+					document.getElementById("CopiedTextMessage").innerHTML = " <span style='color: #FF0000;'>Copy failed!</span>"
+					setTimeout(DeleteCopyMessage, 1500)
+				}
+			);
+		}
+		function DeleteCopyMessage() {
+			document.getElementById("CopiedTextMessage").innerHTML = ""
+		}
 
 	var Element_ScrollSVGGraph = document.getElementById("SVG_VectorGraph")
 	Element_ScrollSVGGraph.onwheel = ScrollSVGGraph

@@ -114,7 +114,7 @@ DirectionalQuake	!Freeram_DirQuake_Layer1XDisplacement	2	-	-</pre></td></tr></ta
 	<li id="BordersAndMirrors">This entire tool does not account to bank borders, so do not assume things like a range of <kbd>$7EFFFF</kbd>-<kbd>$7F0000</kbd> that it avoids it. It also does not account for RAM mirroring, so make sure
 	you place your full address in the tool.</li>
 	<li>This tool can be used beyond smw modding, since this mostly checks address ranges and nothing more.</li>
-	<li>Some RAM may be reused for a different purpose when not used for a given specific purpose, such as reusing <kbd>$60</kbd> for uberasm tool for screen scrolling pipes during a level, and for something else during overworld. If this is the case
+	<li>Some RAM may be reused for a different purpose when not used for a given specific purpose, such as reusing <kbd>$60</kbd> for a jump counter during a level, and for something else during overworld. If this is the case
 	then I would recommend having a list of used RAM being separated from &ldquo;local&rdquo; uses, it is only a problem if 2+ purposes are used at the same time. The same applies for custom scratch RAM besides $00-$0F.</li>
 </ul>
 <h2>Useful tips</h2>

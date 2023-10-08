@@ -91,8 +91,8 @@ Duplicate settings:<br>
 <label><input onchange="MainCode()" type="checkbox" id="IgnoreDuplicate_EmptyRams" checked>Ignore duplicates for empty RAMs</label><br>
 
 <hr>
-<textarea readonly id="Output_AssignedRAMs" cols="150" rows="30" hidden style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
-
+<textarea readonly id="Output_AssignedRAMs" cols="150" rows="30" hidden style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea><br>
+<button onclick="setClipboard(document.getElementById('Output_AssignedRAMs').value)" id="Button_CopyOutput" hidden>Copy to clipboard</button><span id="CopiedTextMessage"></span><br><br>
 
 <script>
 	const String2Regex_GetASMResourceName = "[^\\t]+"
@@ -493,6 +493,7 @@ Duplicate settings:<br>
 				}
 			}
 		document.getElementById("Output_AssignedRAMs").hidden = false
+		document.getElementById("Button_CopyOutput").hidden = false
 		document.getElementById("Output_AssignedRAMs").value = OutputString
 	}
 	//Other functions
@@ -685,5 +686,29 @@ Duplicate settings:<br>
 					}
 				}
 			return OutputArray
+		}
+
+	//Copy text from textarea
+		function setClipboard(String) {
+			//Credit goes to Mozilla: https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/write
+			const type = "text/plain";
+			const blob = new Blob([String], { type });
+			const data = [new ClipboardItem({ [type]: blob })];
+	
+			navigator.clipboard.write(data).then(
+				() => {
+				/* success */
+					document.getElementById("CopiedTextMessage").innerHTML = " <span style='color: #00FF00;'>Copied!</span>"
+					setTimeout(DeleteCopyMessage, 1500)
+				},
+				() => {
+				/* failure */
+					document.getElementById("CopiedTextMessage").innerHTML = " <span style='color: #FF0000;'>Copy failed!</span>"
+					setTimeout(DeleteCopyMessage, 1500)
+				}
+			);
+		}
+		function DeleteCopyMessage() {
+			document.getElementById("CopiedTextMessage").innerHTML = ""
 		}
 </script>

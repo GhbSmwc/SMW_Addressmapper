@@ -363,8 +363,10 @@ Useful tips using this feature:
 								// currently processed that overlaps.
 									let HighestEndAddressGapDetect = -1n
 									let GapAddressList = new Array()
-									let ArrayCopyButSortedForGapFinding = [...ListOfAddress] //thanks to https://www.samanthaming.com/tidbits/35-es6-way-to-clone-an-array/ for telling me that the assignment operator "=" doesn't actually copy the array.
-									ArrayCopyButSortedForGapFinding.sort(SortByStartAddr)
+									//This is old code, before .toSorted existed.
+										//let ArrayCopyButSortedForGapFinding = [...ListOfAddress] //thanks to https://www.samanthaming.com/tidbits/35-es6-way-to-clone-an-array/ for telling me that the assignment operator "=" doesn't actually copy the array.
+										//ArrayCopyButSortedForGapFinding.sort(SortByStartAddr)
+									let ArrayCopyButSortedForGapFinding = ListOfAddress.toSorted(SortByStartAddr) //In around 2023-02-xx or possibly 2023-01-xx, .toSorted existed, which unlike .sort, creates a new, sorted copy.
 									for (let Index = 1; Index < ArrayCopyButSortedForGapFinding.length; Index++) {
 										//If the highest index exceeds HighestEndAddressGapDetect, replace it with the higher number
 											if (ArrayCopyButSortedForGapFinding[Index - 1][0] + ArrayCopyButSortedForGapFinding[Index - 1][1] - 1n > HighestEndAddressGapDetect) {

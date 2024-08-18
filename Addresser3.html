@@ -1,0 +1,425 @@
+<html>
+	<head>
+		<style>
+			html {
+			background-color: black;
+			color: white;
+			font-family: sans-serif;
+			}
+			
+			svg {
+				fill: white;
+				font-family: monospace;
+			}
+			rect:hover {
+				fill: blue
+			}
+			
+			table, th, td {
+			border: 1px solid white;
+			border-collapse: collapse;
+			}
+			
+			span.NoLineBreak {
+				white-space: nowrap;
+			}
+			
+			input[type='text'] { font-family: monospace;}
+			input[type='number'] { font-family: monospace;}
+			
+			select, option {
+				font-family: monospace;
+			}
+			
+			textarea {
+				white-space: pre;
+				overflow-wrap: normal;
+				overflow-x: scroll;
+			}
+		</style>
+	</head>
+<body>
+
+<p>Entere a list of RAM or any memory usage in the textarea below. Must be formatted like this:
+<table><tr><td><pre>Address	Size_in_bytes_Or_EndAddress	Description
+Address	Size_in_bytes_Or_EndAddress	Description
+Address	Size_in_bytes_Or_EndAddress	Description</pre></td></tr></table><br>
+Make sure the format is:
+<ul>
+	<li>No additional tabs, meaning multiple tabs that are used to align columns in text editors is not allowed. The tab character is reserved for <a href="https://en.wikipedia.org/wiki/Tab-separated_values">tab-separated values</a>.</li>
+</ul>
+</p>
+
+Notes:
+	<ul>
+		<li>Lines that are blank or composed of just any whitespace characters are ignored. It will also ignore any lines that start with either a semicolon or a space (0 or more), followed by a semicolon (therefore ASM-styled comments are allowed).</li>
+		<li>Whitespace shown above is a TAB character, not a literal space character.</li>
+		<li>This does not take in account of addressing mirroring (a shorthand <kbd>$00</kbd> instead of <kbd>$7E0000</kbd>), so I strongly recommend putting the full address numbers here. Furthermore, it does not detect what type of memory map it is,
+		things like negative address (only shown on &ldquo;<kbd>Potential ending address before the starting byte of all the ranges</kbd>&rdquo;), address pointing beyond the last byte of the entire memory map, and so on.</li>
+		<li>This tool could be applied to other systems (beyond the SNES), since it merely check ranges.</li>
+	</ul>
+
+Where:
+<ul>
+	<li><kbd>Address</kbd> is the starting address, in hex. <kbd>$</kbd> prefix is optional.</li>
+	<li><kbd>Size_in_bytes_Or_EndAddress</kbd> can either be the number of bytes starting from <kbd>Address</kbd> and ending at <kbd>Address + Size_in_bytes - 1</kbd> or the ending address:
+		<ul>
+			<li><kbd>Decimal_Number</kbd> - number of bytes, in decimal. Don't use commas to separate digit grouping.</li>
+			<li><kbd>-Hexidecimal_EndAddress</kbd> - the ending address (note the hyphen to denote a range), in hex. Also <kbd>$</kbd> prefix is optional (must be placed after
+			the hyphen and before the hexadecimal address number (example: <kbd>$-10</kbd> is wrong, <kbd>-$10</kbd> is correct)).</li>
+		</ul>
+	</li>
+	<li><kbd>Description</kbd> (optional) is a brief description. Note: HTML tags, elements and other reserved symbols apply on the description, and improper opening and closing/ending tags could <abbr title="For example: having only the opening tag or closing/ending tag, if you end the table tag (/td/tr/table), before you start it (tabletrtd), it would mess up the outer table's content after the invalid HTML setup.">break the table</abbr>!
+	If you want to view the table with invalid tag setup and have it not be broken, check the box labeled &ldquo;Escape html tags and escape characters for table description&rdquo;, and it will cancel out the HTML effects (they're <a href="https://en.wikipedia.org/wiki/Character_encodings_in_HTML#XML_character_references">escaped</a>) within the description field.</li>
+</ul>
+
+<textarea id="UserInputList" cols="75" rows="30" oninput="HaveEditedTextarea = true; MainCode()"></textarea>
+<div>
+	View mode:
+	<div><label><input type="radio" name="Setting_ViewMode" onchange="AdjustMode()" id="Setting_ViewMode_Table" checked>Table range</label></div>
+	<div><label><input type="radio" name="Setting_ViewMode" onchange="AdjustMode()" id="Setting_ViewMode_Byte">Byte view</label></div>
+</div>
+<hr>
+<label><input type="checkbox" id="Setting_IgnoreDupes" onchange="HaveEditedTextarea = true; MainCode()" checked>Ignore duplicates</label>
+<div id="SettingPanel_TableViewOptions">
+	Sort by: <select onchange="SortChanges = true">
+		<option id="SortOption_None">Keep order you entered</option>
+		<option id="SortOption_ByAddr">By start address</option>
+		<option id="SortOption_Size">By size</option>
+		<option id="SortOption_Discription">By description (lexicographically)</option>
+		<option id="SortOption_Type">By type</option>
+		<option id="SortOption_OverlapCount">By overlap count</option>
+	</select><label><input type="checkbox" id="SortOption_Reverse">Reverse order</label><br><br>
+	<div>Filter by: <button onclick="ModifyCheckboxes(this.parentNode, 1); MainCode();">Check all</button><button onclick="ModifyCheckboxes(this.parentNode, 0); MainCode();">Uncheck all</button><button onclick="ModifyCheckboxes(this.parentNode, 2); MainCode();">Invert</button>
+		<div><label><input type="checkbox" checked id="Filter_Gaps">Unused gaps</label></div>
+		<div><label><input type="checkbox" checked id="Filter_NonOverlap">Address with no conflicts</label></div>
+		<div><label><input type="checkbox" checked id="Filter_Overlap">Address that conflicted</label></div>
+	</div><br><br>
+	Plaintext size/ending address mode display: <select>
+		<option id="PlaintextSetting_Output_Size">Size</option>
+		<option id="PlaintextSetting_Output_Ending">Ending</option>
+		<option id="PlaintextSetting_Output_SizeAndEnding">Size and ending (&lt;size&gt;/-&lt;ending_address&gt;)</option>
+	</select><label><input type="checkbox" id="PlaintextSetting_Output_OverlapStatus">Show gap/overlap/non-overlap status</label>
+</div>
+<div id="SettingPanel_ByteViewOptions" hidden>
+	Address to view: $<input type="text" value="7E0000" class="HexNumberInput"><br>
+	Useful tips using this feature:
+	<ul>
+	<li>Hover your mouse over the display and roll your scroll wheel to scroll the range</li>
+	<li>To scroll by an entire screen, hold SHIFT and roll your scroll wheel.</li>
+	<li>You can also scroll the display by holding SHIFT and hold down left-click and then move the mouse up or down.</li>
+	</ul>
+</div>
+<hr>
+<pre hidden id="Output_ErrorMessage" style="border: 1px solid white"></pre>
+<script>
+	const Setting_ByteView_SVGGridSizeFactor = 16n
+	const Setting_ByteView_AddressColumnPosition = 5n		//Note: right-aligned, from text-anchor, position of the right edge of text
+	const Setting_ByteView_BarsXPosStart = 5n			//Note: left-aligned, position from left edge.
+	const Setting_ByteView_NumberOfRows = 100n
+	const Setting_ByteView_NumberOfColumns = 20n			//Width of viewbox, that, multiplied by Setting_ByteView_SVGGridSizeFactor
+	
+	let SavedAddresses = []
+	let HaveEditedTextarea = false
+	let SortChanges = false
+	
+	AddHexIncrementDecrementToTextInputs()
+	document.getElementById("UserInputList").addEventListener("keydown", this.keyHandler_Tab, false)
+	
+	function AddHexIncrementDecrementToTextInputs() {
+		//Elements you want to apply to must contain a class "HexNumberInput"
+		[...document.querySelectorAll("input.HexNumberInput")].forEach(TextInput => {
+			TextInput.addEventListener(
+				"keydown",
+				((e) => {
+					let KeyName = e.key
+					if (/(?:ArrowUp|ArrowDown)/.test(KeyName)) {
+						let Str = e.target.value
+						try {
+							let IntegerValue = ParseBigIntValue(Str, 16)
+							if (KeyName == "ArrowUp") {
+								e.preventDefault()
+								IntegerValue++
+							} else if (KeyName == "ArrowDown") {
+								e.preventDefault()
+								IntegerValue--
+							}
+							e.target.value = IntegerValue.toString(16).toUpperCase()
+							MainCode()
+						} catch {}
+					}
+				}).bind(TextInput)
+			);
+			TextInput.addEventListener(
+				"change",
+				((e) => {
+					let Str = e.target.value
+					let IntegerValue = ParseBigIntValue(Str, 16)
+					e.target.value = IntegerValue.toString(16).toUpperCase()
+					MainCode()
+				})
+			)
+		});
+	}
+	function AdjustMode() {
+		if (document.getElementById("Setting_ViewMode_Table").checked) {
+			document.getElementById("SettingPanel_TableViewOptions").hidden = false
+			document.getElementById("SettingPanel_ByteViewOptions").hidden = true
+		} else if (document.getElementById("Setting_ViewMode_Byte").checked) {
+			document.getElementById("SettingPanel_TableViewOptions").hidden = true
+			document.getElementById("SettingPanel_ByteViewOptions").hidden = false
+		}
+		MainCode()
+	}
+	function MainCode() {
+		if (HaveEditedTextarea) {
+			HaveEditedTextarea = false
+			let LinesOfText = document.getElementById("UserInputList").value.split('\n')
+			LinesOfText = LinesOfText.map((Line, Index) => {
+				return {LineNumber: Index, LineText: Line}
+			})
+			LinesOfText = LinesOfText.filter(Line => {
+				if (/(?:^\s*;|^\s*$)/.test(Line.LineText)) { //Lines that begin with any number of spaces and then a semicolon
+					return false
+				}
+				return true
+			});
+			let BadLines = LinesOfText.filter(Line => {
+				if (/^\$?[\da-fA-F]+\t(?:\d+|-\$?[\da-fA-F]+)/.test(Line.LineText)) {
+					return false
+				}
+				return true
+			});
+			if (BadLines.length != 0) {
+				document.getElementById("Output_ErrorMessage").hidden = false
+				let ErrorText = ""
+				ErrorText += "Error! These lines contain invalid info:\n"
+				BadLines.forEach((Line, Index, Arr) => {
+					ErrorText += "Line " + (Line.LineNumber+1).toString(10) + ": " + Line.LineText
+					if (Index != Arr.length-1) {
+						ErrorText += "\n"
+					}
+				})
+				document.getElementById("Output_ErrorMessage").textContent = ErrorText
+				return
+			}
+			let ObjectOfDataRanges = LinesOfText.map(Line => {
+				let LineExtracted = Line.LineText.split('\t')
+				let StartAddress = ParseBigIntValue(LineExtracted[0].replace("$", ""), 16)
+				let EndAddress = 0n
+				let Length = 0n
+				let SourceText = Line.LineText
+				
+				if (/^\d+$/.test(LineExtracted[1])) { //If Length is provided
+					Length = ParseBigIntValue(LineExtracted[1], 10)
+					EndAddress = StartAddress+Length-1n
+				} else { //Otherwise if ending address provided
+					EndAddress = ParseBigIntValue(LineExtracted[1].replace(/^-\$?/, ""), 16)
+					Length = EndAddress-StartAddress+1n
+				}
+				let Description = LineExtracted[2] ?? ""
+				return {
+					LineNumber: Line.LineNumber,
+					StartAddress: StartAddress,
+					Length: Length,
+					EndAddress: EndAddress,
+					Description: Description,
+					SourceText: SourceText,
+					ConflictsWith: []
+				}
+			})
+			let BadObjectOfDataRanges = ObjectOfDataRanges.filter(ByteRange => {
+				if (ByteRange.Length >= 1) {
+					return false
+				}
+				return true
+			})
+			if (BadObjectOfDataRanges.length != 0) {
+				document.getElementById("Output_ErrorMessage").hidden = false
+				let ErrorText = ""
+				ErrorText += "Error! These ranges either have a size of less than 1 byte or an ending address before the start:\n"
+				BadObjectOfDataRanges.forEach((Item, Index, Arr) => {
+					ErrorText += "Line " + (Item.LineNumber+1)+1 + ": " + Item.SourceText
+					if (Index != Arr.length) {
+						ErrorText += "\n"
+					}
+				})
+				document.getElementById("Output_ErrorMessage").textContent = ErrorText
+				return
+			}
+			document.getElementById("Output_ErrorMessage").hidden = true
+			//Remove duplicate entries
+			ObjectOfDataRanges = ((ItemsList) => {
+				let DupeFree = []
+				ObjectOfDataRanges.forEach(item => {
+					let DupedItemOriginal = DupeFree.find(item2 => {
+						if ((item.StartAddress == item2.StartAddress)&&(item.Length == item2.Length)&&(item.Description == item2.Description)) {
+							return true
+						}
+					})
+					if (typeof DupedItemOriginal == "undefined") {
+						DupeFree.push(item)
+					}
+				})
+				return DupeFree
+			})(ObjectOfDataRanges);
+			//Find overlaps
+			{
+				let l = ObjectOfDataRanges.length
+				for (let i=0; i<l; i++) {
+					let item = ObjectOfDataRanges[i]
+					for (let i2 = i+1; i2<l; i2++) {
+						let item2 = ObjectOfDataRanges[i2]
+						if (CheckOverlap(item.StartAddress, item.EndAddress, item2.StartAddress, item2.EndAddress)) {
+							item.ConflictsWith.push({
+								StartAddress: item2.StartAddress,
+								Length: item2.Length,
+								EndAddress: item2.EndAddress,
+								Description: item2.Description,
+								SourceText: item2.SourceText,
+							})
+							item2.ConflictsWith.push({
+								StartAddress: item.StartAddress,
+								Length: item.Length,
+								EndAddress: item.EndAddress,
+								Description: item.Description,
+								SourceText: item.SourceText,
+							})
+						}
+					}
+				}
+			}
+			{
+				//Get gaps
+				//let ArrayCopyButSortedForGapFinding = ListOfAddress.sort(SortByStartAddr) <-This will sort BOTH arrays.
+				// Needed in case if we have multiple overlapping address. When having multiple overlapping addresses, the ending address
+				// of the last range processed is NOT always the last byte, if we had (1st) one address, and then another (2nd) but shorter range,
+				// we wouldn't want to use the ending address of 2nd because we look at the address after the last byte of whoever is the longest.
+				// Made up example:
+				//  7E0060-7E0063	;>First
+				//  7E0061-7E0062	;>Second
+				// 7E0063 is what we assume the last byte, not 7E0062. Essentially, HighestEndAddressGapDetect holds the highest ending address
+				// currently processed that overlaps.
+				let HighestEndAddressGapDetect = -1n
+				let GapList = []
+				let ObjectOfDataRanges_tempSort = ObjectOfDataRanges.sort((a,b) => Number(a.StartAddress-b.StartAddress))
+				let l = ObjectOfDataRanges_tempSort.length
+				for (let i=1; i<l; i++) {
+					//If the highest index exceeds HighestEndAddressGapDetect, replace it with the higher number
+					if (ObjectOfDataRanges_tempSort[i-1].EndAddress > HighestEndAddressGapDetect) {
+						HighestEndAddressGapDetect = ObjectOfDataRanges_tempSort[i-1].EndAddress
+					}
+					if (ObjectOfDataRanges_tempSort[i].StartAddress > HighestEndAddressGapDetect+1n) {
+						GapList.push({
+							StartAddress: (HighestEndAddressGapDetect+1n),
+							Length: (ObjectOfDataRanges_tempSort[i].StartAddress - HighestEndAddressGapDetect-1n),
+							EndAddress: (HighestEndAddressGapDetect + ObjectOfDataRanges_tempSort[i].StartAddress - HighestEndAddressGapDetect-1n),
+							Description: "Gap"
+						})
+					}
+				}
+				if (document.getElementById("Filter_Gaps").checked) {
+					ObjectOfDataRanges = ObjectOfDataRanges.concat(GapList)
+				}
+			}
+			SavedAddresses = ObjectOfDataRanges
+		} else {
+			ObjectOfDataRanges = SavedAddresses
+		}
+
+	}
+//helper
+	function ParseBigIntValue(string, radix) {
+		//Acts more closely to parseInt, unlike other methods (other functions, like CorrectBinBigIntValue)
+		//this works with bigInt.
+		let Output = 0n
+		let NegativeNumber = 1n
+		if ((/^-/).test(string)) {
+			NegativeNumber = -1n
+		}
+		let DigitPart = string.substring((string.search(/[0-9a-zA-Z]/)))
+		switch (radix) {
+			//decimal
+				default:
+				if ((/^-?\d+$/).test(string)) {
+					Output = BigInt(string)
+				}
+				break
+			//Hexadecimal
+				case 16:
+				case "0x":
+				case "0X":
+				if ((/^-?[0-9A-Fa-f]+$/).test(string)) {
+					Output = BigInt("0x" + DigitPart) * NegativeNumber
+				}
+				break
+			//Binary
+				case 2:
+				case "0b":
+				case "0B":
+				if ((/^-?[01]+$/).test(string)) {
+					Output = BigInt("0b" + DigitPart) * NegativeNumber
+				}
+		
+		}
+		return Output
+	}
+	function ModifyCheckboxes(node, checkState) {
+		[...node.querySelectorAll("input[type=checkbox]")].forEach(ele => {
+			if (checkState == 0 || checkState == 1) {
+				ele.checked = checkState
+			} else {
+				ele.checked = !ele.checked
+			}
+		});
+	}
+	
+	function keyHandler_Tab(e) {
+
+		let target;
+		if (!e) e = window.event;
+		if (e.target) target = e.target;
+		else if (e.srcElement) target = e.srcElement;
+
+		if(e.keyCode == 9) {
+			if (document.selection) {
+				e.preventDefault()
+				target.focus();
+				sel = document.selection.createRange();
+				sel.text = '\t';
+			} else if (target.selectionStart || target.selectionStart === 0) {
+				e.preventDefault()
+				let startPos = target.selectionStart;
+				let endPos = target.selectionEnd;
+				target.value = target.value.substring(0, startPos) + '\t' + target.value.substring(endPos, target.value.length);
+				MainCode()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
+
+				target.selectionStart = startPos + 1;
+				target.selectionEnd = startPos + 1;
+
+			} else {
+				e.preventDefault()
+				target.value += '\t';
+			}
+
+			if(e.preventDefault) {
+				e.preventDefault();
+				MainCode()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
+			}
+			return false;
+		}
+	}
+	//Check if two ranges overlap.
+	//Given 2 ranges:
+	//Range_A: A_Start and A_End
+	//Range_B: B_Start and B_End
+	//If B_End is touching A_Start, then Range_B is at the lowest position (or Range_A at the highest position) that would count as an overlap
+	//If B_Start is touching A_End, then Range_B is at the highest position (or Range_A is at the lowest position) that would count as an overlap
+		function CheckOverlap(A_Start, A_End, B_Start, B_End) {
+			if (B_End >= A_Start&&B_Start <= A_End) {
+				return true
+			} else {
+				return false
+			}
+		}
+</script>

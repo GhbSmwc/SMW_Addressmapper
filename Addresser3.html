@@ -84,7 +84,7 @@ Where:
 <div id="SettingPanel_TableViewOptions">
 	Sort: <select onchange="SortChanges = true; MainCode()">
 		<option id="SortOption_None">Keep order you entered</option>
-		<option id="SortOption_ByAddr">By start address</option>
+		<option id="SortOption_ByAddr" selected>By start address</option>
 		<option id="SortOption_Size">By size</option>
 		<option id="SortOption_Discription">By description (lexicographically)</option>
 		<option id="SortOption_Type">By type</option>
@@ -99,7 +99,7 @@ Where:
 		<option id="PlaintextSetting_Output_Size">Size</option>
 		<option id="PlaintextSetting_Output_Ending">Ending</option>
 		<option id="PlaintextSetting_Output_SizeAndEnding">Size and ending (&lt;size&gt;/-&lt;ending_address&gt;)</option>
-	</select><label><input type="checkbox" id="PlaintextSetting_Output_OverlapStatus">Show gap/overlap/non-overlap status</label>
+	</select><label><input type="checkbox" id="PlaintextSetting_Output_OverlapStatus" checked onchange="MainCode()">Show gap/overlap/non-overlap status</label>
 </div>
 <div id="SettingPanel_ByteViewOptions" hidden>
 	Address to view: $<input type="text" value="7E0000" class="HexNumberInput"><br>
@@ -113,7 +113,7 @@ Where:
 <hr>
 <pre hidden id="Output_ErrorMessage" style="border: 1px solid white"></pre>
 <div id="Output_AddressInfo">
-	<textarea id="Output_AddressInfo_Text" readonly style="" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF"></textarea>
+	<textarea id="Output_AddressInfo_Text" readonly cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: white"></textarea>
 	<table id="Output_AddressInfo_Table"></table>
 </div>
 <script>
@@ -176,7 +176,7 @@ Where:
 		MainCode()
 	}
 	function MainCode() {
-		document.getElementById("Output_AddressInfo_Text").textContent = ""
+		document.getElementById("Output_AddressInfo_Text").value = ""
 		let OutputTable = document.getElementById("Output_AddressInfo_Table")
 		while (OutputTable.lastElementChild) {
 			OutputTable.removeChild(OutputTable.lastElementChild)
@@ -345,37 +345,34 @@ Where:
 			ObjectOfDataRanges = SavedAddresses
 		}
 		ObjectOfDataRanges = ObjectOfDataRanges.filter(item => document.getElementById("Filter_" + item.Type).checked)
-		if (SortChanges) {
-			let ReverseSort = document.getElementById("SortOption_Reverse").checked ? -1 : 1
-			if (document.getElementById("SortOption_ByAddr").selected) {
-				document.getElementById("SortOption_Reverse").disabled = false
-				ObjectOfDataRanges.sort((a,b) => Number((a.StartAddress-b.StartAddress))*ReverseSort)
-			} else if (document.getElementById("SortOption_Size").selected) {
-				document.getElementById("SortOption_Reverse").disabled = false
-				ObjectOfDataRanges.sort((a,b) => Number((a.Length-b.Length))*ReverseSort)
-			} else if (document.getElementById("SortOption_Discription").selected) {
-				document.getElementById("SortOption_Reverse").disabled = false
-				ObjectOfDataRanges.sort((a,b) => {
-					if (a.Description === b.Description) {
-						return 0
-					}
-					return ((a.Description < b.Description) ? -1 : 1)*ReverseSort
-				})
-			} else if (document.getElementById("SortOption_Type").selected) {
-				document.getElementById("SortOption_Reverse").disabled = false
-				ObjectOfDataRanges.sort((a,b) => {
-					if (a.Type === b.Type) {
-						return 0
-					}
-					return ((a.Type < b.Type) ? -1 : 1)*ReverseSort
-				})
-			} else if (document.getElementById("SortOption_OverlapCount").selected) {
-				document.getElementById("SortOption_Reverse").disabled = false
-				ObjectOfDataRanges.sort((a,b) => Number((a.ConflictsWith.Length-b.ConflictsWith.Length))*ReverseSort)
-			} else {
-				document.getElementById("SortOption_Reverse").disabled = true
-			}
-			SortChanges = false
+		let ReverseSort = document.getElementById("SortOption_Reverse").checked ? -1 : 1
+		if (document.getElementById("SortOption_ByAddr").selected) {
+			document.getElementById("SortOption_Reverse").disabled = false
+			ObjectOfDataRanges.sort((a,b) => Number((a.StartAddress-b.StartAddress))*ReverseSort)
+		} else if (document.getElementById("SortOption_Size").selected) {
+			document.getElementById("SortOption_Reverse").disabled = false
+			ObjectOfDataRanges.sort((a,b) => Number((a.Length-b.Length))*ReverseSort)
+		} else if (document.getElementById("SortOption_Discription").selected) {
+			document.getElementById("SortOption_Reverse").disabled = false
+			ObjectOfDataRanges.sort((a,b) => {
+				if (a.Description === b.Description) {
+					return 0
+				}
+				return ((a.Description < b.Description) ? -1 : 1)*ReverseSort
+			})
+		} else if (document.getElementById("SortOption_Type").selected) {
+			document.getElementById("SortOption_Reverse").disabled = false
+			ObjectOfDataRanges.sort((a,b) => {
+				if (a.Type === b.Type) {
+					return 0
+				}
+				return ((a.Type < b.Type) ? -1 : 1)*ReverseSort
+			})
+		} else if (document.getElementById("SortOption_OverlapCount").selected) {
+			document.getElementById("SortOption_Reverse").disabled = false
+			ObjectOfDataRanges.sort((a,b) => Number((a.ConflictsWith.Length-b.ConflictsWith.Length))*ReverseSort)
+		} else {
+			document.getElementById("SortOption_Reverse").disabled = true
 		}
 		let PlainTextOutput = ""
 		ObjectOfDataRanges.forEach((item, index, Arr) => {
@@ -388,6 +385,25 @@ Where:
 				PlainTextOutput += item.Length.toString(10) + "/-$" + item.EndAddress.toString(16).toUpperCase()
 			}
 			PlainTextOutput += "\t" + item.Description
+			if (document.getElementById("PlaintextSetting_Output_OverlapStatus").checked) {
+				if (item.ConflictsWith.length != 0) {
+					PlainTextOutput += "\n\t;^Overlaps with:\n"
+					item.ConflictsWith.forEach((overlapped, index2, Arr2) => {
+						PlainTextOutput += "\t;$" + overlapped.StartAddress.toString(16).toUpperCase() + "\t"
+						if (document.getElementById("PlaintextSetting_Output_Size").selected) {
+							PlainTextOutput += overlapped.Length.toString(10)
+						} else if (document.getElementById("PlaintextSetting_Output_Ending").selected) {
+							PlainTextOutput += "-$" + overlapped.EndAddress.toString(16).toUpperCase()
+						} else if (document.getElementById("PlaintextSetting_Output_SizeAndEnding").selected) {
+							PlainTextOutput += overlapped.Length.toString(10) + "/-$" + overlapped.EndAddress.toString(16).toUpperCase()
+						}
+						PlainTextOutput += "\t" + overlapped.Description
+						if (index2 != Arr2.length-1) {
+							PlainTextOutput += "\n"
+						}
+					})
+				}
+			}
 			
 			if (index != Arr.length-1) {
 				PlainTextOutput += "\n"

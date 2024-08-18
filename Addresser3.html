@@ -73,7 +73,7 @@ Where:
 	If you want to view the table with invalid tag setup and have it not be broken, check the box labeled &ldquo;Escape html tags and escape characters for table description&rdquo;, and it will cancel out the HTML effects (they're <a href="https://en.wikipedia.org/wiki/Character_encodings_in_HTML#XML_character_references">escaped</a>) within the description field.</li>
 </ul>
 
-<textarea id="UserInputList" cols="75" rows="30" oninput="HaveEditedTextarea = true; MainCode()"></textarea>
+<textarea id="UserInputList" cols="75" rows="30" oninput="HaveEditedTextarea = true; MainCode()" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
 <div>
 	View mode:
 	<div><label><input type="radio" name="Setting_ViewMode" onchange="AdjustMode()" id="Setting_ViewMode_Table" checked>Table range</label></div>
@@ -82,20 +82,20 @@ Where:
 <hr>
 <label><input type="checkbox" id="Setting_IgnoreDupes" onchange="HaveEditedTextarea = true; MainCode()" checked>Ignore duplicates</label>
 <div id="SettingPanel_TableViewOptions">
-	Sort by: <select onchange="SortChanges = true">
+	Sort: <select onchange="SortChanges = true; MainCode()">
 		<option id="SortOption_None">Keep order you entered</option>
 		<option id="SortOption_ByAddr">By start address</option>
 		<option id="SortOption_Size">By size</option>
 		<option id="SortOption_Discription">By description (lexicographically)</option>
 		<option id="SortOption_Type">By type</option>
 		<option id="SortOption_OverlapCount">By overlap count</option>
-	</select><label><input type="checkbox" id="SortOption_Reverse">Reverse order</label><br><br>
-	<div>Filter by: <button onclick="ModifyCheckboxes(this.parentNode, 1); MainCode();">Check all</button><button onclick="ModifyCheckboxes(this.parentNode, 0); MainCode();">Uncheck all</button><button onclick="ModifyCheckboxes(this.parentNode, 2); MainCode();">Invert</button>
-		<div><label><input type="checkbox" checked id="Filter_Gaps">Unused gaps</label></div>
-		<div><label><input type="checkbox" checked id="Filter_NonOverlap">Address with no conflicts</label></div>
-		<div><label><input type="checkbox" checked id="Filter_Overlap">Address that conflicted</label></div>
+	</select><label><input type="checkbox" id="SortOption_Reverse" onchange="SortChanges = true; MainCode()">Reverse order</label><br><br>
+	<div>Filter by: <button onclick="ModifyCheckboxes(this.parentNode, 1); SortChanges=true; MainCode();">Check all</button><button onclick="ModifyCheckboxes(this.parentNode, 0); MainCode();">Uncheck all</button><button onclick="ModifyCheckboxes(this.parentNode, 2); MainCode();">Invert</button>
+		<div><label><input type="checkbox" onchange="SortChanges = true; MainCode()" checked id="Filter_Gap">Unused gaps</label></div>
+		<div><label><input type="checkbox" onchange="SortChanges = true; MainCode()" checked id="Filter_NonOverlap">Address with no conflicts</label></div>
+		<div><label><input type="checkbox" onchange="SortChanges = true; MainCode()" checked id="Filter_Overlap">Address that conflicted</label></div>
 	</div><br><br>
-	Plaintext size/ending address mode display: <select>
+	Plaintext size/ending address mode display: <select onchange="MainCode();">
 		<option id="PlaintextSetting_Output_Size">Size</option>
 		<option id="PlaintextSetting_Output_Ending">Ending</option>
 		<option id="PlaintextSetting_Output_SizeAndEnding">Size and ending (&lt;size&gt;/-&lt;ending_address&gt;)</option>
@@ -112,6 +112,10 @@ Where:
 </div>
 <hr>
 <pre hidden id="Output_ErrorMessage" style="border: 1px solid white"></pre>
+<div id="Output_AddressInfo">
+	<textarea id="Output_AddressInfo_Text" readonly style="" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF"></textarea>
+	<table id="Output_AddressInfo_Table"></table>
+</div>
 <script>
 	const Setting_ByteView_SVGGridSizeFactor = 16n
 	const Setting_ByteView_AddressColumnPosition = 5n		//Note: right-aligned, from text-anchor, position of the right edge of text
@@ -121,7 +125,7 @@ Where:
 	
 	let SavedAddresses = []
 	let HaveEditedTextarea = false
-	let SortChanges = false
+	let SortChanges = true
 	
 	AddHexIncrementDecrementToTextInputs()
 	document.getElementById("UserInputList").addEventListener("keydown", this.keyHandler_Tab, false)
@@ -172,6 +176,12 @@ Where:
 		MainCode()
 	}
 	function MainCode() {
+		document.getElementById("Output_AddressInfo_Text").textContent = ""
+		let OutputTable = document.getElementById("Output_AddressInfo_Table")
+		while (OutputTable.lastElementChild) {
+			OutputTable.removeChild(OutputTable.lastElementChild)
+		}
+		ObjectOfDataRanges = []
 		if (HaveEditedTextarea) {
 			HaveEditedTextarea = false
 			let LinesOfText = document.getElementById("UserInputList").value.split('\n')
@@ -203,7 +213,7 @@ Where:
 				document.getElementById("Output_ErrorMessage").textContent = ErrorText
 				return
 			}
-			let ObjectOfDataRanges = LinesOfText.map(Line => {
+			ObjectOfDataRanges = LinesOfText.map(Line => {
 				let LineExtracted = Line.LineText.split('\t')
 				let StartAddress = ParseBigIntValue(LineExtracted[0].replace("$", ""), 16)
 				let EndAddress = 0n
@@ -225,6 +235,7 @@ Where:
 					EndAddress: EndAddress,
 					Description: Description,
 					SourceText: SourceText,
+					Type: "NonOverlap",
 					ConflictsWith: []
 				}
 			})
@@ -271,6 +282,8 @@ Where:
 					for (let i2 = i+1; i2<l; i2++) {
 						let item2 = ObjectOfDataRanges[i2]
 						if (CheckOverlap(item.StartAddress, item.EndAddress, item2.StartAddress, item2.EndAddress)) {
+							item.Type = "Overlap"
+							item2.Type = "Overlap"
 							item.ConflictsWith.push({
 								StartAddress: item2.StartAddress,
 								Length: item2.Length,
@@ -310,15 +323,20 @@ Where:
 						HighestEndAddressGapDetect = ObjectOfDataRanges_tempSort[i-1].EndAddress
 					}
 					if (ObjectOfDataRanges_tempSort[i].StartAddress > HighestEndAddressGapDetect+1n) {
+						let StartAddress = HighestEndAddressGapDetect+1n
+						let Length = ObjectOfDataRanges_tempSort[i].StartAddress - HighestEndAddressGapDetect-1n
+						let EndAddress = Length + HighestEndAddressGapDetect
 						GapList.push({
-							StartAddress: (HighestEndAddressGapDetect+1n),
-							Length: (ObjectOfDataRanges_tempSort[i].StartAddress - HighestEndAddressGapDetect-1n),
-							EndAddress: (HighestEndAddressGapDetect + ObjectOfDataRanges_tempSort[i].StartAddress - HighestEndAddressGapDetect-1n),
-							Description: "Gap"
+							StartAddress: StartAddress,
+							Length: Length,
+							EndAddress: EndAddress,
+							Description: "Gap",
+							Type: "Gap",
+							ConflictsWith: [] //This needed to be here else we had to check if this even exists when sorting, making it slow.
 						})
 					}
 				}
-				if (document.getElementById("Filter_Gaps").checked) {
+				if (document.getElementById("Filter_Gap").checked) {
 					ObjectOfDataRanges = ObjectOfDataRanges.concat(GapList)
 				}
 			}
@@ -326,7 +344,56 @@ Where:
 		} else {
 			ObjectOfDataRanges = SavedAddresses
 		}
-
+		ObjectOfDataRanges = ObjectOfDataRanges.filter(item => document.getElementById("Filter_" + item.Type).checked)
+		if (SortChanges) {
+			let ReverseSort = document.getElementById("SortOption_Reverse").checked ? -1 : 1
+			if (document.getElementById("SortOption_ByAddr").selected) {
+				document.getElementById("SortOption_Reverse").disabled = false
+				ObjectOfDataRanges.sort((a,b) => Number((a.StartAddress-b.StartAddress))*ReverseSort)
+			} else if (document.getElementById("SortOption_Size").selected) {
+				document.getElementById("SortOption_Reverse").disabled = false
+				ObjectOfDataRanges.sort((a,b) => Number((a.Length-b.Length))*ReverseSort)
+			} else if (document.getElementById("SortOption_Discription").selected) {
+				document.getElementById("SortOption_Reverse").disabled = false
+				ObjectOfDataRanges.sort((a,b) => {
+					if (a.Description === b.Description) {
+						return 0
+					}
+					return ((a.Description < b.Description) ? -1 : 1)*ReverseSort
+				})
+			} else if (document.getElementById("SortOption_Type").selected) {
+				document.getElementById("SortOption_Reverse").disabled = false
+				ObjectOfDataRanges.sort((a,b) => {
+					if (a.Type === b.Type) {
+						return 0
+					}
+					return ((a.Type < b.Type) ? -1 : 1)*ReverseSort
+				})
+			} else if (document.getElementById("SortOption_OverlapCount").selected) {
+				document.getElementById("SortOption_Reverse").disabled = false
+				ObjectOfDataRanges.sort((a,b) => Number((a.ConflictsWith.Length-b.ConflictsWith.Length))*ReverseSort)
+			} else {
+				document.getElementById("SortOption_Reverse").disabled = true
+			}
+			SortChanges = false
+		}
+		let PlainTextOutput = ""
+		ObjectOfDataRanges.forEach((item, index, Arr) => {
+			PlainTextOutput += "$" + item.StartAddress.toString(16).toUpperCase() + "\t"
+			if (document.getElementById("PlaintextSetting_Output_Size").selected) {
+				PlainTextOutput += item.Length.toString(10)
+			} else if (document.getElementById("PlaintextSetting_Output_Ending").selected) {
+				PlainTextOutput += "-$" + item.EndAddress.toString(16).toUpperCase()
+			} else if (document.getElementById("PlaintextSetting_Output_SizeAndEnding").selected) {
+				PlainTextOutput += item.Length.toString(10) + "/-$" + item.EndAddress.toString(16).toUpperCase()
+			}
+			PlainTextOutput += "\t" + item.Description
+			
+			if (index != Arr.length-1) {
+				PlainTextOutput += "\n"
+			}
+		})
+		document.getElementById("Output_AddressInfo_Text").value = PlainTextOutput
 	}
 //helper
 	function ParseBigIntValue(string, radix) {

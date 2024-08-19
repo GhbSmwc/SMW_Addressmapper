@@ -113,7 +113,9 @@ Where:
 <pre hidden id="Output_ErrorMessage" style="border: 1px solid white"></pre>
 <div id="Output_AddressInfo">
 	<div id="ViewMode_TextTable">
-		<textarea id="Output_AddressInfo_Text" readonly cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: white"></textarea>
+		<textarea id="Output_AddressInfo_Text" readonly cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: white"></textarea><br>
+			<button onclick="setClipboard(document.getElementById('Output_AddressInfo_Text').value);">Copy to clipboard</button>
+			<span id="CopiedMessage"></span><br><br>
 		<div style="overflow: auto; height: 500px">
 			<table id="Output_AddressInfo_Table"></table>
 		</div>
@@ -136,11 +138,12 @@ Where:
 	let SavedSortedForSVGOrder = []
 	
 	let ColorCodedStatus = {
-	"Gap": "#808080",
-	"NonOverlap" : "#008000",
-	"Overlap" : "#800000"
+		"Gap": "#808080",
+		"NonOverlap" : "#008000",
+		"Overlap" : "#800000"
 	}
 	let SVG_GraphElement = document.getElementById("SVGGraph")
+	let CopiedMessage = document.getElementById("CopiedMessage")
 	AddHexIncrementDecrementToTextInputs()
 	document.getElementById("UserInputList").addEventListener("keydown", this.keyHandler_Tab, false)
 	SVG_GraphElement.addEventListener(
@@ -771,5 +774,32 @@ Where:
 			StringOutput = "-$" + (BigIntVal*-1n).toString(16).toUpperCase()
 		}
 		return StringOutput
+	}
+	function DeleteCopyMessage() {
+		CopiedMessage.textContent = ""
+	}
+	
+	function setClipboard(String) {
+		//Credit goes to Mozilla: https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/write
+		const type = "text/plain";
+		const blob = new Blob([String], { type });
+		const data = [new ClipboardItem({ [type]: blob })];
+		
+		let EventElement = event.target
+	
+		navigator.clipboard.write(data).then(
+			(() => {
+			/* success */
+				CopiedMessage.textContent = "Copied!"
+				CopiedMessage.style.color = "#00FF00"
+				setTimeout(DeleteCopyMessage, 1500)
+			}).bind(null, EventElement),
+			(() => {
+			/* failure */
+				CopiedMessage.textContent = "Failed!"
+				CopiedMessage.style.color = "#FF0000"
+				setTimeout(DeleteCopyMessage, 1500)
+			}).bind(null, EventElement)
+		);
 	}
 </script>

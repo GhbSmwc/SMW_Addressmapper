@@ -65,8 +65,8 @@ Where:
 	<li><kbd>Size_in_bytes_Or_EndAddress</kbd> can either be the number of bytes starting from <kbd>Address</kbd> and ending at <kbd>Address + Size_in_bytes - 1</kbd> or the ending address:
 		<ul>
 			<li><kbd>Decimal_Number</kbd> - number of bytes, in decimal. Don't use commas to separate digit grouping.</li>
-			<li><kbd>-Hexidecimal_EndAddress</kbd> - the ending address (note the hyphen to denote a range), in hex. Also <kbd>$</kbd> prefix is optional (must be placed after
-			the hyphen and before the hexadecimal address number (example: <kbd>$-10</kbd> is wrong, <kbd>-$10</kbd> is correct)).</li>
+			<li><kbd>~Hexidecimal_EndAddress</kbd> - the ending address (note the tilde to denote a range), in hex. Also <kbd>$</kbd> prefix is optional (must be placed after
+			the tilde and before the hexadecimal address number (example: <kbd>$~10</kbd> is wrong, <kbd>~$10</kbd> is correct)).</li>
 		</ul>
 	</li>
 	<li><kbd>Description</kbd> (optional) is a brief description. Note: HTML tags, elements and other reserved symbols apply on the description, and improper opening and closing/ending tags could <abbr title="For example: having only the opening tag or closing/ending tag, if you end the table tag (/td/tr/table), before you start it (tabletrtd), it would mess up the outer table's content after the invalid HTML setup.">break the table</abbr>!
@@ -105,9 +105,8 @@ Where:
 	Address to view: $<input type="text" value="7E0000" class="HexNumberInput" id="SVGAddressView"><br>
 	Useful tips using this feature:
 	<ul>
-	<li>Hover your mouse over the display and roll your scroll wheel to scroll the range</li>
-	<li>To scroll by an entire screen, hold SHIFT and roll your scroll wheel.</li>
-	<li>You can also scroll the display by holding SHIFT and hold down left-click and then move the mouse up or down.</li>
+	<li>Hover your mouse over the display and roll your scroll wheel to scroll the graph</li>
+	<li>To scroll by an entire screen, hold SHIFT and roll your scroll wheel. You can also do this by clicking on the graph and press page up/down.</li>
 	</ul>
 </div>
 <hr>
@@ -120,7 +119,7 @@ Where:
 		</div>
 	</div>
 	<div id="ViewMode_AddressBytes" hidden>
-		<svg id="SVGGraph" style="width: 400px; height: 700px; border: 1px solid white"></svg>
+		<svg id="SVGGraph" style="width: 400px; height: 700px; border: 1px solid white" tabindex="0"></svg>
 	</div>
 </div>
 <script>
@@ -141,23 +140,56 @@ Where:
 	"NonOverlap" : "#008000",
 	"Overlap" : "#800000"
 	}
-	
+	let SVG_GraphElement = document.getElementById("SVGGraph")
 	AddHexIncrementDecrementToTextInputs()
 	document.getElementById("UserInputList").addEventListener("keydown", this.keyHandler_Tab, false)
-	document.getElementById("SVGGraph").addEventListener(
+	SVG_GraphElement.addEventListener(
 		"wheel",
 		function (e) {
 			e.preventDefault()
 			let AddressView = ParseBigIntValue(document.getElementById("SVGAddressView").value, 16)
+			let ScrollSize = 4n
+			if (e.shiftKey) {
+				ScrollSize = Setting_ByteView_NumberOfRows
+			}
 			if (e.deltaY > 0) {
-				AddressView = AddressView+4n
+				AddressView = AddressView+ScrollSize
 			} else if (e.deltaY < 0) {
-				AddressView = AddressView-4n
+				AddressView = AddressView-ScrollSize
 			}
 			document.getElementById("SVGAddressView").value = AddressView.toString(16).toUpperCase()
 			MainCode()
 		}
 	
+	)
+	SVG_GraphElement.addEventListener(
+		"keydown",
+		function (e) {
+			let shouldUpdateOutput = false
+			
+			let InputKeyPressed = e.key
+			if (InputKeyPressed == "ArrowUp"||InputKeyPressed == "ArrowDown"||InputKeyPressed == "PageUp"||InputKeyPressed == "PageDown") {
+				e.preventDefault()
+				shouldUpdateOutput = true
+			}
+			let AddressView = ParseBigIntValue(document.getElementById("SVGAddressView").value, 16)
+			if (InputKeyPressed == "ArrowUp") {
+				AddressView = AddressView-4n
+			} else if (InputKeyPressed == "ArrowDown") {
+				AddressView = AddressView+4n
+			} else if (InputKeyPressed == "PageUp") {
+				AddressView = AddressView-Setting_ByteView_NumberOfRows
+			} else if (InputKeyPressed == "PageDown") {
+				AddressView = AddressView+Setting_ByteView_NumberOfRows
+			}
+			document.getElementById("SVGAddressView").value = AddressView.toString(16).toUpperCase()
+			if (shouldUpdateOutput) {
+				//This if statement above prevents a bug where your text selection gets canceled on keypress
+				//because MainCode() will clear the output elements before writing a new output, thus
+				//deleting content you've selected.
+				MainCode()
+			}
+		}
 	)
 	
 	function AddHexIncrementDecrementToTextInputs() {
@@ -224,7 +256,7 @@ Where:
 				return true
 			});
 			let BadLines = LinesOfText.filter(Line => {
-				if (/^\$?[\da-fA-F]+\t(?:\d+|-\$?[\da-fA-F]+)/.test(Line.LineText)) {
+				if (/^-?\$?[\da-fA-F]+\t(?:\d+|\~-?\$?[\da-fA-F]+)(?:\t.*)?$/.test(Line.LineText)) {
 					return false
 				}
 				return true
@@ -254,7 +286,7 @@ Where:
 					Length = ParseBigIntValue(LineExtracted[1], 10)
 					EndAddress = StartAddress+Length-1n
 				} else { //Otherwise if ending address provided
-					EndAddress = ParseBigIntValue(LineExtracted[1].replace(/^-\$?/, ""), 16)
+					EndAddress = ParseBigIntValue(LineExtracted[1].replace(/^~/, "").replace(/^\$/, ""), 16)
 					Length = EndAddress-StartAddress+1n
 				}
 				let Description = LineExtracted[2] ?? ""
@@ -266,7 +298,8 @@ Where:
 					Description: Description,
 					SourceText: SourceText,
 					Type: "NonOverlap",
-					ConflictsWith: []
+					ConflictsWith: [],
+					SVGBarXPos: 0n
 				}
 			})
 			let BadObjectOfDataRanges = ObjectOfDataRanges.filter(ByteRange => {
@@ -345,7 +378,7 @@ Where:
 				//  7E0061-7E0062	;>Second
 				// 7E0063 is what we assume the last byte, not 7E0062. Essentially, HighestEndAddressGapDetect holds the highest ending address
 				// currently processed that overlaps.
-				let HighestEndAddressGapDetect = -1n
+				let HighestEndAddressGapDetect = -Infinity
 				let GapList = []
 				let ObjectOfDataRanges_tempSort = ObjectOfDataRanges.sort((a,b) => Number(a.StartAddress-b.StartAddress))
 				let l = ObjectOfDataRanges_tempSort.length
@@ -363,9 +396,10 @@ Where:
 							Length: Length,
 							EndAddress: EndAddress,
 							Description: "Gap",
-							SourceText: StartAddress.toString(16).toUpperCase() + "\t-$" + EndAddress.toString(16).toUpperCase() + "\tGap",
+							SourceText: BigIntToStringSignedHex(StartAddress) + "\t~" + BigIntToStringSignedHex(EndAddress) + "\tGap",
 							Type: "Gap",
-							ConflictsWith: [] //This needed to be here else we had to check if this even exists when sorting, making it slow.
+							ConflictsWith: [], //This needed to be here else we had to check if this even exists when sorting, making it slow.
+							SVGBarXPos: 0n
 						})
 					}
 				}
@@ -436,13 +470,13 @@ Where:
 			document.getElementById("Output_AddressInfo_Table").appendChild(Output_TableHeaderRow)
 			
 			ObjectOfDataRanges.forEach((item, index, Arr) => {
-				PlainTextOutput += "$" + item.StartAddress.toString(16).toUpperCase() + "\t"
+				PlainTextOutput += BigIntToStringSignedHex(item.StartAddress) + "\t"
 				if (document.getElementById("PlaintextSetting_Output_Size").selected) {
 					PlainTextOutput += item.Length.toString(10)
 				} else if (document.getElementById("PlaintextSetting_Output_Ending").selected) {
-					PlainTextOutput += "-$" + item.EndAddress.toString(16).toUpperCase()
+					PlainTextOutput += "~" + BigIntToStringSignedHex(item.EndAddress)
 				} else if (document.getElementById("PlaintextSetting_Output_SizeAndEnding").selected) {
-					PlainTextOutput += item.Length.toString(10) + "/-$" + item.EndAddress.toString(16).toUpperCase()
+					PlainTextOutput += item.Length.toString(10) + "/~" + BigIntToStringSignedHex(item.EndAddress)
 				}
 				PlainTextOutput += "\t" + item.Description
 				
@@ -451,13 +485,13 @@ Where:
 				let TableItem_StartAddress = document.createElement("td")
 				TableItem_StartAddress.style.fontFamily = "monospace"
 				TableItem_StartAddress.style.backgroundColor = ColorCodedStatus[item.Type]
-				TableItem_StartAddress.appendChild(document.createTextNode("$" + item.StartAddress.toString(16).toUpperCase()))
+				TableItem_StartAddress.appendChild(document.createTextNode(BigIntToStringSignedHex(item.StartAddress)))
 				TableItemRow.appendChild(TableItem_StartAddress)
 				
 				let TableItem_LengthEnd = document.createElement("td")
 				TableItem_LengthEnd.style.fontFamily = "monospace"
 				TableItem_LengthEnd.style.backgroundColor = ColorCodedStatus[item.Type]
-				TableItem_LengthEnd.appendChild(document.createTextNode(item.Length.toString(10) + "/$" + item.EndAddress.toString(16).toUpperCase()))
+				TableItem_LengthEnd.appendChild(document.createTextNode(item.Length.toString(10) + "/" + BigIntToStringSignedHex(item.EndAddress)))
 				TableItemRow.appendChild(TableItem_LengthEnd)
 				
 				let TableItem_Description = document.createElement("td")
@@ -493,13 +527,13 @@ Where:
 						OverlappedItem_Table.appendChild(OverlappedItem_HeaderRow)
 						
 						item.ConflictsWith.forEach((overlapped, index2, Arr2) => {
-							PlainTextOutput += "\t;$" + overlapped.StartAddress.toString(16).toUpperCase() + "\t"
+							PlainTextOutput += "\t;" + BigIntToStringSignedHex(overlapped.StartAddress) + "\t"
 							if (document.getElementById("PlaintextSetting_Output_Size").selected) {
 								PlainTextOutput += overlapped.Length.toString(10)
 							} else if (document.getElementById("PlaintextSetting_Output_Ending").selected) {
-								PlainTextOutput += "-$" + overlapped.EndAddress.toString(16).toUpperCase()
+								PlainTextOutput += "~" + BigIntToStringSignedHex(overlapped.EndAddress)
 							} else if (document.getElementById("PlaintextSetting_Output_SizeAndEnding").selected) {
-								PlainTextOutput += overlapped.Length.toString(10) + "/-$" + overlapped.EndAddress.toString(16).toUpperCase()
+								PlainTextOutput += overlapped.Length.toString(10) + "/~" + BigIntToStringSignedHex(overlapped.EndAddress)
 							}
 							PlainTextOutput += "\t" + overlapped.Description
 							if (index2 != Arr2.length-1) {
@@ -510,12 +544,12 @@ Where:
 							
 							let OverlappedItem_Start = document.createElement("td")
 							OverlappedItem_Start.style.fontFamily = "monospace"
-							OverlappedItem_Start.appendChild(document.createTextNode("$" + overlapped.StartAddress.toString(16).toUpperCase()))
+							OverlappedItem_Start.appendChild(document.createTextNode(BigIntToStringSignedHex(overlapped.StartAddress)))
 							OverlappedItem_RowConflict.appendChild(OverlappedItem_Start)
 							
 							let OverlappedItem_LengthEnd = document.createElement("td")
 							OverlappedItem_LengthEnd.style.fontFamily = "monospace"
-							OverlappedItem_LengthEnd.appendChild(document.createTextNode(overlapped.Length.toString(10) + "/$" + overlapped.EndAddress.toString(16).toUpperCase()))
+							OverlappedItem_LengthEnd.appendChild(document.createTextNode(overlapped.Length.toString(10) + "/" + BigIntToStringSignedHex(overlapped.EndAddress)))
 							OverlappedItem_RowConflict.appendChild(OverlappedItem_LengthEnd)
 							
 							let OverlappedItem_Description = document.createElement("td")
@@ -537,20 +571,42 @@ Where:
 			document.getElementById("Output_AddressInfo_Text").value = PlainTextOutput
 		} else {
 			//Clear the graph
-			let SVGGraph = document.getElementById("SVGGraph")
-			SVGGraph.style.width = (Setting_ByteView_NumberOfColumns*Setting_ByteView_SVGGridSizeFactor)
-			SVGGraph.style.height = (Setting_ByteView_NumberOfRows*Setting_ByteView_SVGGridSizeFactor).toString(10) + "px"
-			while (SVGGraph.lastElementChild) {
-				SVGGraph.removeChild(SVGGraph.lastElementChild)
+			SVG_GraphElement.style.width = (Setting_ByteView_NumberOfColumns*Setting_ByteView_SVGGridSizeFactor)
+			SVG_GraphElement.style.height = (Setting_ByteView_NumberOfRows*Setting_ByteView_SVGGridSizeFactor).toString(10) + "px"
+			while (SVG_GraphElement.lastElementChild) {
+				SVG_GraphElement.removeChild(SVG_GraphElement.lastElementChild)
 			}
 			//Variables needed
 			let StartingAddressViewing = ParseBigIntValue(document.getElementById("SVGAddressView").value, 16)
 			
-			//Sort so things in the HTML remains consistent for debugging
+			
 			if (NeedsToUpdateSVGOrder) {
+				//Sort so when overlaps occurs, what appears first in the overlap group appears on the leftmost.
 				SavedSortedForSVGOrder = SavedAddresses.toSorted((a,b) => Number((a.StartAddress-b.StartAddress)))
+				
 				NeedsToUpdateSVGOrder = false
+				if (SavedSortedForSVGOrder.length > 1) {
+					//Adjust X position so overlapped bars are placed to the right until they don't
+					let l = SavedSortedForSVGOrder.length
+					for (let i=0; i<l; i++) {
+						let isOverlappingXY = false
+						do {
+							isOverlappingXY = false
+							for (let i2=0; i2<i && (!isOverlappingXY); i2++) { //Loop all previous before current index
+								let isAddrOverlapping = CheckOverlap(SavedSortedForSVGOrder[i].StartAddress, SavedSortedForSVGOrder[i].EndAddress, SavedSortedForSVGOrder[i2].StartAddress, SavedSortedForSVGOrder[i2].EndAddress)
+								let isSVGBarXPosOverlapping = SavedSortedForSVGOrder[i].SVGBarXPos == SavedSortedForSVGOrder[i2].SVGBarXPos
+								if (isAddrOverlapping && isSVGBarXPosOverlapping) {
+									isOverlappingXY = true
+								}
+							}
+							if (isOverlappingXY) {
+								SavedSortedForSVGOrder[i].SVGBarXPos++
+							}
+						} while (isOverlappingXY) //If still overlapping, repeat
+					}
+				}
 			}
+			
 			//Line seperator
 			for (let i=0n; i<Setting_ByteView_NumberOfRows; i++) {
 				let AddressSeperatorLine = createSVGElement("line")
@@ -559,7 +615,7 @@ Where:
 				AddressSeperatorLine.setAttribute("x2", (Setting_ByteView_NumberOfColumns*Setting_ByteView_SVGGridSizeFactor).toString(10))
 				AddressSeperatorLine.setAttribute("y1", (i*Setting_ByteView_SVGGridSizeFactor).toString(10))
 				AddressSeperatorLine.setAttribute("y2", (i*Setting_ByteView_SVGGridSizeFactor).toString(10))
-				SVGGraph.appendChild(AddressSeperatorLine)
+				SVG_GraphElement.appendChild(AddressSeperatorLine)
 			}
 			
 			
@@ -577,14 +633,14 @@ Where:
 				AddressRect.setAttribute("height", Height.toString(10))
 				AddressRect.setAttribute("width", Setting_ByteView_SVGGridSizeFactor.toString(10))
 				
-				AddressRect.setAttribute("x", "50")
+				AddressRect.setAttribute("x", (50n + item.SVGBarXPos*Setting_ByteView_SVGGridSizeFactor).toString(10))
 				AddressRect.setAttribute("y", TopPos.toString(10))
 				
 				let TitleHover = createSVGElement("title")
 				TitleHover.appendChild(document.createTextNode(item.SourceText))
 				AddressRect.appendChild(TitleHover)
 				
-				SVGGraph.appendChild(AddressRect)
+				SVG_GraphElement.appendChild(AddressRect)
 			})
 			
 			
@@ -596,9 +652,9 @@ Where:
 				AddressText.setAttribute("text-anchor", "left")
 				AddressText.setAttribute("alignment-baseline", "hanging")
 				AddressText.setAttribute("font-family", "monospace")
-				AddressText.appendChild(document.createTextNode("$" + (StartingAddressViewing+i).toString(16).toUpperCase()))
+				AddressText.appendChild(document.createTextNode(BigIntToStringSignedHex((StartingAddressViewing+i))))
 				AddressText.setAttribute("transform", "translate(0, " + (i*Setting_ByteView_SVGGridSizeFactor).toString(10) + ")")
-				SVGGraph.appendChild(AddressText)
+				SVG_GraphElement.appendChild(AddressText)
 			}
 			
 		}
@@ -667,7 +723,7 @@ Where:
 				let startPos = target.selectionStart;
 				let endPos = target.selectionEnd;
 				target.value = target.value.substring(0, startPos) + '\t' + target.value.substring(endPos, target.value.length);
-				MainCode()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
+				target.oninput()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
 
 				target.selectionStart = startPos + 1;
 				target.selectionEnd = startPos + 1;
@@ -679,7 +735,7 @@ Where:
 
 			if(e.preventDefault) {
 				e.preventDefault();
-				MainCode()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
+				target.oninput()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
 			}
 			return false;
 		}
@@ -703,5 +759,17 @@ Where:
 	function BigintClamp(num, min, max) {
 		//Restrict a number within a specified range, bigInt edition.
 			return num <= min ? min : num >= max ? max : num;
+	}
+	function BigIntToStringSignedHex(BigIntVal) {
+		//Converts a bigint value into a signed ASM-styled hex number:
+		//16n -> "$10"
+		//-16n -> "-$10"
+		let StringOutput = ""
+		if (BigIntVal >= 0n) {
+			StringOutput = "$" + BigIntVal.toString(16).toUpperCase()
+		} else {
+			StringOutput = "-$" + (BigIntVal*-1n).toString(16).toUpperCase()
+		}
+		return StringOutput
 	}
 </script>

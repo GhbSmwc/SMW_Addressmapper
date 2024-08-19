@@ -570,8 +570,8 @@ Where:
 				AddressRect.setAttribute("ry", "8")
 				AddressRect.setAttribute("fill", ColorCodedStatus[item.Type])
 				
-				let TopPos = BigintClamp((item.StartAddress-StartingAddressViewing)*Setting_ByteView_SVGGridSizeFactor, -Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfColumns*Setting_ByteView_SVGGridSizeFactor+1n)*Setting_ByteView_SVGGridSizeFactor)
-				let BottomPos = BigintClamp((item.EndAddress-StartingAddressViewing+1n)*Setting_ByteView_SVGGridSizeFactor, -Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfColumns*Setting_ByteView_SVGGridSizeFactor+1n)*Setting_ByteView_SVGGridSizeFactor)
+				let TopPos = BigintClamp((item.StartAddress-StartingAddressViewing)*Setting_ByteView_SVGGridSizeFactor, -Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfRows+1n)*Setting_ByteView_SVGGridSizeFactor)
+				let BottomPos = BigintClamp((item.EndAddress-StartingAddressViewing+1n)*Setting_ByteView_SVGGridSizeFactor, -Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfRows+1n)*Setting_ByteView_SVGGridSizeFactor)
 				let Height = BottomPos-TopPos
 				
 				AddressRect.setAttribute("height", Height.toString(10))

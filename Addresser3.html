@@ -73,7 +73,7 @@ Where:
 	If you want to view the table with invalid tag setup and have it not be broken, check the box labeled &ldquo;Escape html tags and escape characters for table description&rdquo;, and it will cancel out the HTML effects (they're <a href="https://en.wikipedia.org/wiki/Character_encodings_in_HTML#XML_character_references">escaped</a>) within the description field.</li>
 </ul>
 
-<textarea id="UserInputList" cols="75" rows="30" oninput="HaveEditedTextarea = true; MainCode()" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
+<textarea id="UserInputList" cols="75" rows="30" oninput="HaveEditedTextarea = true; NeedsToUpdateSVGOrder = true; MainCode()" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
 <div>
 	View mode:
 	<div><label><input type="radio" name="Setting_ViewMode" onchange="AdjustMode()" id="Setting_ViewMode_Table" checked>Table range</label></div>
@@ -102,7 +102,7 @@ Where:
 	</select><label><input type="checkbox" id="PlaintextSetting_Output_OverlapStatus" checked onchange="MainCode()">Show gap/overlap/non-overlap status</label>
 </div>
 <div id="SettingPanel_ByteViewOptions" hidden>
-	Address to view: $<input type="text" value="7E0000" class="HexNumberInput"><br>
+	Address to view: $<input type="text" value="7E0000" class="HexNumberInput" id="SVGAddressView"><br>
 	Useful tips using this feature:
 	<ul>
 	<li>Hover your mouse over the display and roll your scroll wheel to scroll the range</li>
@@ -113,8 +113,15 @@ Where:
 <hr>
 <pre hidden id="Output_ErrorMessage" style="border: 1px solid white"></pre>
 <div id="Output_AddressInfo">
-	<textarea id="Output_AddressInfo_Text" readonly cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: white"></textarea>
-	<table id="Output_AddressInfo_Table"></table>
+	<div id="ViewMode_TextTable">
+		<textarea id="Output_AddressInfo_Text" readonly cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: white"></textarea>
+		<div style="overflow: auto; height: 500px">
+			<table id="Output_AddressInfo_Table"></table>
+		</div>
+	</div>
+	<div id="ViewMode_AddressBytes" hidden>
+		<svg id="SVGGraph" style="width: 400px; height: 700px; border: 1px solid white"></svg>
+	</div>
 </div>
 <script>
 	const Setting_ByteView_SVGGridSizeFactor = 16n
@@ -126,9 +133,32 @@ Where:
 	let SavedAddresses = []
 	let HaveEditedTextarea = false
 	let SortChanges = true
+	let NeedsToUpdateSVGOrder = false
+	let SavedSortedForSVGOrder = []
+	
+	let ColorCodedStatus = {
+	"Gap": "#808080",
+	"NonOverlap" : "#008000",
+	"Overlap" : "#800000"
+	}
 	
 	AddHexIncrementDecrementToTextInputs()
 	document.getElementById("UserInputList").addEventListener("keydown", this.keyHandler_Tab, false)
+	document.getElementById("SVGGraph").addEventListener(
+		"wheel",
+		function (e) {
+			e.preventDefault()
+			let AddressView = ParseBigIntValue(document.getElementById("SVGAddressView").value, 16)
+			if (e.deltaY > 0) {
+				AddressView = AddressView+4n
+			} else if (e.deltaY < 0) {
+				AddressView = AddressView-4n
+			}
+			document.getElementById("SVGAddressView").value = AddressView.toString(16).toUpperCase()
+			MainCode()
+		}
+	
+	)
 	
 	function AddHexIncrementDecrementToTextInputs() {
 		//Elements you want to apply to must contain a class "HexNumberInput"
@@ -169,18 +199,17 @@ Where:
 		if (document.getElementById("Setting_ViewMode_Table").checked) {
 			document.getElementById("SettingPanel_TableViewOptions").hidden = false
 			document.getElementById("SettingPanel_ByteViewOptions").hidden = true
+			document.getElementById("ViewMode_TextTable").hidden = false
+			document.getElementById("ViewMode_AddressBytes").hidden = true
 		} else if (document.getElementById("Setting_ViewMode_Byte").checked) {
 			document.getElementById("SettingPanel_TableViewOptions").hidden = true
 			document.getElementById("SettingPanel_ByteViewOptions").hidden = false
+			document.getElementById("ViewMode_TextTable").hidden = true
+			document.getElementById("ViewMode_AddressBytes").hidden = false
 		}
 		MainCode()
 	}
 	function MainCode() {
-		document.getElementById("Output_AddressInfo_Text").value = ""
-		let OutputTable = document.getElementById("Output_AddressInfo_Table")
-		while (OutputTable.lastElementChild) {
-			OutputTable.removeChild(OutputTable.lastElementChild)
-		}
 		ObjectOfDataRanges = []
 		if (HaveEditedTextarea) {
 			HaveEditedTextarea = false
@@ -202,6 +231,7 @@ Where:
 			});
 			if (BadLines.length != 0) {
 				document.getElementById("Output_ErrorMessage").hidden = false
+				document.getElementById("Output_AddressInfo").hidden = true
 				let ErrorText = ""
 				ErrorText += "Error! These lines contain invalid info:\n"
 				BadLines.forEach((Line, Index, Arr) => {
@@ -247,6 +277,7 @@ Where:
 			})
 			if (BadObjectOfDataRanges.length != 0) {
 				document.getElementById("Output_ErrorMessage").hidden = false
+				document.getElementById("Output_AddressInfo").hidden = true
 				let ErrorText = ""
 				ErrorText += "Error! These ranges either have a size of less than 1 byte or an ending address before the start:\n"
 				BadObjectOfDataRanges.forEach((Item, Index, Arr) => {
@@ -259,6 +290,7 @@ Where:
 				return
 			}
 			document.getElementById("Output_ErrorMessage").hidden = true
+			document.getElementById("Output_AddressInfo").hidden = false
 			//Remove duplicate entries
 			ObjectOfDataRanges = ((ItemsList) => {
 				let DupeFree = []
@@ -331,6 +363,7 @@ Where:
 							Length: Length,
 							EndAddress: EndAddress,
 							Description: "Gap",
+							SourceText: StartAddress.toString(16).toUpperCase() + "\t-$" + EndAddress.toString(16).toUpperCase() + "\tGap",
 							Type: "Gap",
 							ConflictsWith: [] //This needed to be here else we had to check if this even exists when sorting, making it slow.
 						})
@@ -344,72 +377,231 @@ Where:
 		} else {
 			ObjectOfDataRanges = SavedAddresses
 		}
-		ObjectOfDataRanges = ObjectOfDataRanges.filter(item => document.getElementById("Filter_" + item.Type).checked)
-		let ReverseSort = document.getElementById("SortOption_Reverse").checked ? -1 : 1
-		if (document.getElementById("SortOption_ByAddr").selected) {
-			document.getElementById("SortOption_Reverse").disabled = false
-			ObjectOfDataRanges.sort((a,b) => Number((a.StartAddress-b.StartAddress))*ReverseSort)
-		} else if (document.getElementById("SortOption_Size").selected) {
-			document.getElementById("SortOption_Reverse").disabled = false
-			ObjectOfDataRanges.sort((a,b) => Number((a.Length-b.Length))*ReverseSort)
-		} else if (document.getElementById("SortOption_Discription").selected) {
-			document.getElementById("SortOption_Reverse").disabled = false
-			ObjectOfDataRanges.sort((a,b) => {
-				if (a.Description === b.Description) {
-					return 0
-				}
-				return ((a.Description < b.Description) ? -1 : 1)*ReverseSort
-			})
-		} else if (document.getElementById("SortOption_Type").selected) {
-			document.getElementById("SortOption_Reverse").disabled = false
-			ObjectOfDataRanges.sort((a,b) => {
-				if (a.Type === b.Type) {
-					return 0
-				}
-				return ((a.Type < b.Type) ? -1 : 1)*ReverseSort
-			})
-		} else if (document.getElementById("SortOption_OverlapCount").selected) {
-			document.getElementById("SortOption_Reverse").disabled = false
-			ObjectOfDataRanges.sort((a,b) => Number((a.ConflictsWith.Length-b.ConflictsWith.Length))*ReverseSort)
-		} else {
-			document.getElementById("SortOption_Reverse").disabled = true
-		}
-		let PlainTextOutput = ""
-		ObjectOfDataRanges.forEach((item, index, Arr) => {
-			PlainTextOutput += "$" + item.StartAddress.toString(16).toUpperCase() + "\t"
-			if (document.getElementById("PlaintextSetting_Output_Size").selected) {
-				PlainTextOutput += item.Length.toString(10)
-			} else if (document.getElementById("PlaintextSetting_Output_Ending").selected) {
-				PlainTextOutput += "-$" + item.EndAddress.toString(16).toUpperCase()
-			} else if (document.getElementById("PlaintextSetting_Output_SizeAndEnding").selected) {
-				PlainTextOutput += item.Length.toString(10) + "/-$" + item.EndAddress.toString(16).toUpperCase()
+		if (document.getElementById("Setting_ViewMode_Table").checked) {
+			document.getElementById("Output_AddressInfo_Text").value = ""
+			let OutputTable = document.getElementById("Output_AddressInfo_Table")
+			while (OutputTable.lastElementChild) {
+				OutputTable.removeChild(OutputTable.lastElementChild)
 			}
-			PlainTextOutput += "\t" + item.Description
-			if (document.getElementById("PlaintextSetting_Output_OverlapStatus").checked) {
-				if (item.ConflictsWith.length != 0) {
-					PlainTextOutput += "\n\t;^Overlaps with:\n"
-					item.ConflictsWith.forEach((overlapped, index2, Arr2) => {
-						PlainTextOutput += "\t;$" + overlapped.StartAddress.toString(16).toUpperCase() + "\t"
-						if (document.getElementById("PlaintextSetting_Output_Size").selected) {
-							PlainTextOutput += overlapped.Length.toString(10)
-						} else if (document.getElementById("PlaintextSetting_Output_Ending").selected) {
-							PlainTextOutput += "-$" + overlapped.EndAddress.toString(16).toUpperCase()
-						} else if (document.getElementById("PlaintextSetting_Output_SizeAndEnding").selected) {
-							PlainTextOutput += overlapped.Length.toString(10) + "/-$" + overlapped.EndAddress.toString(16).toUpperCase()
-						}
-						PlainTextOutput += "\t" + overlapped.Description
-						if (index2 != Arr2.length-1) {
-							PlainTextOutput += "\n"
-						}
-					})
+			ObjectOfDataRanges = ObjectOfDataRanges.filter(item => document.getElementById("Filter_" + item.Type).checked)
+			let ReverseSort = document.getElementById("SortOption_Reverse").checked ? -1 : 1
+			if (document.getElementById("SortOption_ByAddr").selected) {
+				document.getElementById("SortOption_Reverse").disabled = false
+				ObjectOfDataRanges.sort((a,b) => Number((a.StartAddress-b.StartAddress))*ReverseSort)
+			} else if (document.getElementById("SortOption_Size").selected) {
+				document.getElementById("SortOption_Reverse").disabled = false
+				ObjectOfDataRanges.sort((a,b) => Number((a.Length-b.Length))*ReverseSort)
+			} else if (document.getElementById("SortOption_Discription").selected) {
+				document.getElementById("SortOption_Reverse").disabled = false
+				ObjectOfDataRanges.sort((a,b) => {
+					if (a.Description === b.Description) {
+						return 0
+					}
+					return ((a.Description < b.Description) ? -1 : 1)*ReverseSort
+				})
+			} else if (document.getElementById("SortOption_Type").selected) {
+				document.getElementById("SortOption_Reverse").disabled = false
+				ObjectOfDataRanges.sort((a,b) => {
+					if (a.Type === b.Type) {
+						return 0
+					}
+					return ((a.Type < b.Type) ? -1 : 1)*ReverseSort
+				})
+			} else if (document.getElementById("SortOption_OverlapCount").selected) {
+				document.getElementById("SortOption_Reverse").disabled = false
+				ObjectOfDataRanges.sort((a,b) => Number((a.ConflictsWith.Length-b.ConflictsWith.Length))*ReverseSort)
+			} else {
+				document.getElementById("SortOption_Reverse").disabled = true
+			}
+			let PlainTextOutput = ""
+			
+			let Output_TableHeaderRow = document.createElement("tr")
+			
+			let Output_TableHeader_StartAddress = document.createElement("th")
+			Output_TableHeader_StartAddress.appendChild(document.createTextNode("Starting address"))
+			Output_TableHeaderRow.appendChild(Output_TableHeader_StartAddress)
+			
+			let Output_TableHeader_LengthAndEnd = document.createElement("th")
+			Output_TableHeader_LengthAndEnd.appendChild(document.createTextNode("Length/ending address"))
+			Output_TableHeaderRow.appendChild(Output_TableHeader_LengthAndEnd)
+			
+			let Output_TableHeader_Description = document.createElement("th")
+			Output_TableHeader_Description.appendChild(document.createTextNode("Description"))
+			Output_TableHeaderRow.appendChild(Output_TableHeader_Description)
+			
+			let Output_TableHeader_Overlap = document.createElement("th")
+			Output_TableHeader_Overlap.appendChild(document.createTextNode("Overlap"))
+			Output_TableHeaderRow.appendChild(Output_TableHeader_Overlap)
+			
+			document.getElementById("Output_AddressInfo_Table").appendChild(Output_TableHeaderRow)
+			
+			ObjectOfDataRanges.forEach((item, index, Arr) => {
+				PlainTextOutput += "$" + item.StartAddress.toString(16).toUpperCase() + "\t"
+				if (document.getElementById("PlaintextSetting_Output_Size").selected) {
+					PlainTextOutput += item.Length.toString(10)
+				} else if (document.getElementById("PlaintextSetting_Output_Ending").selected) {
+					PlainTextOutput += "-$" + item.EndAddress.toString(16).toUpperCase()
+				} else if (document.getElementById("PlaintextSetting_Output_SizeAndEnding").selected) {
+					PlainTextOutput += item.Length.toString(10) + "/-$" + item.EndAddress.toString(16).toUpperCase()
 				}
+				PlainTextOutput += "\t" + item.Description
+				
+				let TableItemRow = document.createElement("tr")
+				
+				let TableItem_StartAddress = document.createElement("td")
+				TableItem_StartAddress.style.fontFamily = "monospace"
+				TableItem_StartAddress.style.backgroundColor = ColorCodedStatus[item.Type]
+				TableItem_StartAddress.appendChild(document.createTextNode("$" + item.StartAddress.toString(16).toUpperCase()))
+				TableItemRow.appendChild(TableItem_StartAddress)
+				
+				let TableItem_LengthEnd = document.createElement("td")
+				TableItem_LengthEnd.style.fontFamily = "monospace"
+				TableItem_LengthEnd.style.backgroundColor = ColorCodedStatus[item.Type]
+				TableItem_LengthEnd.appendChild(document.createTextNode(item.Length.toString(10) + "/$" + item.EndAddress.toString(16).toUpperCase()))
+				TableItemRow.appendChild(TableItem_LengthEnd)
+				
+				let TableItem_Description = document.createElement("td")
+				TableItem_Description.style.fontFamily = "monospace"
+				TableItem_Description.style.backgroundColor = ColorCodedStatus[item.Type]
+				TableItem_Description.appendChild(document.createTextNode(item.Description))
+				TableItemRow.appendChild(TableItem_Description)
+				
+				let TableItem_Overlap = document.createElement("td")
+				TableItem_Overlap.style.backgroundColor = ColorCodedStatus[item.Type]
+				
+				TableItemRow.appendChild(TableItem_Overlap)
+				
+				if (document.getElementById("PlaintextSetting_Output_OverlapStatus").checked) {
+					if (item.ConflictsWith.length != 0) {
+						PlainTextOutput += "\n\t;^Overlaps with:\n"
+						
+						let OverlappedItem_Table = document.createElement("table")
+						let OverlappedItem_HeaderRow = document.createElement("tr")
+						
+						let OverlappedItem_HeaderStart = document.createElement("th")
+						OverlappedItem_HeaderStart.appendChild(document.createTextNode("Starting address"))
+						OverlappedItem_HeaderRow.appendChild(OverlappedItem_HeaderStart)
+						
+						let OverlappedItem_LengthEnd = document.createElement("th")
+						OverlappedItem_LengthEnd.appendChild(document.createTextNode("length/end"))
+						OverlappedItem_HeaderRow.appendChild(OverlappedItem_LengthEnd)
+						
+						let OverlappedItem_Description = document.createElement("th")
+						OverlappedItem_Description.appendChild(document.createTextNode("Description"))
+						OverlappedItem_HeaderRow.appendChild(OverlappedItem_Description)
+						
+						OverlappedItem_Table.appendChild(OverlappedItem_HeaderRow)
+						
+						item.ConflictsWith.forEach((overlapped, index2, Arr2) => {
+							PlainTextOutput += "\t;$" + overlapped.StartAddress.toString(16).toUpperCase() + "\t"
+							if (document.getElementById("PlaintextSetting_Output_Size").selected) {
+								PlainTextOutput += overlapped.Length.toString(10)
+							} else if (document.getElementById("PlaintextSetting_Output_Ending").selected) {
+								PlainTextOutput += "-$" + overlapped.EndAddress.toString(16).toUpperCase()
+							} else if (document.getElementById("PlaintextSetting_Output_SizeAndEnding").selected) {
+								PlainTextOutput += overlapped.Length.toString(10) + "/-$" + overlapped.EndAddress.toString(16).toUpperCase()
+							}
+							PlainTextOutput += "\t" + overlapped.Description
+							if (index2 != Arr2.length-1) {
+								PlainTextOutput += "\n"
+							}
+							
+							let OverlappedItem_RowConflict = document.createElement("tr")
+							
+							let OverlappedItem_Start = document.createElement("td")
+							OverlappedItem_Start.style.fontFamily = "monospace"
+							OverlappedItem_Start.appendChild(document.createTextNode("$" + overlapped.StartAddress.toString(16).toUpperCase()))
+							OverlappedItem_RowConflict.appendChild(OverlappedItem_Start)
+							
+							let OverlappedItem_LengthEnd = document.createElement("td")
+							OverlappedItem_LengthEnd.style.fontFamily = "monospace"
+							OverlappedItem_LengthEnd.appendChild(document.createTextNode(overlapped.Length.toString(10) + "/$" + overlapped.EndAddress.toString(16).toUpperCase()))
+							OverlappedItem_RowConflict.appendChild(OverlappedItem_LengthEnd)
+							
+							let OverlappedItem_Description = document.createElement("td")
+							OverlappedItem_Description.style.fontFamily = "monospace"
+							OverlappedItem_Description.appendChild(document.createTextNode(overlapped.Description))
+							OverlappedItem_RowConflict.appendChild(OverlappedItem_Description)
+							
+							OverlappedItem_Table.appendChild(OverlappedItem_RowConflict)
+						})
+						TableItem_Overlap.appendChild(OverlappedItem_Table)
+					}
+				}
+				
+				if (index != Arr.length-1) {
+					PlainTextOutput += "\n"
+				}
+				document.getElementById("Output_AddressInfo_Table").appendChild(TableItemRow)
+			})
+			document.getElementById("Output_AddressInfo_Text").value = PlainTextOutput
+		} else {
+			//Clear the graph
+			let SVGGraph = document.getElementById("SVGGraph")
+			SVGGraph.style.width = (Setting_ByteView_NumberOfColumns*Setting_ByteView_SVGGridSizeFactor)
+			SVGGraph.style.height = (Setting_ByteView_NumberOfRows*Setting_ByteView_SVGGridSizeFactor).toString(10) + "px"
+			while (SVGGraph.lastElementChild) {
+				SVGGraph.removeChild(SVGGraph.lastElementChild)
+			}
+			//Variables needed
+			let StartingAddressViewing = ParseBigIntValue(document.getElementById("SVGAddressView").value, 16)
+			
+			//Sort so things in the HTML remains consistent for debugging
+			if (NeedsToUpdateSVGOrder) {
+				SavedSortedForSVGOrder = SavedAddresses.toSorted((a,b) => Number((a.StartAddress-b.StartAddress)))
+				NeedsToUpdateSVGOrder = false
+			}
+			//Line seperator
+			for (let i=0n; i<Setting_ByteView_NumberOfRows; i++) {
+				let AddressSeperatorLine = createSVGElement("line")
+				AddressSeperatorLine.setAttribute("stroke", "#ffffff")
+				AddressSeperatorLine.setAttribute("x1", "0")
+				AddressSeperatorLine.setAttribute("x2", (Setting_ByteView_NumberOfColumns*Setting_ByteView_SVGGridSizeFactor).toString(10))
+				AddressSeperatorLine.setAttribute("y1", (i*Setting_ByteView_SVGGridSizeFactor).toString(10))
+				AddressSeperatorLine.setAttribute("y2", (i*Setting_ByteView_SVGGridSizeFactor).toString(10))
+				SVGGraph.appendChild(AddressSeperatorLine)
 			}
 			
-			if (index != Arr.length-1) {
-				PlainTextOutput += "\n"
+			
+			//Generate bars representing an address range
+			SavedSortedForSVGOrder.forEach(item => {
+				let AddressRect = createSVGElement("rect")
+				AddressRect.setAttribute("rx", "8")
+				AddressRect.setAttribute("ry", "8")
+				AddressRect.setAttribute("fill", ColorCodedStatus[item.Type])
+				
+				let TopPos = BigintClamp((item.StartAddress-StartingAddressViewing)*Setting_ByteView_SVGGridSizeFactor, -Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfColumns*Setting_ByteView_SVGGridSizeFactor+1n)*Setting_ByteView_SVGGridSizeFactor)
+				let BottomPos = BigintClamp((item.EndAddress-StartingAddressViewing+1n)*Setting_ByteView_SVGGridSizeFactor, -Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfColumns*Setting_ByteView_SVGGridSizeFactor+1n)*Setting_ByteView_SVGGridSizeFactor)
+				let Height = BottomPos-TopPos
+				
+				AddressRect.setAttribute("height", Height.toString(10))
+				AddressRect.setAttribute("width", Setting_ByteView_SVGGridSizeFactor.toString(10))
+				
+				AddressRect.setAttribute("x", "50")
+				AddressRect.setAttribute("y", TopPos.toString(10))
+				
+				let TitleHover = createSVGElement("title")
+				TitleHover.appendChild(document.createTextNode(item.SourceText))
+				AddressRect.appendChild(TitleHover)
+				
+				SVGGraph.appendChild(AddressRect)
+			})
+			
+			
+			//Generate addresses text
+			for (let i=0n; i<Setting_ByteView_NumberOfRows; i++) {
+				let AddressText = createSVGElement("text")
+				AddressText.setAttribute("stroke", "#ffffff")
+				AddressText.setAttribute("font-weight", "lighter")
+				AddressText.setAttribute("text-anchor", "left")
+				AddressText.setAttribute("alignment-baseline", "hanging")
+				AddressText.setAttribute("font-family", "monospace")
+				AddressText.appendChild(document.createTextNode("$" + (StartingAddressViewing+i).toString(16).toUpperCase()))
+				AddressText.setAttribute("transform", "translate(0, " + (i*Setting_ByteView_SVGGridSizeFactor).toString(10) + ")")
+				SVGGraph.appendChild(AddressText)
 			}
-		})
-		document.getElementById("Output_AddressInfo_Text").value = PlainTextOutput
+			
+		}
 	}
 //helper
 	function ParseBigIntValue(string, radix) {
@@ -505,4 +697,11 @@ Where:
 				return false
 			}
 		}
+	function createSVGElement(tag) { //https://stackoverflow.com/questions/57894500/why-is-it-necessary-to-use-document-createelementns-when-adding-svg-tags-to
+		return document.createElementNS('http://www.w3.org/2000/svg', tag)
+	}
+	function BigintClamp(num, min, max) {
+		//Restrict a number within a specified range, bigInt edition.
+			return num <= min ? min : num >= max ? max : num;
+	}
 </script>

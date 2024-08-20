@@ -1,0 +1,121 @@
+<html>
+	<head>
+		<style>
+			html {
+			background-color: black;
+			color: white;
+			font-family: sans-serif;
+			}
+			
+			svg {
+				fill: white;
+				font-family: monospace;
+			}
+			rect:hover {
+				fill: blue
+			}
+			
+			table, th, td {
+			border: 1px solid white;
+			border-collapse: collapse;
+			}
+			
+			span.NoLineBreak {
+				white-space: nowrap;
+			}
+			
+			input[type='text'] { font-family: monospace;}
+			input[type='number'] { font-family: monospace;}
+			
+			select, option {
+				font-family: monospace;
+			}
+			
+			textarea {
+				white-space: pre;
+				overflow-wrap: normal;
+				overflow-x: scroll;
+			}
+		</style>
+	</head>
+<body>
+
+
+<p>This tool will take the provided freeram defines, and the list of unused RAM, and automatically find freeram and will assign each freeram defines to which address to use.</p>
+
+<p>Make sure the supplied RAMs do not overlap.</p>
+
+Format for freeram should be:<br>
+<table><tr><td><pre>ASM_resource_name	!RAM_Define	Number_of_bytes_Decimal	Optional_min	Optional_max
+ASM_resource_name	!RAM_Define	Number_of_bytes_Decimal	Optional_min	Optional_max
+ASM_resource_name	!RAM_Define	Number_of_bytes_Decimal	Optional_min	Optional_max</pre></td></tr></table>
+
+Where:
+<ul>
+<li><kbd>ASM_resource_name</kbd> is the name of an ASM resource. Can be any character but must not contain a linebreak or tab.</li>
+<li><kbd>!RAM_Define</kbd> is the define name used in the ASM file that represents a RAM to use. Just like above, no linebreaks, no tabs.</li>
+<li><kbd>Number_of_bytes_Decimal</kbd> is how many bytes the RAM it requires, in decimal. Must be at least 1.</li>
+<li>
+	<kbd>Optional_min</kbd>: This is optional, either enter an address hex number (&ldquo;$&rdquo; is optional) or just &ldquo;-&rdquo; to nullify it. When a hex number is supplied, this forces
+	the RAM to search for a freeram define to not have its starting address location below this address. This is useful if RAMs that an ASM resource must or must not reset during loading screens (black screen).
+</li>
+<li><kbd>Optional_max</kbd>: Same as above, but forces the location of a freeram define address not to have its ending byte greater than this address. Note: when both min and max are set, max must be greater than or equal to min.</li>
+</ul>
+Format for list of empty RAM should be (same as the address tracker):<br>
+<table><tr><td><pre>Address	Size_or_ending_address	Optional_description
+Address	Size_or_ending_address	Optional_description
+Address	Size_or_ending_address	Optional_description</pre></td></tr></table><br>
+All of these ranges must NOT overlap.
+<ul>
+<li><kbd>Address</kbd> is the starting address. (dollar sign &ldquo;$&rdquo; is optional)</li>
+<li><kbd>Size_or_ending_address</kbd> is the size or ending addresses (entering a decimal number results in number of bytes, and typing hyphen &ldquo;-&rdquo;, before a hexadecimal number denotes an ending address (dollar sign &ldquo;$&rdquo; is optional))</li>
+<li><kbd>Optional_description</kbd> is optional, will not be checked by this javascript at all. When the remove duplicate flags is checked here, will only check the location and size/ending address.</li>
+</ul><br><br>
+Notes:
+<ul>
+	<li>This tool will process each freeram defines from top to bottom order from the text, and the list of gaps at increasing address order. This means that the RAM at the top of the list will be assigned to the lowest address location that it can fit
+	(unless if not, will state no suitable address is found)</li>
+</ul>
+
+<table>
+	<tr>
+		<th>Enter your list of ASM resource freeram defines here.</th>
+		<th>Enter your list of empty RAMs here.</th>
+	</tr>
+	<tr>
+		<td>
+			<textarea id="TextareaInput_FreeramDefines" onchange="MainCode()" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
+		</td>
+		<td>
+			<textarea id="TextareaInput_EmptyRams" onchange="MainCode()" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
+		</td>
+	</tr>
+</table>
+<div>Sort:
+<select onchange="MainCode()">
+	<option id="SortSetting_None">None</option>
+	<option id="SortSetting_ResourceName" selected>Resource name</option>
+	<option id="SortSetting_Addr">By address</option>
+	<option id="SortSetting_Length">By number of bytes</option>
+</select><label><input type="checkbox">Reverse order</label><br><br>
+Output format: <select onchange="MainCode()">
+	<optgroup label="ASM format">
+		<option id="OutputFormatSetting_ASMFormat">ASM define</option>
+	</optgroup>
+	<optgroup label="Address tracker format">
+		<option id="OutputFormatSetting_AddressTracker">Address tracker format - length</option>
+		<option id="OutputFormatSetting_AddressTracker">Address tracker format - end address</option>
+	</optgroup>
+</select><br><br>
+
+Duplicate settings:
+	<div><label><input type="checkbox" checked id="DuplicateSettings_Defines">Ignore duplicates for defines</label></div>
+	<div><label><input type="checkbox" checked id="DuplicateSettings_EmptyRams">Ignore duplicates for defines</label></div>
+</div>
+<hr>
+<textarea id="TextareaOutput_AssignedRAMs" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
+<script>
+	function MainCode() {
+	
+	}
+</script>

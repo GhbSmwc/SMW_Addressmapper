@@ -106,7 +106,7 @@ Where:
 	Useful tips using this feature:
 	<ul>
 	<li>Hover your mouse over the display and roll your scroll wheel to scroll the graph</li>
-	<li>To scroll by an entire screen, hold SHIFT and roll your scroll wheel. You can also do this by clicking on the graph and press page up/down.</li>
+	<li>To scroll by an entire screen, hold CTRL and roll your scroll wheel. You can also do this by clicking on the graph and press page up/down.</li>
 	</ul>
 </div>
 <hr>
@@ -132,6 +132,7 @@ Where:
 		</div>
 	</div>
 	<div id="ViewMode_AddressBytes" hidden>
+		<button onclick="ResetSVGHorizScoll()" id="Btn_ResetHorizScroll">Reset horizontal scroll</button><br>
 		<svg id="SVGGraph" style="width: 400px; height: 700px; border: 1px solid white" tabindex="0"></svg>
 	</div>
 </div>
@@ -148,6 +149,7 @@ Where:
 	let SavedSortedForSVGOrder = []
 	let UsedAddress_Min = Infinity
 	let UsedAddress_Max = -Infinity
+	let SVGHorizontalScroll = 0n
 	
 	let ColorCodedStatus = {
 		"NonOverlap" : "#008000",
@@ -162,17 +164,26 @@ Where:
 		"wheel",
 		function (e) {
 			e.preventDefault()
-			let AddressView = ParseBigIntValue(document.getElementById("SVGAddressView").value, 16)
-			let ScrollSize = 4n
-			if (e.shiftKey) {
-				ScrollSize = Setting_ByteView_NumberOfRows
+			if (!e.shiftKey) {
+				let AddressView = ParseBigIntValue(document.getElementById("SVGAddressView").value, 16)
+				let ScrollSize = 4n
+				if (e.ctrlKey) {
+					ScrollSize = Setting_ByteView_NumberOfRows
+				}
+				if (e.deltaY > 0) {
+					AddressView = AddressView+ScrollSize
+				} else if (e.deltaY < 0) {
+					AddressView = AddressView-ScrollSize
+				}
+				document.getElementById("SVGAddressView").value = AddressView.toString(16).toUpperCase()
+			} else {
+				let ScrollSize = 1n
+				if (e.deltaY > 0) {
+					SVGHorizontalScroll = SVGHorizontalScroll+ScrollSize
+				} else if (e.deltaY < 0) {
+					SVGHorizontalScroll = SVGHorizontalScroll-ScrollSize
+				}
 			}
-			if (e.deltaY > 0) {
-				AddressView = AddressView+ScrollSize
-			} else if (e.deltaY < 0) {
-				AddressView = AddressView-ScrollSize
-			}
-			document.getElementById("SVGAddressView").value = AddressView.toString(16).toUpperCase()
 			MainCode()
 		}
 	
@@ -183,7 +194,7 @@ Where:
 			let shouldUpdateOutput = false
 			
 			let InputKeyPressed = e.key
-			if (InputKeyPressed == "ArrowUp"||InputKeyPressed == "ArrowDown"||InputKeyPressed == "PageUp"||InputKeyPressed == "PageDown") {
+			if (InputKeyPressed == "ArrowUp"||InputKeyPressed == "ArrowDown"||InputKeyPressed == "ArrowLeft"||InputKeyPressed == "ArrowRight"||InputKeyPressed == "PageUp"||InputKeyPressed == "PageDown") {
 				e.preventDefault()
 				shouldUpdateOutput = true
 			}
@@ -197,6 +208,13 @@ Where:
 			} else if (InputKeyPressed == "PageDown") {
 				AddressView = AddressView+Setting_ByteView_NumberOfRows
 			}
+			if (InputKeyPressed == "ArrowLeft") {
+				SVGHorizontalScroll--
+			}
+			if (InputKeyPressed == "ArrowRight") {
+				SVGHorizontalScroll++
+			}
+			
 			document.getElementById("SVGAddressView").value = AddressView.toString(16).toUpperCase()
 			if (shouldUpdateOutput) {
 				//This if statement above prevents a bug where your text selection gets canceled on keypress
@@ -206,7 +224,10 @@ Where:
 			}
 		}
 	)
-	
+	function ResetSVGHorizScoll() {
+		SVGHorizontalScroll = 0n
+		MainCode()
+	}
 	function AddHexIncrementDecrementToTextInputs() {
 		//Elements you want to apply to must contain a class "HexNumberInput"
 		[...document.querySelectorAll("input.HexNumberInput")].forEach(TextInput => {
@@ -383,20 +404,21 @@ Where:
 			document.getElementById("Output_ErrorMessage").hidden = true
 			document.getElementById("Output_AddressInfo").hidden = false
 			//Remove duplicate entries
-			ObjectOfDataRanges = ((ItemsList) => {
-				let DupeFree = []
-				ObjectOfDataRanges.forEach(Item => {
-					let DupedItemOriginal = DupeFree.find(Item2 => {
-						if ((Item.StartAddress == Item2.StartAddress)&&(Item.Length == Item2.Length)&&(Item.Description == Item2.Description)) {
-							return true
+			if (document.getElementById("Setting_IgnoreDupes").checked)
+				ObjectOfDataRanges = ((ItemsList) => {
+					let DupeFree = []
+					ObjectOfDataRanges.forEach(Item => {
+						let DupedItemOriginal = DupeFree.find(Item2 => {
+							if ((Item.StartAddress == Item2.StartAddress)&&(Item.Length == Item2.Length)&&(Item.Description == Item2.Description)) {
+								return true
+							}
+						})
+						if (typeof DupedItemOriginal == "undefined") {
+							DupeFree.push(Item)
 						}
 					})
-					if (typeof DupedItemOriginal == "undefined") {
-						DupeFree.push(Item)
-					}
-				})
-				return DupeFree
-			})(ObjectOfDataRanges);
+					return DupeFree
+				})(ObjectOfDataRanges);
 			//Find overlaps
 			{
 				let l = ObjectOfDataRanges.length
@@ -698,7 +720,7 @@ Where:
 				AddressRect.setAttribute("height", Height.toString(10))
 				AddressRect.setAttribute("width", Setting_ByteView_SVGGridSizeFactor.toString(10))
 				
-				AddressRect.setAttribute("x", (50n + Item.SVGBarXPos*Setting_ByteView_SVGGridSizeFactor).toString(10))
+				AddressRect.setAttribute("x", (70n + (Item.SVGBarXPos-SVGHorizontalScroll)*Setting_ByteView_SVGGridSizeFactor).toString(10))
 				AddressRect.setAttribute("y", TopPos.toString(10))
 				
 				let TitleHover = createSVGElement("title")
@@ -709,7 +731,7 @@ Where:
 			})
 			
 			
-			//Generate addresses text
+			//Generate addresses text (not merged with the line separator loop so that numbers are written on top of the bars when horizontal scroll is applied)
 			for (let i=0n; i<Setting_ByteView_NumberOfRows; i++) {
 				let AddressText = createSVGElement("text")
 				AddressText.setAttribute("stroke", "#ffffff")

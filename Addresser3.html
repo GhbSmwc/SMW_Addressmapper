@@ -721,7 +721,7 @@ Where:
 				AddressRect.setAttribute("height", Height.toString(10))
 				AddressRect.setAttribute("width", Setting_ByteView_SVGGridSizeFactor.toString(10))
 				
-				AddressRect.setAttribute("x", (70n + (Item.SVGBarXPos-SVGHorizontalScroll)*Setting_ByteView_SVGGridSizeFactor).toString(10))
+				AddressRect.setAttribute("x", (BigintClamp(70n + (Item.SVGBarXPos-SVGHorizontalScroll)*Setting_ByteView_SVGGridSizeFactor, -Setting_ByteView_SVGGridSizeFactor/2n, (Setting_ByteView_NumberOfColumns*Setting_ByteView_SVGGridSizeFactor)-Setting_ByteView_SVGGridSizeFactor/2n)).toString(10))
 				AddressRect.setAttribute("y", TopPos.toString(10))
 				
 				let TitleHover = createSVGElement("title")

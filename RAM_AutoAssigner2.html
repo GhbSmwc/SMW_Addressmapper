@@ -84,10 +84,10 @@ Notes:
 	</tr>
 	<tr>
 		<td>
-			<textarea id="TextareaInput_FreeramDefines" onchange="MainCode()" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
+			<textarea id="TextareaInput_FreeramDefines" onchange="NeedToUpdateLists = true; MainCode()" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
 		</td>
 		<td>
-			<textarea id="TextareaInput_EmptyRams" onchange="MainCode()" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
+			<textarea id="TextareaInput_EmptyRams" onchange="NeedToUpdateLists = true; MainCode()" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
 		</td>
 	</tr>
 </table>
@@ -115,7 +115,104 @@ Duplicate settings:
 <hr>
 <textarea id="TextareaOutput_AssignedRAMs" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
 <script>
+	let Saved_Data = {
+		FreeramList: [],
+		EmptyRamsList: []
+	}
+	let NeedToUpdateLists = false
 	function MainCode() {
-	
+		let FreeramList = []
+		
+		if (NeedToUpdateLists) {
+			let InputText = document.getElementById("TextareaInput_FreeramDefines").value
+			InputText = InputText.split("\n")
+			FreeramList = InputText.map((line, Index) => {
+				if (!(/^[^\t]+\t![a-zA-Z\d_]+\t\d+\t(?:-|-?\$?[\dA-Fa-f]+)\t(?:-|-?\$?[\dA-Fa-f]+)/).test(line)) {
+					return {
+						Type: "Error",
+						Reason: "Invalid text, please check no mistyped character",
+						LineNumber: Index,
+						EnteredText: line
+					}
+				}
+				let PartsOfString = line.split("\t")
+				let ResourceName = PartsOfString[0]
+				let DefineName = PartsOfString[1]
+				let Length = ParseBigIntValue(PartsOfString[2].replace(/\$/, ""))
+				if (Length < 1n) {
+					return {
+						Type: "Error",
+						Reason: "Number of bytes must be at least 1",
+						LineNumber: Index,
+						EnteredText: line
+					}
+				}
+				let MinAddress = -Infinity
+				if (/^-?\$?[\dA-Fa-f]+$/.test(PartsOfString[3])) {
+					MinAddress = ParseBigIntValue(PartsOfString[3].replace(/\$/, ""), 16)
+				}
+				let MaxAddress = Infinity
+				if (/^-?\$?[\dA-Fa-f]+$/.test(PartsOfString[4])) {
+					MaxAddress = ParseBigIntValue(PartsOfString[4].replace(/\$/, ""), 16)
+				}
+				if (MinAddress > MaxAddress) {
+					return {
+						Type: "Error",
+						Reason: "Max address is before the min address.",
+						LineNumber: Index,
+						EnteredText: line
+					}
+				}
+				return {
+					Type: "ValidItem",
+					ResourceName: ResourceName,
+					DefineName: DefineName,
+					Length: Length,
+					MinAddress: MinAddress,
+					MaxAddress: MaxAddress,
+					LineNumber: Index,
+					Text: line
+				}
+			})
+			let a = 0
+		}
+		
+		
+	}
+//Helper
+	function ParseBigIntValue(string, radix) {
+		//Acts more closely to parseInt, unlike other methods (other functions, like CorrectBinBigIntValue)
+		//this works with bigInt.
+		let Output = 0n
+		let NegativeNumber = 1n
+		if ((/^-/).test(string)) {
+			NegativeNumber = -1n
+		}
+		let DigitPart = string.substring((string.search(/[0-9a-zA-Z]/)))
+		switch (radix) {
+			//decimal
+				default:
+				if ((/^-?\d+$/).test(string)) {
+					Output = BigInt(string)
+				}
+				break
+			//Hexadecimal
+				case 16:
+				case "0x":
+				case "0X":
+				if ((/^-?[0-9A-Fa-f]+$/).test(string)) {
+					Output = BigInt("0x" + DigitPart) * NegativeNumber
+				}
+				break
+			//Binary
+				case 2:
+				case "0b":
+				case "0B":
+				if ((/^-?[01]+$/).test(string)) {
+					Output = BigInt("0b" + DigitPart) * NegativeNumber
+				}
+		
+		}
+		return Output
 	}
 </script>

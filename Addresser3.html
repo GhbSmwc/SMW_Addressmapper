@@ -40,7 +40,7 @@
 	</head>
 <body>
 
-<p>Entere a list of RAM or any memory usage in the textarea below. Must be formatted like this:
+<p>Enter a list of RAM or any memory usage in the textarea below. Must be formatted like this:
 <table><tr><td><pre>Address	Size_in_bytes_Or_EndAddress	Description
 Address	Size_in_bytes_Or_EndAddress	Description
 Address	Size_in_bytes_Or_EndAddress	Description</pre></td></tr></table><br>
@@ -69,31 +69,31 @@ Where:
 			the tilde and before the hexadecimal address number (example: <kbd>$~10</kbd> is wrong, <kbd>~$10</kbd> is correct)).</li>
 		</ul>
 	</li>
-	<li><kbd>Description</kbd> (optional) is a brief description. Note: HTML tags, elements and other reserved symbols apply on the description, and improper opening and closing/ending tags could <abbr title="For example: having only the opening tag or closing/ending tag, if you end the table tag (/td/tr/table), before you start it (tabletrtd), it would mess up the outer table's content after the invalid HTML setup.">break the table</abbr>!
-	If you want to view the table with invalid tag setup and have it not be broken, check the box labeled &ldquo;Escape html tags and escape characters for table description&rdquo;, and it will cancel out the HTML effects (they're <a href="https://en.wikipedia.org/wiki/Character_encodings_in_HTML#XML_character_references">escaped</a>) within the description field.</li>
+	<li><kbd>Description</kbd> (optional) is a brief description.</li>
 </ul>
 
-<textarea id="UserInputList" cols="75" rows="30" oninput="HaveEditedTextarea = true; NeedsToUpdateSVGOrder = true; MainCode()" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
+<textarea id="UserInputList" cols="75" rows="30" oninput="MainCodeWithFullRefresh()" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
 <div>
+	<abbr title="This will take the starting (and ending address) you entered above, add (offsets) by this value, and the output are the off-set by this. Useful if you using RAM mirrors - like this: $01 becomes $7E0001 by an offset of $7E0000.">Offset input addresses by</abbr>: <input type="number" id="AddressOffsetterDec" onchange="AddressOffsetterDec_DecToHex()" value="0" step="1">($<input type="text" value="0" class="HexNumberInput" onchange="AddressOffsetterDec_HexToDec()" id="AddressOffsetterHex">)<br>
 	View mode:
 	<div><label><input type="radio" name="Setting_ViewMode" onchange="AdjustMode()" id="Setting_ViewMode_Table" checked>Table range</label></div>
 	<div><label><input type="radio" name="Setting_ViewMode" onchange="AdjustMode()" id="Setting_ViewMode_Byte">Byte view</label></div>
 </div>
 <hr>
-<label><input type="checkbox" id="Setting_IgnoreDupes" onchange="HaveEditedTextarea = true; MainCode()" checked>Ignore duplicates</label>
+<label><input type="checkbox" id="Setting_IgnoreDupes" onchange="MainCodeWithFullRefresh()" checked>Ignore duplicates</label>
 <div id="SettingPanel_TableViewOptions">
-	Sort: <select onchange="SortChanges = true; MainCode()">
+	Sort: <select onchange="MainCode()">
 		<option id="SortOption_None">Keep order you entered</option>
 		<option id="SortOption_ByAddr" selected>By start address</option>
 		<option id="SortOption_Size">By size</option>
 		<option id="SortOption_Discription">By description (lexicographically)</option>
 		<option id="SortOption_Type">By type</option>
 		<option id="SortOption_OverlapCount">By overlap count</option>
-	</select><label><input type="checkbox" id="SortOption_Reverse" onchange="SortChanges = true; MainCode()">Reverse order</label><br><br>
-	<div>Filter by: <button onclick="ModifyCheckboxes(this.parentNode, 1); SortChanges=true; MainCode();">Check all</button><button onclick="ModifyCheckboxes(this.parentNode, 0); MainCode();">Uncheck all</button><button onclick="ModifyCheckboxes(this.parentNode, 2); MainCode();">Invert</button>
-		<div><label><input type="checkbox" onchange="SortChanges = true; MainCode()" checked id="Filter_Gap">Unused gaps</label></div>
-		<div><label><input type="checkbox" onchange="SortChanges = true; MainCode()" checked id="Filter_NonOverlap">Address with no conflicts</label></div>
-		<div><label><input type="checkbox" onchange="SortChanges = true; MainCode()" checked id="Filter_Overlap">Address that conflicted</label></div>
+	</select><label><input type="checkbox" id="SortOption_Reverse" onchange="MainCode()">Reverse order</label><br><br>
+	<div>Filter by: <button onclick="ModifyCheckboxes(this.parentNode, 1); MainCode();">Check all</button><button onclick="ModifyCheckboxes(this.parentNode, 0); MainCode();">Uncheck all</button><button onclick="ModifyCheckboxes(this.parentNode, 2); MainCode();">Invert</button>
+		<div><label><input type="checkbox" onchange="MainCode()" checked id="Filter_Gap">Unused gaps</label></div>
+		<div><label><input type="checkbox" onchange="MainCode()" checked id="Filter_NonOverlap">Address with no conflicts</label></div>
+		<div><label><input type="checkbox" onchange="MainCode()" checked id="Filter_Overlap">Address that conflicted</label></div>
 	</div><br><br>
 	Plaintext size/ending address mode display: <select onchange="MainCode();">
 		<option id="PlaintextSetting_Output_Size">Size</option>
@@ -102,7 +102,7 @@ Where:
 	</select><label><input type="checkbox" id="PlaintextSetting_Output_OverlapStatus" checked onchange="MainCode()">Show gap/overlap/non-overlap status</label>
 </div>
 <div id="SettingPanel_ByteViewOptions" hidden>
-	Address to view: $<input type="text" value="7E0000" class="HexNumberInput" id="SVGAddressView"><br>
+	Address to view: $<input type="text" value="0" class="HexNumberInput" id="SVGAddressView" oninput="MainCode()"><br>
 	Useful tips using this feature:
 	<ul>
 	<li>Hover your mouse over the display and roll your scroll wheel to scroll the graph</li>
@@ -112,7 +112,18 @@ Where:
 <hr>
 <pre hidden id="Output_ErrorMessage" style="border: 1px solid white"></pre>
 <div id="Output_AddressInfo">
+	<table>
+		<tr><th colspan="2">Address statistics</th></tr>
+		<tr><td style="font-family: monospace; background-color: #008000">Number of entered ranges that didn&apos;t overlap</td><td style="font-family: monospace" id="OutputStatistics_NonOverlap">0</td></tr>
+		<tr><td style="font-family: monospace; background-color: #800000">Number of entered ranges that overlap</td><td style="font-family: monospace" id="OutputStatistics_Overlap">0</td></tr>
+		<tr><td style="font-family: monospace; background-color: #808080">Number of gaps found</td><td style="font-family: monospace" id="OutputStatistics_Gaps">0</td></tr>
+		<tr><td style="font-family: monospace;">Total ranges including gaps</td><td style="font-family: monospace" id="OutputStatistics_TotalIncludingGaps">0</td></tr>
+		<tr><td style="font-family: monospace;">Lowest used address</td><td style="font-family: monospace" id="OutputStatistics_UsedAddress_Min"></td></tr>
+		<tr><td style="font-family: monospace;">Highest used address</td><td style="font-family: monospace" id="OutputStatistics_UsedAddress_Max"></td></tr>
+	</table>
+	<hr>
 	<div id="ViewMode_TextTable">
+		<div style="font-family: monospace;">Number of results (after filter): <span id="OutputStatistics_TotalAfterFilter">0</span></div>
 		<textarea id="Output_AddressInfo_Text" readonly cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: white"></textarea><br>
 			<button onclick="setClipboard(document.getElementById('Output_AddressInfo_Text').value);">Copy to clipboard</button>
 			<span id="CopiedMessage"></span><br><br>
@@ -133,14 +144,15 @@ Where:
 	
 	let SavedAddresses = []
 	let HaveEditedTextarea = false
-	let SortChanges = true
 	let NeedsToUpdateSVGOrder = false
 	let SavedSortedForSVGOrder = []
+	let UsedAddress_Min = Infinity
+	let UsedAddress_Max = -Infinity
 	
 	let ColorCodedStatus = {
-		"Gap": "#808080",
 		"NonOverlap" : "#008000",
-		"Overlap" : "#800000"
+		"Overlap" : "#800000",
+		"Gap": "#808080"
 	}
 	let SVG_GraphElement = document.getElementById("SVGGraph")
 	let CopiedMessage = document.getElementById("CopiedMessage")
@@ -214,7 +226,7 @@ Where:
 								IntegerValue--
 							}
 							e.target.value = IntegerValue.toString(16).toUpperCase()
-							MainCode()
+							e.target.onchange()
 						} catch {}
 					}
 				}).bind(TextInput)
@@ -244,100 +256,143 @@ Where:
 		}
 		MainCode()
 	}
+	function AddressOffsetterDec_DecToHex() {
+		let Offsetter = ParseBigIntValue(document.getElementById("AddressOffsetterDec").value)
+		document.getElementById("AddressOffsetterDec").value = Offsetter.toString(10)
+		document.getElementById("AddressOffsetterHex").value = Offsetter.toString(16).toUpperCase()
+		MainCodeWithFullRefresh()
+	}
+	function AddressOffsetterDec_HexToDec() {
+		let Offsetter = ParseBigIntValue(document.getElementById("AddressOffsetterHex").value, 16)
+		document.getElementById("AddressOffsetterHex").value = Offsetter.toString(16).toUpperCase()
+		document.getElementById("AddressOffsetterDec").value = Offsetter.toString(10)
+		MainCodeWithFullRefresh()
+	}
+	function MainCodeWithFullRefresh() {
+		HaveEditedTextarea = true
+		NeedsToUpdateSVGOrder = true
+		
+		MainCode()
+	}
+	function MainCodeSortRefresh() {
+		
+	}
 	function MainCode() {
 		ObjectOfDataRanges = []
+		
+		let StartingAddressViewing = ParseBigIntValue(document.getElementById("SVGAddressView").value, 16)
 		if (HaveEditedTextarea) {
 			HaveEditedTextarea = false
+			let ErrorExists = false
 			let LinesOfText = document.getElementById("UserInputList").value.split('\n')
-			LinesOfText = LinesOfText.map((Line, Index) => {
-				return {LineNumber: Index, LineText: Line}
-			})
-			LinesOfText = LinesOfText.filter(Line => {
-				if (/(?:^\s*;|^\s*$)/.test(Line.LineText)) { //Lines that begin with any number of spaces and then a semicolon
-					return false
-				}
-				return true
-			});
-			let BadLines = LinesOfText.filter(Line => {
-				if (/^-?\$?[\da-fA-F]+\t(?:\d+|\~-?\$?[\da-fA-F]+)(?:\t.*)?$/.test(Line.LineText)) {
-					return false
-				}
-				return true
-			});
-			if (BadLines.length != 0) {
-				document.getElementById("Output_ErrorMessage").hidden = false
-				document.getElementById("Output_AddressInfo").hidden = true
-				let ErrorText = ""
-				ErrorText += "Error! These lines contain invalid info:\n"
-				BadLines.forEach((Line, Index, Arr) => {
-					ErrorText += "Line " + (Line.LineNumber+1).toString(10) + ": " + Line.LineText
-					if (Index != Arr.length-1) {
-						ErrorText += "\n"
+			let Offsetter = ParseBigIntValue(document.getElementById("AddressOffsetterHex").value, 16)
+			
+			
+			UsedAddress_Min = Infinity
+			UsedAddress_Max = -Infinity
+			
+			ObjectOfDataRanges = LinesOfText.map((Line, Index) => {
+				let SourceText = Line
+				if (/^\s*(?:;.*)?$/.test(Line)) {
+					return {
+						Type: "CommentOrBlankLine"
 					}
-				})
-				document.getElementById("Output_ErrorMessage").textContent = ErrorText
-				return
-			}
-			ObjectOfDataRanges = LinesOfText.map(Line => {
-				let LineExtracted = Line.LineText.split('\t')
-				let StartAddress = ParseBigIntValue(LineExtracted[0].replace("$", ""), 16)
+				}
+				if (!/^\s*-?\$?[\da-fA-F]+\t(?:\d+|\~-?\$?[\da-fA-F]+)(?:\t.*)?$/.test(Line)) {
+					ErrorExists = true
+					return {
+						Type: "Error",
+						Reason: "Line containing invalid information.",
+						SourceText: SourceText,
+						LineNumber: Index
+					}
+				
+				}
+				let LineExtracted = Line.replace(/^\s*/, "").split("\t")
+				let StartAddress = ParseBigIntValue(LineExtracted[0].replace("$", ""), 16) + Offsetter
 				let EndAddress = 0n
 				let Length = 0n
-				let SourceText = Line.LineText
-				
 				if (/^\d+$/.test(LineExtracted[1])) { //If Length is provided
 					Length = ParseBigIntValue(LineExtracted[1], 10)
 					EndAddress = StartAddress+Length-1n
 				} else { //Otherwise if ending address provided
-					EndAddress = ParseBigIntValue(LineExtracted[1].replace(/^~/, "").replace(/^\$/, ""), 16)
+					EndAddress = ParseBigIntValue(LineExtracted[1].replace(/^~/, "").replace(/^\$/, ""), 16) + Offsetter
 					Length = EndAddress-StartAddress+1n
+				}
+				if (Length < 1n) {
+					ErrorExists = true
+					return {
+						Type: "Error",
+						Reason: "Length less than 1 byte or ending address is less than start address",
+						SourceText: SourceText,
+						LineNumber: Index
+					}
+				}
+				if (UsedAddress_Min > StartAddress) {
+					UsedAddress_Min = StartAddress
+				}
+				if (UsedAddress_Max < EndAddress) {
+					UsedAddress_Max = EndAddress
 				}
 				let Description = LineExtracted[2] ?? ""
 				return {
-					LineNumber: Line.LineNumber,
+					Type: "NonOverlap",
+					LineNumber: Index,
 					StartAddress: StartAddress,
 					Length: Length,
 					EndAddress: EndAddress,
 					Description: Description,
 					SourceText: SourceText,
-					Type: "NonOverlap",
 					ConflictsWith: [],
 					SVGBarXPos: 0n
 				}
 			})
-			let BadObjectOfDataRanges = ObjectOfDataRanges.filter(ByteRange => {
-				if (ByteRange.Length >= 1) {
-					return false
-				}
-				return true
-			})
-			if (BadObjectOfDataRanges.length != 0) {
+			if (ErrorExists) {
 				document.getElementById("Output_ErrorMessage").hidden = false
 				document.getElementById("Output_AddressInfo").hidden = true
-				let ErrorText = ""
-				ErrorText += "Error! These ranges either have a size of less than 1 byte or an ending address before the start:\n"
+				BadObjectOfDataRanges = ObjectOfDataRanges.filter(Item => Item.Type == "Error")
+				let ErrorText = "Errors found in the input:\n"
 				BadObjectOfDataRanges.forEach((Item, Index, Arr) => {
-					ErrorText += "Line " + (Item.LineNumber+1)+1 + ": " + Item.SourceText
-					if (Index != Arr.length) {
+					ErrorText += "At line " + (Item.LineNumber+1).toString(10) + ": [" + Item.SourceText + "]: "+ Item.Reason
+					if (Index != Arr.length-1) {
 						ErrorText += "\n"
 					}
+					document.getElementById("Output_ErrorMessage").textContent = ErrorText
 				})
-				document.getElementById("Output_ErrorMessage").textContent = ErrorText
+				
+				
 				return
 			}
+			document.getElementById("OutputStatistics_UsedAddress_Min").textContent = ""
+			if (typeof UsedAddress_Min == "bigint") {
+				document.getElementById("OutputStatistics_UsedAddress_Min").textContent = BigIntToStringSignedHex(UsedAddress_Min)
+				if (StartingAddressViewing < UsedAddress_Min) {
+					StartingAddressViewing = UsedAddress_Min
+				}
+			}
+			document.getElementById("OutputStatistics_UsedAddress_Max").textContent = ""
+			if (typeof UsedAddress_Max == "bigint") {
+				document.getElementById("OutputStatistics_UsedAddress_Max").textContent = BigIntToStringSignedHex(UsedAddress_Max)
+				if (StartingAddressViewing > UsedAddress_Max) {
+					StartingAddressViewing = UsedAddress_Max
+				}
+			}
+			document.getElementById("SVGAddressView").value = StartingAddressViewing.toString(16).toUpperCase()
+			
+			ObjectOfDataRanges = ObjectOfDataRanges.filter(Item => Item.Type == "NonOverlap")
 			document.getElementById("Output_ErrorMessage").hidden = true
 			document.getElementById("Output_AddressInfo").hidden = false
 			//Remove duplicate entries
 			ObjectOfDataRanges = ((ItemsList) => {
 				let DupeFree = []
-				ObjectOfDataRanges.forEach(item => {
-					let DupedItemOriginal = DupeFree.find(item2 => {
-						if ((item.StartAddress == item2.StartAddress)&&(item.Length == item2.Length)&&(item.Description == item2.Description)) {
+				ObjectOfDataRanges.forEach(Item => {
+					let DupedItemOriginal = DupeFree.find(Item2 => {
+						if ((Item.StartAddress == Item2.StartAddress)&&(Item.Length == Item2.Length)&&(Item.Description == Item2.Description)) {
 							return true
 						}
 					})
 					if (typeof DupedItemOriginal == "undefined") {
-						DupeFree.push(item)
+						DupeFree.push(Item)
 					}
 				})
 				return DupeFree
@@ -345,30 +400,37 @@ Where:
 			//Find overlaps
 			{
 				let l = ObjectOfDataRanges.length
+				let OverlapCount = 0
 				for (let i=0; i<l; i++) {
-					let item = ObjectOfDataRanges[i]
+					let Item = ObjectOfDataRanges[i]
 					for (let i2 = i+1; i2<l; i2++) {
-						let item2 = ObjectOfDataRanges[i2]
-						if (CheckOverlap(item.StartAddress, item.EndAddress, item2.StartAddress, item2.EndAddress)) {
-							item.Type = "Overlap"
-							item2.Type = "Overlap"
-							item.ConflictsWith.push({
-								StartAddress: item2.StartAddress,
-								Length: item2.Length,
-								EndAddress: item2.EndAddress,
-								Description: item2.Description,
-								SourceText: item2.SourceText,
+						let Item2 = ObjectOfDataRanges[i2]
+						if (CheckOverlap(Item.StartAddress, Item.EndAddress, Item2.StartAddress, Item2.EndAddress)) {
+							Item.Type = "Overlap"
+							Item2.Type = "Overlap"
+							Item.ConflictsWith.push({
+								StartAddress: Item2.StartAddress,
+								Length: Item2.Length,
+								EndAddress: Item2.EndAddress,
+								Description: Item2.Description,
+								SourceText: Item2.SourceText,
 							})
-							item2.ConflictsWith.push({
-								StartAddress: item.StartAddress,
-								Length: item.Length,
-								EndAddress: item.EndAddress,
-								Description: item.Description,
-								SourceText: item.SourceText,
+							Item2.ConflictsWith.push({
+								StartAddress: Item.StartAddress,
+								Length: Item.Length,
+								EndAddress: Item.EndAddress,
+								Description: Item.Description,
+								SourceText: Item.SourceText,
 							})
 						}
 					}
+					//Count how many items overlaps with another range at least once (so that one item shouldn't count as twice or more)).
+					if (Item.ConflictsWith.length != 0) {
+						OverlapCount++
+					}
 				}
+				document.getElementById("OutputStatistics_Overlap").textContent = OverlapCount.toString(10)
+				document.getElementById("OutputStatistics_NonOverlap").textContent = (ObjectOfDataRanges.length - OverlapCount).toString(10)
 			}
 			{
 				//Get gaps
@@ -406,9 +468,11 @@ Where:
 						})
 					}
 				}
+				document.getElementById("OutputStatistics_Gaps").textContent = GapList.length.toString(10)
 				if (document.getElementById("Filter_Gap").checked) {
 					ObjectOfDataRanges = ObjectOfDataRanges.concat(GapList)
 				}
+				document.getElementById("OutputStatistics_TotalIncludingGaps").textContent = ObjectOfDataRanges.length.toString(10)
 			}
 			SavedAddresses = ObjectOfDataRanges
 		} else {
@@ -420,17 +484,18 @@ Where:
 			while (OutputTable.lastElementChild) {
 				OutputTable.removeChild(OutputTable.lastElementChild)
 			}
-			ObjectOfDataRanges = ObjectOfDataRanges.filter(item => document.getElementById("Filter_" + item.Type).checked)
+			let OutputDisplay_ObjectOfDataRanges = ObjectOfDataRanges.filter(Item => document.getElementById("Filter_" + Item.Type).checked)
+			document.getElementById("OutputStatistics_TotalAfterFilter").textContent = OutputDisplay_ObjectOfDataRanges.length.toString(10)
 			let ReverseSort = document.getElementById("SortOption_Reverse").checked ? -1 : 1
 			if (document.getElementById("SortOption_ByAddr").selected) {
 				document.getElementById("SortOption_Reverse").disabled = false
-				ObjectOfDataRanges.sort((a,b) => Number((a.StartAddress-b.StartAddress))*ReverseSort)
+				OutputDisplay_ObjectOfDataRanges.sort((a,b) => Number((a.StartAddress-b.StartAddress))*ReverseSort)
 			} else if (document.getElementById("SortOption_Size").selected) {
 				document.getElementById("SortOption_Reverse").disabled = false
-				ObjectOfDataRanges.sort((a,b) => Number((a.Length-b.Length))*ReverseSort)
+				OutputDisplay_ObjectOfDataRanges.sort((a,b) => Number((a.Length-b.Length))*ReverseSort)
 			} else if (document.getElementById("SortOption_Discription").selected) {
 				document.getElementById("SortOption_Reverse").disabled = false
-				ObjectOfDataRanges.sort((a,b) => {
+				OutputDisplay_ObjectOfDataRanges.sort((a,b) => {
 					if (a.Description === b.Description) {
 						return 0
 					}
@@ -438,7 +503,7 @@ Where:
 				})
 			} else if (document.getElementById("SortOption_Type").selected) {
 				document.getElementById("SortOption_Reverse").disabled = false
-				ObjectOfDataRanges.sort((a,b) => {
+				OutputDisplay_ObjectOfDataRanges.sort((a,b) => {
 					if (a.Type === b.Type) {
 						return 0
 					}
@@ -446,7 +511,7 @@ Where:
 				})
 			} else if (document.getElementById("SortOption_OverlapCount").selected) {
 				document.getElementById("SortOption_Reverse").disabled = false
-				ObjectOfDataRanges.sort((a,b) => Number((a.ConflictsWith.Length-b.ConflictsWith.Length))*ReverseSort)
+				OutputDisplay_ObjectOfDataRanges.sort((a,b) => Number((a.ConflictsWith.Length-b.ConflictsWith.Length))*ReverseSort)
 			} else {
 				document.getElementById("SortOption_Reverse").disabled = true
 			}
@@ -472,44 +537,44 @@ Where:
 			
 			document.getElementById("Output_AddressInfo_Table").appendChild(Output_TableHeaderRow)
 			
-			ObjectOfDataRanges.forEach((item, index, Arr) => {
-				PlainTextOutput += BigIntToStringSignedHex(item.StartAddress) + "\t"
+			OutputDisplay_ObjectOfDataRanges.forEach((Item, index, Arr) => {
+				PlainTextOutput += BigIntToStringSignedHex(Item.StartAddress) + "\t"
 				if (document.getElementById("PlaintextSetting_Output_Size").selected) {
-					PlainTextOutput += item.Length.toString(10)
+					PlainTextOutput += Item.Length.toString(10)
 				} else if (document.getElementById("PlaintextSetting_Output_Ending").selected) {
-					PlainTextOutput += "~" + BigIntToStringSignedHex(item.EndAddress)
+					PlainTextOutput += "~" + BigIntToStringSignedHex(Item.EndAddress)
 				} else if (document.getElementById("PlaintextSetting_Output_SizeAndEnding").selected) {
-					PlainTextOutput += item.Length.toString(10) + "/~" + BigIntToStringSignedHex(item.EndAddress)
+					PlainTextOutput += Item.Length.toString(10) + "/~" + BigIntToStringSignedHex(Item.EndAddress)
 				}
-				PlainTextOutput += "\t" + item.Description
+				PlainTextOutput += "\t" + Item.Description
 				
 				let TableItemRow = document.createElement("tr")
 				
 				let TableItem_StartAddress = document.createElement("td")
 				TableItem_StartAddress.style.fontFamily = "monospace"
-				TableItem_StartAddress.style.backgroundColor = ColorCodedStatus[item.Type]
-				TableItem_StartAddress.appendChild(document.createTextNode(BigIntToStringSignedHex(item.StartAddress)))
+				TableItem_StartAddress.style.backgroundColor = ColorCodedStatus[Item.Type]
+				TableItem_StartAddress.appendChild(document.createTextNode(BigIntToStringSignedHex(Item.StartAddress)))
 				TableItemRow.appendChild(TableItem_StartAddress)
 				
 				let TableItem_LengthEnd = document.createElement("td")
 				TableItem_LengthEnd.style.fontFamily = "monospace"
-				TableItem_LengthEnd.style.backgroundColor = ColorCodedStatus[item.Type]
-				TableItem_LengthEnd.appendChild(document.createTextNode(item.Length.toString(10) + "/" + BigIntToStringSignedHex(item.EndAddress)))
+				TableItem_LengthEnd.style.backgroundColor = ColorCodedStatus[Item.Type]
+				TableItem_LengthEnd.appendChild(document.createTextNode(Item.Length.toString(10) + "/" + BigIntToStringSignedHex(Item.EndAddress)))
 				TableItemRow.appendChild(TableItem_LengthEnd)
 				
 				let TableItem_Description = document.createElement("td")
 				TableItem_Description.style.fontFamily = "monospace"
-				TableItem_Description.style.backgroundColor = ColorCodedStatus[item.Type]
-				TableItem_Description.appendChild(document.createTextNode(item.Description))
+				TableItem_Description.style.backgroundColor = ColorCodedStatus[Item.Type]
+				TableItem_Description.appendChild(document.createTextNode(Item.Description))
 				TableItemRow.appendChild(TableItem_Description)
 				
 				let TableItem_Overlap = document.createElement("td")
-				TableItem_Overlap.style.backgroundColor = ColorCodedStatus[item.Type]
+				TableItem_Overlap.style.backgroundColor = ColorCodedStatus[Item.Type]
 				
 				TableItemRow.appendChild(TableItem_Overlap)
 				
 				if (document.getElementById("PlaintextSetting_Output_OverlapStatus").checked) {
-					if (item.ConflictsWith.length != 0) {
+					if (Item.ConflictsWith.length != 0) {
 						PlainTextOutput += "\n\t;^Overlaps with:\n"
 						
 						let OverlappedItem_Table = document.createElement("table")
@@ -529,7 +594,7 @@ Where:
 						
 						OverlappedItem_Table.appendChild(OverlappedItem_HeaderRow)
 						
-						item.ConflictsWith.forEach((overlapped, index2, Arr2) => {
+						Item.ConflictsWith.forEach((overlapped, index2, Arr2) => {
 							PlainTextOutput += "\t;" + BigIntToStringSignedHex(overlapped.StartAddress) + "\t"
 							if (document.getElementById("PlaintextSetting_Output_Size").selected) {
 								PlainTextOutput += overlapped.Length.toString(10)
@@ -579,9 +644,6 @@ Where:
 			while (SVG_GraphElement.lastElementChild) {
 				SVG_GraphElement.removeChild(SVG_GraphElement.lastElementChild)
 			}
-			//Variables needed
-			let StartingAddressViewing = ParseBigIntValue(document.getElementById("SVGAddressView").value, 16)
-			
 			
 			if (NeedsToUpdateSVGOrder) {
 				//Sort so when overlaps occurs, what appears first in the overlap group appears on the leftmost.
@@ -623,24 +685,24 @@ Where:
 			
 			
 			//Generate bars representing an address range
-			SavedSortedForSVGOrder.forEach(item => {
+			SavedSortedForSVGOrder.forEach(Item => {
 				let AddressRect = createSVGElement("rect")
 				AddressRect.setAttribute("rx", "8")
 				AddressRect.setAttribute("ry", "8")
-				AddressRect.setAttribute("fill", ColorCodedStatus[item.Type])
+				AddressRect.setAttribute("fill", ColorCodedStatus[Item.Type])
 				
-				let TopPos = BigintClamp((item.StartAddress-StartingAddressViewing)*Setting_ByteView_SVGGridSizeFactor, -Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfRows+1n)*Setting_ByteView_SVGGridSizeFactor)
-				let BottomPos = BigintClamp((item.EndAddress-StartingAddressViewing+1n)*Setting_ByteView_SVGGridSizeFactor, -Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfRows+1n)*Setting_ByteView_SVGGridSizeFactor)
+				let TopPos = BigintClamp((Item.StartAddress-StartingAddressViewing)*Setting_ByteView_SVGGridSizeFactor, -Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfRows+1n)*Setting_ByteView_SVGGridSizeFactor)
+				let BottomPos = BigintClamp((Item.EndAddress-StartingAddressViewing+1n)*Setting_ByteView_SVGGridSizeFactor, -Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfRows+1n)*Setting_ByteView_SVGGridSizeFactor)
 				let Height = BottomPos-TopPos
 				
 				AddressRect.setAttribute("height", Height.toString(10))
 				AddressRect.setAttribute("width", Setting_ByteView_SVGGridSizeFactor.toString(10))
 				
-				AddressRect.setAttribute("x", (50n + item.SVGBarXPos*Setting_ByteView_SVGGridSizeFactor).toString(10))
+				AddressRect.setAttribute("x", (50n + Item.SVGBarXPos*Setting_ByteView_SVGGridSizeFactor).toString(10))
 				AddressRect.setAttribute("y", TopPos.toString(10))
 				
 				let TitleHover = createSVGElement("title")
-				TitleHover.appendChild(document.createTextNode(item.SourceText))
+				TitleHover.appendChild(document.createTextNode(Item.SourceText))
 				AddressRect.appendChild(TitleHover)
 				
 				SVG_GraphElement.appendChild(AddressRect)

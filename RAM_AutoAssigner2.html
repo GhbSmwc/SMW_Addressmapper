@@ -406,7 +406,7 @@ Duplicate settings:
 					if (ASMFreeramDefine.MinAddress != -Infinity && StartPos < ASMFreeramDefine.MinAddress) {
 						StartPos = ASMFreeramDefine.MinAddress
 					}
-					let EndPos = GapItem.EndAddress
+					let EndPos = GapItem.StartAddress + GapItem.Length-1n
 					if (ASMFreeramDefine.MaxAddress != Infinity && EndPos > ASMFreeramDefine.MaxAddress) {
 						EndPos = ASMFreeramDefine.MaxAddress
 					}

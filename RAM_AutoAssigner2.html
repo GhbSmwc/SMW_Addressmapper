@@ -68,7 +68,7 @@ Address	Size_or_ending_address	Optional_description</pre></td></tr></table><br>
 All of these ranges must NOT overlap.
 <ul>
 <li><kbd>Address</kbd> is the starting address. (dollar sign &ldquo;$&rdquo; is optional)</li>
-<li><kbd>Size_or_ending_address</kbd> is the size or ending addresses (entering a decimal number results in number of bytes, and typing hyphen &ldquo;-&rdquo;, before a hexadecimal number denotes an ending address (dollar sign &ldquo;$&rdquo; is optional))</li>
+<li><kbd>Size_or_ending_address</kbd> is the size or ending addresses (entering a decimal number results in number of bytes, and typing tilde &ldquo;~&rdquo;, before a hexadecimal number denotes an ending address (dollar sign &ldquo;$&rdquo; is optional))</li>
 <li><kbd>Optional_description</kbd> is optional, will not be checked by this javascript at all. When the remove duplicate flags is checked here, will only check the location and size/ending address.</li>
 </ul><br><br>
 Notes:
@@ -287,7 +287,7 @@ Duplicate settings:
 					Length = ParseBigIntValue(LineExtracted[1], 10)
 					EndAddress = StartAddress+Length-1n
 				} else { //Otherwise if ending address provided
-					EndAddress = ParseBigIntValue(LineExtracted[1].replace(/^~/, "").replace(/^\$/, ""), 16)
+					EndAddress = ParseBigIntValue(LineExtracted[1].replace(/^~/, "").replace(/\$/, ""), 16)
 					Length = EndAddress-StartAddress+1n
 				}
 				if (Length < 1n) {
@@ -394,12 +394,12 @@ Duplicate settings:
 			ListOfGaps.sort((a,b) => Number(a.StartAddress - b.StartAddress))
 			//Now place the freeram at a given gap address, and update the gaps list
 			let l = FreeramList.length
-			let l2 = ListOfGaps.length
 			for (let i=0; i<l; i++) { //Loop each freeram define list
 				let ASMFreeramDefine = FreeramList[i]
-				let IsPlacedUsageSuccessful = false
 				let IsAllLaterGapsBeyondMax = false //Cuts off the loop of searching each empty RAMs if we run into the max address (we know that as we go higher up, it still be greater than max.)
-				for (let i2 = 0; i2<l2&&(!IsPlacedUsageSuccessful)&&(!IsAllLaterGapsBeyondMax); i2++) { //Loop each RAM gaps
+				for (let i2 = 0; i2<ListOfGaps.length&&(!IsAllLaterGapsBeyondMax); i2++) { //Loop each RAM gaps
+					//^Now, I use ListOfGaps.length instead of "let l2 = ListOfGaps.length" because this array length changes as we successfully
+					//assign a define to a RAM.
 					let GapItem = ListOfGaps[i2]
 					//Set up start and end points, accounting for potential min and max addresses
 					let StartPos = GapItem.StartAddress
@@ -416,7 +416,6 @@ Duplicate settings:
 					if (ASMFreeramDefine.Length <= SizeAvailableSpace) { //If it can fit
 						ASMFreeramDefine.AssignedAddressStartPos = StartPos //Freeram have been successfully placed.
 						IsPlacedUsageSuccessful = true
-						FreeramDefinePlacementCountSuccess++
 						
 						//modify the empty RAM array. This can potentially split the RAM range into 2 ranges.
 						let SplittedRamBeforeStart = {
@@ -432,7 +431,7 @@ Duplicate settings:
 						//7e0063 gap
 						let SplittedRamAfterEnd = {
 							StartAddress: ASMFreeramDefine.AssignedAddressStartPos + ASMFreeramDefine.Length, //First byte after last used byte.
-							Length: GapItem.StartAddress+GapItem.Length - ASMFreeramDefine.AssignedAddressStartPos + ASMFreeramDefine.Length,
+							Length: GapItem.StartAddress+GapItem.Length - (ASMFreeramDefine.AssignedAddressStartPos + ASMFreeramDefine.Length),
 						}
 						if (SplittedRamBeforeStart.Length < 1n && SplittedRamAfterEnd.Length < 1n) { //Entire range consumed (e.g. all 4 bytes of 7E0060-$7E0063 used up by one define)
 							ListOfGaps.splice(i2, 1) //Delete the RAM, it is all used up
@@ -443,28 +442,38 @@ Duplicate settings:
 						} else if (SplittedRamBeforeStart.Length >= 1n && SplittedRamAfterEnd.Length >= 1n) { //Split the RAM so both before and after usage there are gaps on either side
 							ListOfGaps.splice(i2, 1, SplittedRamBeforeStart, SplittedRamAfterEnd)
 						}
-						
+						break
 					} else { //If not, potentially stop the loop entirely and go to next RAM define
 						if (ASMFreeramDefine.MaxAddress != Infinity && StartPos+ASMFreeramDefine.Length-1n > ASMFreeramDefine.MaxAddress) {
 							//If last byte beyond the max address, it cannot fit and all later empty RAMs are beyond this
 							IsAllLaterGapsBeyondMax = true
-							FreeramDefinePlacementCountFailed++
 						}
 					}
 				}
 			}
-			
+			{
+				let l = FreeramList.length
+				for (let i=0; i<l; i++) { //This code is the sole purpose of counting success and fails, and for loops are a bit faster than foreach
+					let Item = FreeramList[i]
+					if (Item.AssignedAddressStartPos != -Infinity) {
+						FreeramDefinePlacementCountSuccess++
+					} else {
+						FreeramDefinePlacementCountFailed++
+					}
+				}
+			}
 		}
 		//Sorter
 		
 		//Output
 			let OutputString = "Results"
-			OutputString += "Success: " + FreeramDefinePlacementCountSuccess.toString(10) + "\n"
-			OutputString += "Success: " + FreeramDefinePlacementCountFailed.toString(10) + "\n"
+			OutputString += "Total defines found: " + FreeramList.length.toString(10) + "\n"
+			OutputString += "Number of defines successfully placed: " + FreeramDefinePlacementCountSuccess.toString(10) + "\n"
+			OutputString += "Number of defines failed to be placed: " + FreeramDefinePlacementCountFailed.toString(10) + "\n"
 			OutputString += "----------------------------------------------------------------------------------------\n"
 			FreeramList.forEach((PlacedRAM, Index, Arr) => {
 				if (PlacedRAM.AssignedAddressStartPos != -Infinity) {
-					OutputString += PlacedRAM.DefineName + " = " + BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos) + ";[" + PlacedRAM.Length + " bytes] " + PlacedRAM.ResourceName
+					OutputString += PlacedRAM.DefineName + " = " + BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos) + "\t;[" + PlacedRAM.Length + " bytes] " + PlacedRAM.ResourceName
 				} else {
 					OutputString += PlacedRAM.DefineName + " Error! No suitable RAM found."
 				}

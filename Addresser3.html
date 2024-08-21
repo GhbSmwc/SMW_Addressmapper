@@ -338,7 +338,7 @@ Where:
 					Length = ParseBigIntValue(LineExtracted[1], 10)
 					EndAddress = StartAddress+Length-1n
 				} else { //Otherwise if ending address provided
-					EndAddress = ParseBigIntValue(LineExtracted[1].replace(/^~/, "").replace(/^\$/, ""), 16) + Offsetter
+					EndAddress = ParseBigIntValue(LineExtracted[1].replace(/^~/, "").replace(/\$/, ""), 16) + Offsetter
 					Length = EndAddress-StartAddress+1n
 				}
 				if (Length < 1n) {

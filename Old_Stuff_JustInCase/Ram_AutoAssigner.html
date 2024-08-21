@@ -321,10 +321,16 @@ Duplicate settings:<br>
 																	IsPlacedUsageSuccessful = true
 																	//modify the empty RAM array. This can potentially split the RAM range into 2 ranges.
 																		//First, find if there will be empty RAM between ListOfProcessedEmptyRams[Index2][0] and StartPos
-																			let SplittedRamBeforeStart = [ListOfProcessedEmptyRams[Index2][0], StartPos - ListOfProcessedEmptyRams[Index2][0]]
+																			let SplittedRamBeforeStart = [
+																				ListOfProcessedEmptyRams[Index2][0],
+																				StartPos - ListOfProcessedEmptyRams[Index2][0]
+																				]
 																		//Second, find if there will be empty RAM between ListOfParsedDefinesData[Index][7] + ListOfParsedDefinesData[Index][2] and
 																		//ListOfProcessedEmptyRams[Index2][0] + ListOfProcessedEmptyRams[Index2][1] -1n
-																			let SplittedRamAfterEnd = [ListOfParsedDefinesData[Index][7] + ListOfParsedDefinesData[Index][2], ListOfProcessedEmptyRams[Index2][0] + ListOfProcessedEmptyRams[Index2][1] -1n - (ListOfParsedDefinesData[Index][7] + ListOfParsedDefinesData[Index][2] - 1n)]
+																			let SplittedRamAfterEnd = [
+																				ListOfParsedDefinesData[Index][7] + ListOfParsedDefinesData[Index][2],
+																				ListOfProcessedEmptyRams[Index2][0] + ListOfProcessedEmptyRams[Index2][1] -1n - (ListOfParsedDefinesData[Index][7] + ListOfParsedDefinesData[Index][2] - 1n)
+																			]
 																		//and now we want to modify this range since we placed our usage there.
 																			if (SplittedRamBeforeStart[1] < 1n && SplittedRamAfterEnd[1] < 1n) { //if the start and end of usage used the entire range...
 																				ListOfProcessedEmptyRams.splice(Index2, 1)

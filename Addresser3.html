@@ -413,11 +413,11 @@ Where:
 							if ((Item.StartAddress == Item2.StartAddress)&&(Item.Length == Item2.Length)&&(Item.Description == Item2.Description)) {
 								return true
 							}
-						})
+						});
 						if (typeof DupedItemOriginal == "undefined") {
 							DupeFree.push(Item)
 						}
-					})
+					});
 					return DupeFree
 				})(ObjectOfDataRanges);
 			//Find overlaps
@@ -432,6 +432,7 @@ Where:
 							Item.Type = "Overlap"
 							Item2.Type = "Overlap"
 							Item.ConflictsWith.push({
+								LineNumber: Item2.LineNumber,
 								StartAddress: Item2.StartAddress,
 								Length: Item2.Length,
 								EndAddress: Item2.EndAddress,
@@ -439,6 +440,7 @@ Where:
 								SourceText: Item2.SourceText,
 							})
 							Item2.ConflictsWith.push({
+								LineNumber: Item.LineNumber,
 								StartAddress: Item.StartAddress,
 								Length: Item.Length,
 								EndAddress: Item.EndAddress,

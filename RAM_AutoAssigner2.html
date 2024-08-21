@@ -109,8 +109,8 @@ Output format: <select onchange="MainCode()">
 </select><br><br>
 
 Duplicate settings:
-	<div><label><input type="checkbox" checked id="DuplicateSettings_Defines">Ignore duplicates for defines</label></div>
-	<div><label><input type="checkbox" checked id="DuplicateSettings_EmptyRams">Ignore duplicates for defines</label></div>
+	<div><label><input type="checkbox" checked onchange="MainCode()" id="DuplicateSettings_Defines">Ignore duplicates for defines</label></div>
+	<div><label><input type="checkbox" checked onchange="MainCode()" id="DuplicateSettings_EmptyRams">Ignore duplicates for gaps</label></div>
 </div>
 <hr>
 <textarea id="TextareaOutput_AssignedRAMs" cols="150" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
@@ -166,8 +166,11 @@ Duplicate settings:
 	}
 	function MainCode() {
 		let FreeramList = []
-		let FreeramListContainsInvalidData = false
+		let ProcessError = false
 		document.getElementById("TextareaOutput_AssignedRAMs").value = ""
+		let FreeramDefinePlacementCountSuccess = 0
+		let FreeramDefinePlacementCountFailed = 0
+		
 		if (NeedToUpdateLists) {
 			let InputText = document.getElementById("TextareaInput_FreeramDefines").value
 			InputText = InputText.split("\n")
@@ -178,12 +181,12 @@ Duplicate settings:
 					}
 				}
 				if (!(/^[^\t]+\t![a-zA-Z\d_]+\t\d+\t(?:-|-?\$?[\dA-Fa-f]+)\t(?:-|-?\$?[\dA-Fa-f]+)/).test(Line)) {
-					FreeramListContainsInvalidData = true
+					ProcessError = true
 					return {
 						Type: "Error",
 						Reason: "Invalid text, please check no mistyped character.",
 						LineNumber: Index,
-						EnteredText: Line
+						SourceText: Line
 					}
 				}
 				let PartsOfString = Line.split("\t")
@@ -191,12 +194,12 @@ Duplicate settings:
 				let DefineName = PartsOfString[1]
 				let Length = ParseBigIntValue(PartsOfString[2].replace(/\$/, ""))
 				if (Length < 1n) {
-					FreeramListContainsInvalidData = true
+					ProcessError = true
 					return {
 						Type: "Error",
 						Reason: "Number of bytes must be at least 1",
 						LineNumber: Index,
-						EnteredText: Line
+						SourceText: Line
 					}
 				}
 				let MinAddress = -Infinity
@@ -208,12 +211,12 @@ Duplicate settings:
 					MaxAddress = ParseBigIntValue(PartsOfString[4].replace(/\$/, ""), 16)
 				}
 				if (MinAddress > MaxAddress) {
-					FreeramListContainsInvalidData = true
+					ProcessError = true
 					return {
 						Type: "Error",
 						Reason: "Max address is before min address.",
 						LineNumber: Index,
-						EnteredText: Line
+						SourceText: Line
 					}
 				}
 				return {
@@ -221,17 +224,18 @@ Duplicate settings:
 					ResourceName: ResourceName,
 					DefineName: DefineName,
 					Length: Length,
+					AssignedAddressStartPos: -Infinity,
 					MinAddress: MinAddress,
 					MaxAddress: MaxAddress,
 					LineNumber: Index,
-					EnteredText: Line
+					SourceText: Line
 				}
 			})
-			if (FreeramListContainsInvalidData) {
-				let ListOfBadInputs = FreeramList.filter(Item => Item.Type=="Error")
-				let ErrorText = "Error!\n"
-				ListOfBadInputs.forEach((Item, Index, Arr) => {
-					ErrorText += "Line " + (Item.LineNumber+1).toString(10) + ": [" + Item.EnteredText + "]: " + Item.Reason
+			if (ProcessError) {
+				let ListOfBadFreerams = FreeramList.filter(Item => Item.Type=="Error")
+				let ErrorText = "Error! The following items below are invalid free RAM entries:\n"
+				ListOfBadFreerams.forEach((Item, Index, Arr) => {
+					ErrorText += "Line " + (Item.LineNumber+1).toString(10) + ": [" + Item.SourceText + "]: " + Item.Reason
 					if (Index != Arr.length-1) {
 						ErrorText += "\n"
 					}
@@ -239,8 +243,24 @@ Duplicate settings:
 				document.getElementById("TextareaOutput_AssignedRAMs").value = ErrorText
 				return
 			}
-			FreeramList = FreeramList.filter(Item => Item.Type != "CommentOrBlankLine") //Got all our data, next, get gap data
-			
+			FreeramList = FreeramList.filter(Item => Item.Type=="ValidItem") //Got all our data, 
+			if (document.getElementById("DuplicateSettings_Defines").checked) {
+				FreeramList = ((ItemsList) => {
+					let DupeFree = []
+					FreeramList.forEach(Item => {
+						let DupedItemOriginal = DupeFree.find(Item2 => {
+							if ((Item.ResourceName == Item2.ResourceName)&&(Item.DefineName == Item2.DefineName)&&(Item.Length == Item2.Length)&&(Item.Length == Item2.Length)&&(Item.MinAddress == Item2.MinAddress)&&(Item.MaxAddress == Item2.MaxAddress)) {
+								return true
+							}
+						});
+						if (typeof DupedItemOriginal == "undefined") {
+							DupeFree.push(Item)
+						}
+					});
+					return DupeFree
+				})(FreeramList);
+			}
+			//FreeramList process are done.
 			let ListOfGapsText = document.getElementById("TextareaInput_EmptyRams").value.split('\n')
 			let ListOfGaps = ListOfGapsText.map((Line, Index) => {
 				let SourceText = Line
@@ -250,7 +270,7 @@ Duplicate settings:
 					}
 				}
 				if (!/^\s*-?\$?[\da-fA-F]+\t(?:\d+|\~-?\$?[\da-fA-F]+)(?:\t.*)?$/.test(Line)) {
-					FreeramListContainsInvalidData = true
+					ProcessError = true
 					return {
 						Type: "Error",
 						Reason: "Line containing invalid information.",
@@ -271,7 +291,7 @@ Duplicate settings:
 					Length = EndAddress-StartAddress+1n
 				}
 				if (Length < 1n) {
-					FreeramListContainsInvalidData = true
+					ProcessError = true
 					return {
 						Type: "Error",
 						Reason: "Length less than 1 byte or ending address is less than start address",
@@ -282,6 +302,7 @@ Duplicate settings:
 				let Description = LineExtracted[2] ?? ""
 				return {
 					Type: "Gap",
+					SourceText: SourceText,
 					LineNumber: Index,
 					StartAddress: StartAddress,
 					Length: Length,
@@ -289,9 +310,9 @@ Duplicate settings:
 					ConflictsWith: []
 				}
 			})
-			if (FreeramListContainsInvalidData) {
+			if (ProcessError) {
 				let ListOfBadGaps = ListOfGaps.filter(Item => Item.Type=="Error")
-				let ErrorText = "Error!\n"
+				let ErrorText = "Error! The following items below are invalid entries of empty RAMs:\n"
 				ListOfBadGaps.forEach((Item, Index, Arr) => {
 					ErrorText += "Line " + (Item.LineNumber+1).toString(10) + ": [" + Item.SourceText + "]: " + Item.Reason
 					if (Index != Arr.length-1) {
@@ -301,11 +322,173 @@ Duplicate settings:
 				document.getElementById("TextareaOutput_AssignedRAMs").value = ErrorText
 				return
 			}
+			ListOfGaps = ListOfGaps.filter(Item => Item.Type=="Gap")
+			if (document.getElementById("DuplicateSettings_EmptyRams").checked) {
+				ListOfGaps = ((ItemsList) => { //Remove dupes
+					let DupeFree = []
+					ListOfGaps.forEach(Item => {
+						let DupedItemOriginal = DupeFree.find(Item2 => {
+							if ((Item.StartAddress == Item2.StartAddress)&&(Item.Length == Item2.Length)&&(Item.Description == Item2.Description)) {
+								return true
+							}
+						});
+						if (typeof DupedItemOriginal == "undefined") {
+							DupeFree.push(Item)
+						}
+					});
+					return DupeFree
+				})(ListOfGaps);
+			}
+			//ListOfGaps is done.
+			//Check if ListOfGaps contains items that overlap
+			{
+				let l = ListOfGaps.length
+				for (let i=0; i<l; i++) {
+					let Item = ListOfGaps[i]
+					for (let i2 = i+1; i2<l; i2++) {
+						let Item2 = ListOfGaps[i2]
+						if (CheckOverlap(Item.StartAddress, Item.EndAddress, Item2.StartAddress, Item2.EndAddress)) {
+							Item.Type = "Overlap"
+							Item2.Type = "Overlap"
+							ProcessError = true
+							Item.ConflictsWith.push({
+								LineNumber: Item2.LineNumber,
+								StartAddress: Item2.StartAddress,
+								Length: Item2.Length,
+								EndAddress: Item2.EndAddress,
+								Description: Item2.Description,
+								SourceText: Item2.SourceText,
+							})
+							Item2.ConflictsWith.push({
+								LineNumber: Item.LineNumber,
+								StartAddress: Item.StartAddress,
+								Length: Item.Length,
+								EndAddress: Item.EndAddress,
+								Description: Item.Description,
+								SourceText: Item.SourceText,
+							})
+						}
+					}
+				}
+			}
+			if (ProcessError) {
+				let Overlaps = ListOfGaps.filter(Item => Item.Type=="Overlap")
+				let ErrorText = "Error! The following items below are empty RAMs overlapping:\n"
+				Overlaps.forEach((Item, Index, Arr) => {
+					ErrorText += "Line " + (Item.LineNumber+1).toString(10) + ": [" + Item.SourceText + "]:\n\t;Conflicts with:\n"
+					Item.ConflictsWith.forEach((Item2, Index2, Arr2) => {
+						ErrorText += "\t;Line " + (Item2.LineNumber+1).toString(10) + " [" + Item2.SourceText + "]"
+						if (Index2 != Arr2.length-1) {
+							ErrorText += "\n"
+						}
+					})
+					if (Index != Arr.length-1) {
+						ErrorText += "\n"
+					}
+				})
+				document.getElementById("TextareaOutput_AssignedRAMs").value = ErrorText 
+				return
+			}
+			//Both inputs done. Loop through FreeramList and place them in ListOfGaps
+			//Sort, this makes it consistent that bytes will be used from low to high addresses when one define have multiple suitable ranges.
+			ListOfGaps.sort((a,b) => Number(a.StartAddress - b.StartAddress))
+			//Now place the freeram at a given gap address, and update the gaps list
+			let l = FreeramList.length
+			let l2 = ListOfGaps.length
+			for (let i=0; i<l; i++) { //Loop each freeram define list
+				let ASMFreeramDefine = FreeramList[i]
+				let IsPlacedUsageSuccessful = false
+				let IsAllLaterGapsBeyondMax = false //Cuts off the loop of searching each empty RAMs if we run into the max address (we know that as we go higher up, it still be greater than max.)
+				for (let i2 = 0; i2<l2&&(!IsPlacedUsageSuccessful)&&(!IsAllLaterGapsBeyondMax); i2++) { //Loop each RAM gaps
+					let GapItem = ListOfGaps[i2]
+					//Set up start and end points, accounting for potential min and max addresses
+					let StartPos = GapItem.StartAddress
+					if (ASMFreeramDefine.MinAddress != -Infinity && StartPos < ASMFreeramDefine.MinAddress) {
+						StartPos = ASMFreeramDefine.MinAddress
+					}
+					let EndPos = GapItem.EndAddress
+					if (ASMFreeramDefine.MaxAddress != Infinity && EndPos > ASMFreeramDefine.MaxAddress) {
+						EndPos = ASMFreeramDefine.MaxAddress
+					}
+					
+					//Get the number of bytes between start and end
+					let SizeAvailableSpace = EndPos-StartPos+1n
+					if (ASMFreeramDefine.Length <= SizeAvailableSpace) { //If it can fit
+						ASMFreeramDefine.AssignedAddressStartPos = StartPos //Freeram have been successfully placed.
+						IsPlacedUsageSuccessful = true
+						FreeramDefinePlacementCountSuccess++
+						
+						//modify the empty RAM array. This can potentially split the RAM range into 2 ranges.
+						let SplittedRamBeforeStart = {
+							StartAddress: GapItem.StartAddress,
+							Length: StartPos - GapItem.StartAddress
+						}
+						
+						//find if there will be empty RAM between ASMFreeramDefine.StartingAddress and ASMFreeramDefine.EndingAddress
+						//example ASMFreeramDefine 2 bytes used on 7e0060. The GapItem is 4 bytes at 7e0060
+						//7e0060 used
+						//7e0061 used
+						//7e0062 gap
+						//7e0063 gap
+						let SplittedRamAfterEnd = {
+							StartAddress: ASMFreeramDefine.AssignedAddressStartPos + ASMFreeramDefine.Length, //First byte after last used byte.
+							Length: GapItem.StartAddress+GapItem.Length - ASMFreeramDefine.AssignedAddressStartPos + ASMFreeramDefine.Length,
+						}
+						if (SplittedRamBeforeStart.Length < 1n && SplittedRamAfterEnd.Length < 1n) { //Entire range consumed (e.g. all 4 bytes of 7E0060-$7E0063 used up by one define)
+							ListOfGaps.splice(i2, 1) //Delete the RAM, it is all used up
+						} else if (SplittedRamBeforeStart.Length >= 1n && SplittedRamAfterEnd.Length < 1n) { //Splitted RAM have empty bytes before the used RAM, but up to the end is used
+							ListOfGaps.splice(i2, 1, SplittedRamBeforeStart)
+						} else if (SplittedRamBeforeStart.Length < 1n && SplittedRamAfterEnd.Length >= 1n) { //Beginning parts of the freeram used up, but leaves a gap between last used byte and last freeram
+							ListOfGaps.splice(i2, 1, SplittedRamAfterEnd)
+						} else if (SplittedRamBeforeStart.Length >= 1n && SplittedRamAfterEnd.Length >= 1n) { //Split the RAM so both before and after usage there are gaps on either side
+							ListOfGaps.splice(i2, 1, SplittedRamBeforeStart, SplittedRamAfterEnd)
+						}
+						
+					} else { //If not, potentially stop the loop entirely and go to next RAM define
+						if (ASMFreeramDefine.MaxAddress != Infinity && StartPos+ASMFreeramDefine.Length-1n > ASMFreeramDefine.MaxAddress) {
+							//If last byte beyond the max address, it cannot fit and all later empty RAMs are beyond this
+							IsAllLaterGapsBeyondMax = true
+							FreeramDefinePlacementCountFailed++
+						}
+					}
+				}
+			}
+			
 		}
+		//Sorter
 		
+		//Output
+			let OutputString = "Results"
+			OutputString += "Success: " + FreeramDefinePlacementCountSuccess.toString(10) + "\n"
+			OutputString += "Success: " + FreeramDefinePlacementCountFailed.toString(10) + "\n"
+			OutputString += "----------------------------------------------------------------------------------------\n"
+			FreeramList.forEach((PlacedRAM, Index, Arr) => {
+				if (PlacedRAM.AssignedAddressStartPos != -Infinity) {
+					OutputString += PlacedRAM.DefineName + " = " + BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos) + ";[" + PlacedRAM.Length + " bytes] " + PlacedRAM.ResourceName
+				} else {
+					OutputString += PlacedRAM.DefineName + " Error! No suitable RAM found."
+				}
+				if (Index != Arr.length-1) {
+					OutputString += "\n"
+				}
+			})
+			document.getElementById("TextareaOutput_AssignedRAMs").value = OutputString
 		
 	}
 //Helper
+	//Check if two ranges overlap.
+	//Given 2 ranges:
+	//Range_A: A_Start and A_End
+	//Range_B: B_Start and B_End
+	//If B_End is touching A_Start, then Range_B is at the lowest position (or Range_A at the highest position) that would count as an overlap
+	//If B_Start is touching A_End, then Range_B is at the highest position (or Range_A is at the lowest position) that would count as an overlap
+		function CheckOverlap(A_Start, A_End, B_Start, B_End) {
+			if (B_End >= A_Start&&B_Start <= A_End) {
+				return true
+			} else {
+				return false
+			}
+		}
 	function ParseBigIntValue(string, radix) {
 		//Acts more closely to parseInt, unlike other methods (other functions, like CorrectBinBigIntValue)
 		//this works with bigInt.

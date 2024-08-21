@@ -1,3 +1,18 @@
+2024-08-20 v3.0
+	-Major updates
+	--Less relient on "innerHTML" because it causes an entire HTML
+	  "re-painting" which is very slow and also not recommended due
+	  to security reasons.
+	--Cleaner javascript code, using guard statement (no more
+	  MASSIVE indentation) and make use of several JS array methods.
+	--Negative address supported, if you somehow need addresses
+	  located before the earliest one.
+	--Address offsetting added, if you need to relocate them to
+	  to another area.
+	-Notes
+	--If you are entering an ending address, it is now denoted
+	  with a tilde ("~") instead of a hyphen due to negative
+	  addressing supported.
 2021-05-03 v2.0
 	-Released with the changes including a tab function. Thanks
 	 to dtothefourth (https://www.smwcentral.net/?p=profile&id=37441 )

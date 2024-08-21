@@ -84,10 +84,10 @@ Notes:
 	</tr>
 	<tr>
 		<td>
-			<textarea id="TextareaInput_FreeramDefines" onchange="NeedToUpdateLists = true; MainCode()" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
+			<textarea id="TextareaInput_FreeramDefines" oninput="RefreshAndMainCode()" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
 		</td>
 		<td>
-			<textarea id="TextareaInput_EmptyRams" onchange="NeedToUpdateLists = true; MainCode()" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
+			<textarea id="TextareaInput_EmptyRams" oninput="RefreshAndMainCode()" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
 		</td>
 	</tr>
 </table>
@@ -113,38 +113,90 @@ Duplicate settings:
 	<div><label><input type="checkbox" checked id="DuplicateSettings_EmptyRams">Ignore duplicates for defines</label></div>
 </div>
 <hr>
-<textarea id="TextareaOutput_AssignedRAMs" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
+<textarea id="TextareaOutput_AssignedRAMs" cols="150" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
 <script>
+	function keyHandler_Tab(e) {
+
+		let target;
+		if (!e) e = window.event;
+		if (e.target) target = e.target;
+		else if (e.srcElement) target = e.srcElement;
+
+		if(e.keyCode == 9) {
+			if (document.selection) {
+				e.preventDefault()
+				target.focus();
+				sel = document.selection.createRange();
+				sel.text = '\t';
+			} else if (target.selectionStart || target.selectionStart === 0) {
+				e.preventDefault()
+				let startPos = target.selectionStart;
+				let endPos = target.selectionEnd;
+				target.value = target.value.substring(0, startPos) + '\t' + target.value.substring(endPos, target.value.length);
+				target.oninput()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
+
+				target.selectionStart = startPos + 1;
+				target.selectionEnd = startPos + 1;
+
+			} else {
+				e.preventDefault()
+				target.value += '\t';
+			}
+
+			if(e.preventDefault) {
+				e.preventDefault();
+				target.oninput()	//Fix an issue where if a tab is inserted and results the format being valid, the function to display the address won't update.
+			}
+			return false;
+		}
+	}
+	
+	[...document.querySelectorAll("textarea")].forEach(Ele => {
+		Ele.addEventListener("keydown", this.keyHandler_Tab, false)
+	})
+	
 	let Saved_Data = {
 		FreeramList: [],
 		EmptyRamsList: []
 	}
 	let NeedToUpdateLists = false
+	function RefreshAndMainCode() {
+		NeedToUpdateLists = true
+		MainCode()
+	}
 	function MainCode() {
 		let FreeramList = []
-		
+		let FreeramListContainsInvalidData = false
+		document.getElementById("TextareaOutput_AssignedRAMs").value = ""
 		if (NeedToUpdateLists) {
 			let InputText = document.getElementById("TextareaInput_FreeramDefines").value
 			InputText = InputText.split("\n")
-			FreeramList = InputText.map((line, Index) => {
-				if (!(/^[^\t]+\t![a-zA-Z\d_]+\t\d+\t(?:-|-?\$?[\dA-Fa-f]+)\t(?:-|-?\$?[\dA-Fa-f]+)/).test(line)) {
+			FreeramList = InputText.map((Line, Index) => {
+				if (/^\s*(?:;.*)?$/.test(Line)) {
 					return {
-						Type: "Error",
-						Reason: "Invalid text, please check no mistyped character",
-						LineNumber: Index,
-						EnteredText: line
+						Type: "CommentOrBlankLine"
 					}
 				}
-				let PartsOfString = line.split("\t")
+				if (!(/^[^\t]+\t![a-zA-Z\d_]+\t\d+\t(?:-|-?\$?[\dA-Fa-f]+)\t(?:-|-?\$?[\dA-Fa-f]+)/).test(Line)) {
+					FreeramListContainsInvalidData = true
+					return {
+						Type: "Error",
+						Reason: "Invalid text, please check no mistyped character.",
+						LineNumber: Index,
+						EnteredText: Line
+					}
+				}
+				let PartsOfString = Line.split("\t")
 				let ResourceName = PartsOfString[0]
 				let DefineName = PartsOfString[1]
 				let Length = ParseBigIntValue(PartsOfString[2].replace(/\$/, ""))
 				if (Length < 1n) {
+					FreeramListContainsInvalidData = true
 					return {
 						Type: "Error",
 						Reason: "Number of bytes must be at least 1",
 						LineNumber: Index,
-						EnteredText: line
+						EnteredText: Line
 					}
 				}
 				let MinAddress = -Infinity
@@ -156,11 +208,12 @@ Duplicate settings:
 					MaxAddress = ParseBigIntValue(PartsOfString[4].replace(/\$/, ""), 16)
 				}
 				if (MinAddress > MaxAddress) {
+					FreeramListContainsInvalidData = true
 					return {
 						Type: "Error",
-						Reason: "Max address is before the min address.",
+						Reason: "Max address is before min address.",
 						LineNumber: Index,
-						EnteredText: line
+						EnteredText: Line
 					}
 				}
 				return {
@@ -171,10 +224,83 @@ Duplicate settings:
 					MinAddress: MinAddress,
 					MaxAddress: MaxAddress,
 					LineNumber: Index,
-					Text: line
+					EnteredText: Line
 				}
 			})
-			let a = 0
+			if (FreeramListContainsInvalidData) {
+				let ListOfBadInputs = FreeramList.filter(Item => Item.Type=="Error")
+				let ErrorText = "Error!\n"
+				ListOfBadInputs.forEach((Item, Index, Arr) => {
+					ErrorText += "Line " + (Item.LineNumber+1).toString(10) + ": [" + Item.EnteredText + "]: " + Item.Reason
+					if (Index != Arr.length-1) {
+						ErrorText += "\n"
+					}
+				});
+				document.getElementById("TextareaOutput_AssignedRAMs").value = ErrorText
+				return
+			}
+			FreeramList = FreeramList.filter(Item => Item.Type != "CommentOrBlankLine") //Got all our data, next, get gap data
+			
+			let ListOfGapsText = document.getElementById("TextareaInput_EmptyRams").value.split('\n')
+			let ListOfGaps = ListOfGapsText.map((Line, Index) => {
+				let SourceText = Line
+				if (/^\s*(?:;.*)?$/.test(Line)) {
+					return {
+						Type: "CommentOrBlankLine"
+					}
+				}
+				if (!/^\s*-?\$?[\da-fA-F]+\t(?:\d+|\~-?\$?[\da-fA-F]+)(?:\t.*)?$/.test(Line)) {
+					FreeramListContainsInvalidData = true
+					return {
+						Type: "Error",
+						Reason: "Line containing invalid information.",
+						SourceText: SourceText,
+						LineNumber: Index
+					}
+				
+				}
+				let LineExtracted = Line.replace(/^\s*/, "").split("\t")
+				let StartAddress = ParseBigIntValue(LineExtracted[0].replace("$", ""), 16)
+				let EndAddress = 0n
+				let Length = 0n
+				if (/^\d+$/.test(LineExtracted[1])) { //If Length is provided
+					Length = ParseBigIntValue(LineExtracted[1], 10)
+					EndAddress = StartAddress+Length-1n
+				} else { //Otherwise if ending address provided
+					EndAddress = ParseBigIntValue(LineExtracted[1].replace(/^~/, "").replace(/^\$/, ""), 16)
+					Length = EndAddress-StartAddress+1n
+				}
+				if (Length < 1n) {
+					FreeramListContainsInvalidData = true
+					return {
+						Type: "Error",
+						Reason: "Length less than 1 byte or ending address is less than start address",
+						SourceText: SourceText,
+						LineNumber: Index
+					}
+				}
+				let Description = LineExtracted[2] ?? ""
+				return {
+					Type: "Gap",
+					LineNumber: Index,
+					StartAddress: StartAddress,
+					Length: Length,
+					EndAddress: EndAddress,
+					ConflictsWith: []
+				}
+			})
+			if (FreeramListContainsInvalidData) {
+				let ListOfBadGaps = ListOfGaps.filter(Item => Item.Type=="Error")
+				let ErrorText = "Error!\n"
+				ListOfBadGaps.forEach((Item, Index, Arr) => {
+					ErrorText += "Line " + (Item.LineNumber+1).toString(10) + ": [" + Item.SourceText + "]: " + Item.Reason
+					if (Index != Arr.length-1) {
+						ErrorText += "\n"
+					}
+				})
+				document.getElementById("TextareaOutput_AssignedRAMs").value = ErrorText
+				return
+			}
 		}
 		
 		
@@ -214,5 +340,20 @@ Duplicate settings:
 		
 		}
 		return Output
+	}
+	function BigIntToStringSignedHex(BigIntVal) {
+		//Converts a bigint value into a signed ASM-styled hex number:
+		//16n -> "$10"
+		//-16n -> "-$10"
+		let StringOutput = ""
+		if (BigIntVal >= 0n) {
+			StringOutput = "$" + BigIntVal.toString(16).toUpperCase()
+		} else {
+			StringOutput = "-$" + (BigIntVal*-1n).toString(16).toUpperCase()
+		}
+		return StringOutput
+	}
+	function DeleteCopyMessage() {
+		CopiedMessage.textContent = ""
 	}
 </script>

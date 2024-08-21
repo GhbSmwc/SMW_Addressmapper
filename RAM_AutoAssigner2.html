@@ -75,6 +75,11 @@ Notes:
 <ul>
 	<li>This tool will process each freeram defines from top to bottom order from the text, and the list of gaps at increasing address order. This means that the RAM at the top of the list will be assigned to the lowest address location that it can fit
 	(unless if not, will state no suitable address is found)</li>
+	<li>If you have gap ranges touching each other, like this:
+	<table><tr><td><pre>
+	$7E0060	~$7E0061	Range 1
+	$7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last byte of the one above, no bytes between)</pre></td></tr></table>
+	it will NOT merge them together and any freeram define set cannot cross the boundary where they touch. So a freeram that needs 3 or 4 bytes cannot fit here.</li>
 </ul>
 
 <table>
@@ -91,29 +96,78 @@ Notes:
 		</td>
 	</tr>
 </table>
-<div>Sort:
-<select onchange="MainCode()">
-	<option id="SortSetting_None">None</option>
-	<option id="SortSetting_ResourceName" selected>Resource name</option>
-	<option id="SortSetting_Addr">By address</option>
-	<option id="SortSetting_Length">By number of bytes</option>
-</select><label><input type="checkbox">Reverse order</label><br><br>
-Output format: <select onchange="MainCode()">
-	<optgroup label="ASM format">
-		<option id="OutputFormatSetting_ASMFormat">ASM define</option>
-	</optgroup>
-	<optgroup label="Address tracker format">
-		<option id="OutputFormatSetting_AddressTracker">Address tracker format - length</option>
-		<option id="OutputFormatSetting_AddressTracker">Address tracker format - end address</option>
-	</optgroup>
-</select><br><br>
+<div>Duplicate settings:
+	<div><label><input type="checkbox" checked onchange="RefreshAndMainCode()" id="DuplicateSettings_Defines">Ignore duplicates for defines</label></div>
+	<div><label><input type="checkbox" checked onchange="RefreshAndMainCode()" id="DuplicateSettings_EmptyRams">Ignore duplicates for gaps</label></div>
 
-Duplicate settings:
-	<div><label><input type="checkbox" checked onchange="MainCode()" id="DuplicateSettings_Defines">Ignore duplicates for defines</label></div>
-	<div><label><input type="checkbox" checked onchange="MainCode()" id="DuplicateSettings_EmptyRams">Ignore duplicates for gaps</label></div>
+<table>
+	<tr>
+		<th>Freeram list settings</th>
+		<th>Remaining gaps settings</th>
+	</tr>
+	<tr>
+		<td>
+			Sort:
+			<select onchange="MainCode()">
+				<option id="FreeramDefine_SortOption_None">None</option>
+				<option id="FreeramDefine_SortOption_ResourceName" selected>Resource name</option>
+				<option id="FreeramDefine_SortOption_Addr">By address</option>
+				<option id="FreeramDefine_SortOption_Length">By number of bytes</option>
+			</select><label><input type="checkbox" id="FreeramDefine_SortOption_Reverse" onchange="MainCode()">Reverse order</label><br><br>
+			Output format: <select onchange="MainCode()">
+				<optgroup label="ASM format">
+					<option id="OutputFormatSetting_ASMFormat">ASM define</option>
+				</optgroup>
+				<optgroup label="Address tracker format">
+					<option id="OutputFormatSetting_AddressTracker">Address tracker format - length</option>
+					<option id="OutputFormatSetting_AddressTracker">Address tracker format - end address</option>
+				</optgroup>
+			</select>
+		</td>
+		<td>
+			Sort: <select onchange="MainCode()">
+				<option id="Gaps_SortOption_None">Keep order you entered</option>
+				<option id="Gaps_SortOption_ByAddr" selected>By start address</option>
+				<option id="Gaps_SortOption_Size">By size</option>
+				<option id="Gaps_SortOption_Discription">By description (lexicographically)</option>
+				<option id="Gaps_SortOption_Type">By type</option>
+				<option id="Gaps_SortOption_OverlapCount">By overlap count</option>
+			</select><label><input type="checkbox" id="Gaps_SortOption_Reverse" onchange="MainCode()">Reverse order</label><br><br>
+		</td>
+	</tr>
+</table>
 </div>
 <hr>
-<textarea id="TextareaOutput_AssignedRAMs" cols="150" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
+<table>
+	<tr>
+		<th colspan="2">Statistics</th>
+	</tr>
+	<tr>
+		<td>Total defines</td>
+		<td style="font-family: monospace" id="Statistics_TotalDefines">0</td>
+	</tr>
+	<tr>
+		<td>Success</td>
+		<td style="font-family: monospace" id="Statistics_Success">0</td>
+	</tr>
+	<tr>
+		<td>Failed</td>
+		<td style="font-family: monospace" id="Statistics_Failed">0</td>
+	</tr>
+</table>
+<div id="OutputErrorMessage" hidden><pre id="OutputErrorMessage_Text" style="border: 1px solid white;"></pre></div>
+<div id="OutputResults">
+	<table>
+		<tr>
+			<th>Freeram defines result</th>
+			<th>Empty RAMs result</th>
+		</tr>
+		<tr>
+			<td><textarea id="TextareaOutput_AssignedRAMs" cols="150" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea></td>
+			<td><textarea id="TextareaOutput_ResultingGaps" cols="150" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea></td>
+		</tr>
+	</table>
+</div>
 <script>
 	function keyHandler_Tab(e) {
 
@@ -157,7 +211,7 @@ Duplicate settings:
 	
 	let Saved_Data = {
 		FreeramList: [],
-		EmptyRamsList: []
+		ListOfGaps: []
 	}
 	let NeedToUpdateLists = false
 	function RefreshAndMainCode() {
@@ -166,6 +220,7 @@ Duplicate settings:
 	}
 	function MainCode() {
 		let FreeramList = []
+		let ListOfGaps = []
 		let ProcessError = false
 		document.getElementById("TextareaOutput_AssignedRAMs").value = ""
 		let FreeramDefinePlacementCountSuccess = 0
@@ -240,7 +295,9 @@ Duplicate settings:
 						ErrorText += "\n"
 					}
 				});
-				document.getElementById("TextareaOutput_AssignedRAMs").value = ErrorText
+				document.getElementById("OutputErrorMessage_Text").textContent = ErrorText
+				document.getElementById("OutputErrorMessage").hidden = false
+				document.getElementById("OutputResults").hidden = true
 				return
 			}
 			FreeramList = FreeramList.filter(Item => Item.Type=="ValidItem") //Got all our data, 
@@ -262,7 +319,7 @@ Duplicate settings:
 			}
 			//FreeramList process are done.
 			let ListOfGapsText = document.getElementById("TextareaInput_EmptyRams").value.split('\n')
-			let ListOfGaps = ListOfGapsText.map((Line, Index) => {
+			ListOfGaps = ListOfGapsText.map((Line, Index) => {
 				let SourceText = Line
 				if (/^\s*(?:;.*)?$/.test(Line)) {
 					return {
@@ -319,7 +376,9 @@ Duplicate settings:
 						ErrorText += "\n"
 					}
 				})
-				document.getElementById("TextareaOutput_AssignedRAMs").value = ErrorText
+				document.getElementById("OutputErrorMessage_Text").textContent = ErrorText
+				document.getElementById("OutputErrorMessage").hidden = false
+				document.getElementById("OutputResults").hidden = true
 				return
 			}
 			ListOfGaps = ListOfGaps.filter(Item => Item.Type=="Gap")
@@ -386,9 +445,14 @@ Duplicate settings:
 						ErrorText += "\n"
 					}
 				})
-				document.getElementById("TextareaOutput_AssignedRAMs").value = ErrorText 
+				document.getElementById("OutputErrorMessage_Text").textContent = ErrorText
+				document.getElementById("OutputErrorMessage").hidden = false
+				document.getElementById("OutputResults").hidden = true
 				return
 			}
+			document.getElementById("OutputErrorMessage_Text").textContent = ""
+			document.getElementById("OutputErrorMessage").hidden = true
+			document.getElementById("OutputResults").hidden = false
 			//Both inputs done. Loop through FreeramList and place them in ListOfGaps
 			//Sort, this makes it consistent that bytes will be used from low to high addresses when one define have multiple suitable ranges.
 			ListOfGaps.sort((a,b) => Number(a.StartAddress - b.StartAddress))
@@ -420,7 +484,8 @@ Duplicate settings:
 						//modify the empty RAM array. This can potentially split the RAM range into 2 ranges.
 						let SplittedRamBeforeStart = {
 							StartAddress: GapItem.StartAddress,
-							Length: StartPos - GapItem.StartAddress
+							Length: StartPos - GapItem.StartAddress,
+							EndAddress: (GapItem.StartAddress) + (StartPos - GapItem.StartAddress) -1n
 						}
 						
 						//find if there will be empty RAM between ASMFreeramDefine.StartingAddress and ASMFreeramDefine.EndingAddress
@@ -432,6 +497,7 @@ Duplicate settings:
 						let SplittedRamAfterEnd = {
 							StartAddress: ASMFreeramDefine.AssignedAddressStartPos + ASMFreeramDefine.Length, //First byte after last used byte.
 							Length: GapItem.StartAddress+GapItem.Length - (ASMFreeramDefine.AssignedAddressStartPos + ASMFreeramDefine.Length),
+							EndAddress: (ASMFreeramDefine.AssignedAddressStartPos + ASMFreeramDefine.Length) + (GapItem.StartAddress+GapItem.Length - (ASMFreeramDefine.AssignedAddressStartPos + ASMFreeramDefine.Length)) -1n
 						}
 						if (SplittedRamBeforeStart.Length < 1n && SplittedRamAfterEnd.Length < 1n) { //Entire range consumed (e.g. all 4 bytes of 7E0060-$7E0063 used up by one define)
 							ListOfGaps.splice(i2, 1) //Delete the RAM, it is all used up
@@ -451,38 +517,64 @@ Duplicate settings:
 					}
 				}
 			}
-			{
-				let l = FreeramList.length
-				for (let i=0; i<l; i++) { //This code is the sole purpose of counting success and fails, and for loops are a bit faster than foreach
-					let Item = FreeramList[i]
-					if (Item.AssignedAddressStartPos != -Infinity) {
-						FreeramDefinePlacementCountSuccess++
-					} else {
-						FreeramDefinePlacementCountFailed++
-					}
-				}
-			}
+			Saved_Data.FreeramList = FreeramList
+			Saved_Data.ListOfGaps = ListOfGaps
+		} else {
+			FreeramList = Saved_Data.FreeramList
+			ListOfGaps = Save_Data.ListOfGaps
 		}
-		//Sorter
-		
+		//Sorter (freeram defines)
+			let ReverseSort_Freeram = document.getElementById("FreeramDefine_SortOption_Reverse").checked ? -1 : 1
+			
+			if (document.getElementById("FreeramDefine_SortOption_ResourceName").selected) {
+				document.getElementById("FreeramDefine_SortOption_Reverse").disabled = false
+				FreeramList.sort((a,b) => {
+					if (a.ResourceName === b.ResourceName) {
+						return 0
+					}
+					return ((a.ResourceName < b.ResourceName) ? -1 : 1)*ReverseSort
+				})
+			} else if (document.getElementById("SortOption_Size").selected) {
+				document.getElementById("FreeramDefine_SortOption_Reverse").disabled = false
+				
+			} else if (document.getElementById("SortOption_Discription").selected) {
+				document.getElementById("FreeramDefine_SortOption_Reverse").disabled = false
+
+			} else if (document.getElementById("SortOption_Type").selected) {
+				document.getElementById("FreeramDefine_SortOption_Reverse").disabled = false
+
+			} else if (document.getElementById("SortOption_OverlapCount").selected) {
+				document.getElementById("FreeramDefine_SortOption_Reverse").disabled = false
+
+			} else {
+				document.getElementById("FreeramDefine_SortOption_Reverse").disabled = true
+			}
+			
+			
 		//Output
-			let OutputString = "Results\n"
-			OutputString += "Total defines found: " + FreeramList.length.toString(10) + "\n"
-			OutputString += "Number of defines successfully placed: " + FreeramDefinePlacementCountSuccess.toString(10) + "\n"
-			OutputString += "Number of defines failed to be placed: " + FreeramDefinePlacementCountFailed.toString(10) + "\n"
-			OutputString += "----------------------------------------------------------------------------------------\n"
-			FreeramList.forEach((PlacedRAM, Index, Arr) => {
+			let OutputString = ""
+			FreeramList.forEach((PlacedRAM, Index, Arr) => { //Get text and count how many success and fails
 				if (PlacedRAM.AssignedAddressStartPos != -Infinity) {
+					FreeramDefinePlacementCountSuccess++
 					OutputString += PlacedRAM.DefineName + " = " + BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos) + "\t;[" + PlacedRAM.Length + " bytes] " + PlacedRAM.ResourceName
 				} else {
+					FreeramDefinePlacementCountFailed++
 					OutputString += PlacedRAM.DefineName + " Error! No suitable RAM found."
 				}
 				if (Index != Arr.length-1) {
 					OutputString += "\n"
 				}
 			})
+			document.getElementById("Statistics_TotalDefines").textContent = FreeramList.length.toString(10)
+			document.getElementById("Statistics_Success").textContent = FreeramDefinePlacementCountSuccess.toString(10)
+			document.getElementById("Statistics_Failed").textContent = FreeramDefinePlacementCountFailed.toString(10)
 			document.getElementById("TextareaOutput_AssignedRAMs").value = OutputString
-		
+		//Display the remaining gaps
+			OutputString = ""
+			ListOfGaps.forEach((EmptyRam, Index, Arr) => {
+				OutputString += BigIntToStringSignedHex(EmptyRam.StartAddress) + "\t"
+				
+			})
 	}
 //Helper
 	//Check if two ranges overlap.

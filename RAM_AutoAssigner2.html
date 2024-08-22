@@ -250,244 +250,251 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 		let FreeramDefinePlacementCountFailed = 0
 		
 		if (NeedToUpdateLists) {
-			
-			let InputText = document.getElementById("TextareaInput_FreeramDefines").value
-			InputText = InputText.split("\n")
-			FreeramList = InputText.map((Line, Index) => {
-				if (/^\s*(?:;.*)?$/.test(Line)) {
-					return {
-						Type: "CommentOrBlankLine"
-					}
-				}
-				if (!(/^[^\t]+\t+![a-zA-Z\d_]+\t\d+(?:\t(?:-|-?\$?[\dA-Fa-f]+)){2}$/).test(Line)) {
-					ProcessError = true
-					return {
-						Type: "Error",
-						Reason: "Invalid text, please check no mistyped character.",
-						LineNumber: Index,
-						SourceText: Line
-					}
-				}
-				let PartsOfString = Line.split("\t")
-				let ResourceName = PartsOfString[0]
-				let DefineName = PartsOfString[1]
-				let Length = ParseBigIntValue(PartsOfString[2].replace(/\$/, ""))
-				if (Length < 1n) {
-					ProcessError = true
-					return {
-						Type: "Error",
-						Reason: "Number of bytes must be at least 1",
-						LineNumber: Index,
-						SourceText: Line
-					}
-				}
-				let MinAddress = -Infinity
-				if (/^-?\$?[\dA-Fa-f]+$/.test(PartsOfString[3])) {
-					MinAddress = ParseBigIntValue(PartsOfString[3].replace(/\$/, ""), 16)
-				}
-				let MaxAddress = Infinity
-				if (/^-?\$?[\dA-Fa-f]+$/.test(PartsOfString[4])) {
-					MaxAddress = ParseBigIntValue(PartsOfString[4].replace(/\$/, ""), 16)
-				}
-				if (MinAddress > MaxAddress) {
-					ProcessError = true
-					return {
-						Type: "Error",
-						Reason: "Max address is before min address.",
-						LineNumber: Index,
-						SourceText: Line
-					}
-				}
-				return {
-					Type: "ValidItem",
-					Status: "Failed",
-					ResourceName: ResourceName,
-					DefineName: DefineName,
-					Length: Length,
-					AssignedAddressStartPos: -Infinity,
-					MinAddress: MinAddress,
-					MaxAddress: MaxAddress,
-					LineNumber: Index,
-					SourceText: Line
-				}
-			})
-			if (ProcessError) {
-				let ListOfBadFreerams = FreeramList.filter(Item => Item.Type=="Error")
-				let ErrorText = "Error! The following items below are invalid free RAM entries:\n"
-				ListOfBadFreerams.forEach((Item, Index, Arr) => {
-					ErrorText += "Line " + (Item.LineNumber+1).toString(10) + ": [" + Item.SourceText + "]: " + Item.Reason
-					if (Index != Arr.length-1) {
-						ErrorText += "\n"
-					}
-				});
-				document.getElementById("OutputErrorMessage_Text").textContent = ErrorText
-				document.getElementById("OutputErrorMessage").hidden = false
-				document.getElementById("OutputResults").hidden = true
-				return
-			}
-			FreeramList = FreeramList.filter(Item => Item.Type=="ValidItem") //Got all our data, 
-			if (document.getElementById("DuplicateSettings_Defines").checked) {
-				FreeramList = ((ItemsList) => {
-					let DupeFree = []
-					FreeramList.forEach(Item => {
-						let DupedItemOriginal = DupeFree.find(Item2 => {
-							if ((Item.ResourceName == Item2.ResourceName)&&(Item.DefineName == Item2.DefineName)&&(Item.Length == Item2.Length)&&(Item.Length == Item2.Length)&&(Item.MinAddress == Item2.MinAddress)&&(Item.MaxAddress == Item2.MaxAddress)) {
-								return true
-							}
-						});
-						if (typeof DupedItemOriginal == "undefined") {
-							DupeFree.push(Item)
+			//Process Freeram list
+				let InputText = document.getElementById("TextareaInput_FreeramDefines").value
+				InputText = InputText.split("\n")
+				FreeramList = InputText.map((Line, Index) => {
+					if (/^\s*(?:;.*)?$/.test(Line)) {
+						return {
+							Type: "CommentOrBlankLine"
 						}
-					});
-					return DupeFree
-				})(FreeramList);
-			}
-			//FreeramList process are done.
-			let Statistics_EmptyRAMBytesBefore_Count = 0n
-			let ListOfGapsText = document.getElementById("TextareaInput_EmptyRams").value.split('\n')
-			ListOfGaps = ListOfGapsText.map((Line, Index) => {
-				let SourceText = Line
-				if (/^\s*(?:;.*)?$/.test(Line)) {
-					return {
-						Type: "CommentOrBlankLine"
 					}
-				}
-				if (!/^\s*-?\$?[\da-fA-F]+\t(?:\d+|\~-?\$?[\da-fA-F]+)(?:\t.*)?$/.test(Line)) {
-					ProcessError = true
-					return {
-						Type: "Error",
-						Reason: "Line containing invalid information.",
-						SourceText: SourceText,
-						LineNumber: Index
+					if (!(/^[^\t]+\t+![a-zA-Z\d_]+\t\d+(?:\t(?:-|-?\$?[\dA-Fa-f]+)){2}$/).test(Line)) {
+						ProcessError = true
+						return {
+							Type: "Error",
+							Reason: "Invalid text, please check no mistyped character.",
+							LineNumber: Index,
+							SourceText: Line
+						}
 					}
-				
-				}
-				let LineExtracted = Line.replace(/^\s*/, "").split("\t")
-				let StartAddress = ParseBigIntValue(LineExtracted[0].replace("$", ""), 16)
-				let EndAddress = 0n
-				let Length = 0n
-				if (/^\d+$/.test(LineExtracted[1])) { //If Length is provided
-					Length = ParseBigIntValue(LineExtracted[1], 10)
-					EndAddress = StartAddress+Length-1n
-				} else { //Otherwise if ending address provided
-					EndAddress = ParseBigIntValue(LineExtracted[1].replace(/^~/, "").replace(/\$/, ""), 16)
-					Length = EndAddress-StartAddress+1n
-				}
-				if (Length < 1n) {
-					ProcessError = true
-					return {
-						Type: "Error",
-						Reason: "Length less than 1 byte or ending address is less than start address",
-						SourceText: SourceText,
-						LineNumber: Index
+					let PartsOfString = Line.split("\t")
+					let ResourceName = PartsOfString[0]
+					let DefineName = PartsOfString[1]
+					let Length = ParseBigIntValue(PartsOfString[2].replace(/\$/, ""))
+					if (Length < 1n) {
+						ProcessError = true
+						return {
+							Type: "Error",
+							Reason: "Number of bytes must be at least 1",
+							LineNumber: Index,
+							SourceText: Line
+						}
 					}
-				}
-				Statistics_EmptyRAMBytesBefore_Count += Length
-				let Description = LineExtracted[2] ?? ""
-				return {
-					Type: "Gap",
-					SourceText: SourceText,
-					LineNumber: Index,
-					StartAddress: StartAddress,
-					Length: Length,
-					EndAddress: EndAddress,
-					ConflictsWith: []
-				}
-			})
-			if (ProcessError) {
-				let ListOfBadGaps = ListOfGaps.filter(Item => Item.Type=="Error")
-				let ErrorText = "Error! The following items below are invalid entries of empty RAMs:\n"
-				ListOfBadGaps.forEach((Item, Index, Arr) => {
-					ErrorText += "Line " + (Item.LineNumber+1).toString(10) + ": [" + Item.SourceText + "]: " + Item.Reason
-					if (Index != Arr.length-1) {
-						ErrorText += "\n"
+					let MinAddress = -Infinity
+					if (/^-?\$?[\dA-Fa-f]+$/.test(PartsOfString[3])) {
+						MinAddress = ParseBigIntValue(PartsOfString[3].replace(/\$/, ""), 16)
+					}
+					let MaxAddress = Infinity
+					if (/^-?\$?[\dA-Fa-f]+$/.test(PartsOfString[4])) {
+						MaxAddress = ParseBigIntValue(PartsOfString[4].replace(/\$/, ""), 16)
+					}
+					if (MinAddress > MaxAddress) {
+						ProcessError = true
+						return {
+							Type: "Error",
+							Reason: "Max address is before min address.",
+							LineNumber: Index,
+							SourceText: Line
+						}
+					}
+					return {
+						Type: "ValidItem",
+						Status: "Failed",
+						ResourceName: ResourceName,
+						DefineName: DefineName,
+						Length: Length,
+						AssignedAddressStartPos: -Infinity,
+						MinAddress: MinAddress,
+						MaxAddress: MaxAddress,
+						LineNumber: Index,
+						SourceText: Line
 					}
 				})
-				document.getElementById("OutputErrorMessage_Text").textContent = ErrorText
-				document.getElementById("OutputErrorMessage").hidden = false
-				document.getElementById("OutputResults").hidden = true
-				return
-			}
-			ListOfGaps = ListOfGaps.filter(Item => Item.Type=="Gap")
-			if (document.getElementById("DuplicateSettings_EmptyRams").checked) {
-				ListOfGaps = ((ItemsList) => { //Remove dupes
-					let DupeFree = []
-					ListOfGaps.forEach(Item => {
-						let DupedItemOriginal = DupeFree.find(Item2 => {
-							if ((Item.StartAddress == Item2.StartAddress)&&(Item.Length == Item2.Length)&&(Item.Description == Item2.Description)) {
-								return true
-							}
-						});
-						if (typeof DupedItemOriginal == "undefined") {
-							DupeFree.push(Item)
+				if (ProcessError) {
+					let ListOfBadFreerams = FreeramList.filter(Item => Item.Type=="Error")
+					let ErrorText = "Error! The following items below are invalid free RAM entries:\n"
+					ListOfBadFreerams.forEach((Item, Index, Arr) => {
+						ErrorText += "Line " + (Item.LineNumber+1).toString(10) + ": [" + Item.SourceText + "]: " + Item.Reason
+						if (Index != Arr.length-1) {
+							ErrorText += "\n"
 						}
 					});
-					return DupeFree
-				})(ListOfGaps);
-			}
-			//ListOfGaps is done.
-			//Check if ListOfGaps contains items that overlap
-			{
-				let l = ListOfGaps.length
-				for (let i=0; i<l; i++) {
-					let Item = ListOfGaps[i]
-					for (let i2 = i+1; i2<l; i2++) {
-						let Item2 = ListOfGaps[i2]
-						if (CheckOverlap(Item.StartAddress, Item.EndAddress, Item2.StartAddress, Item2.EndAddress)) {
-							Item.Type = "Overlap"
-							Item2.Type = "Overlap"
-							ProcessError = true
-							Item.ConflictsWith.push({
-								LineNumber: Item2.LineNumber,
-								StartAddress: Item2.StartAddress,
-								Length: Item2.Length,
-								EndAddress: Item2.EndAddress,
-								Description: Item2.Description,
-								SourceText: Item2.SourceText,
-							})
-							Item2.ConflictsWith.push({
-								LineNumber: Item.LineNumber,
-								StartAddress: Item.StartAddress,
-								Length: Item.Length,
-								EndAddress: Item.EndAddress,
-								Description: Item.Description,
-								SourceText: Item.SourceText,
-							})
+					document.getElementById("OutputErrorMessage_Text").textContent = ErrorText
+					document.getElementById("OutputErrorMessage").hidden = false
+					document.getElementById("OutputResults").hidden = true
+					return
+				}
+				FreeramList = FreeramList.filter(Item => Item.Type=="ValidItem") //Got all our data, 
+				if (document.getElementById("DuplicateSettings_Defines").checked) {
+					FreeramList = ((ItemsList) => {
+						let DupeFree = []
+						FreeramList.forEach(Item => {
+							let DupedItemOriginal = DupeFree.find(Item2 => {
+								if ((Item.ResourceName == Item2.ResourceName)&&(Item.DefineName == Item2.DefineName)&&(Item.Length == Item2.Length)&&(Item.Length == Item2.Length)&&(Item.MinAddress == Item2.MinAddress)&&(Item.MaxAddress == Item2.MaxAddress)) {
+									return true
+								}
+							});
+							if (typeof DupedItemOriginal == "undefined") {
+								DupeFree.push(Item)
+							}
+						});
+						return DupeFree
+					})(FreeramList);
+				}
+			//FreeramList process are done. Now work on gaps
+				let ListOfGapsText = document.getElementById("TextareaInput_EmptyRams").value.split('\n')
+				ListOfGaps = ListOfGapsText.map((Line, Index) => {
+					let SourceText = Line
+					if (/^\s*(?:;.*)?$/.test(Line)) {
+						return {
+							Type: "CommentOrBlankLine"
 						}
 					}
-				}
-			}
-			if (ProcessError) {
-				let Overlaps = ListOfGaps.filter(Item => Item.Type=="Overlap")
-				let ErrorText = "Error! The following items below are empty RAMs overlapping:\n"
-				Overlaps.forEach((Item, Index, Arr) => {
-					ErrorText += "Line " + (Item.LineNumber+1).toString(10) + ": [" + Item.SourceText + "]:\n\t;Conflicts with:\n"
-					Item.ConflictsWith.forEach((Item2, Index2, Arr2) => {
-						ErrorText += "\t;Line " + (Item2.LineNumber+1).toString(10) + " [" + Item2.SourceText + "]"
-						if (Index2 != Arr2.length-1) {
+					if (!/^\s*-?\$?[\da-fA-F]+\t(?:\d+|\~-?\$?[\da-fA-F]+)(?:\t.*)?$/.test(Line)) {
+						ProcessError = true
+						return {
+							Type: "Error",
+							Reason: "Line containing invalid information.",
+							SourceText: SourceText,
+							LineNumber: Index
+						}
+					
+					}
+					let LineExtracted = Line.replace(/^\s*/, "").split("\t")
+					let StartAddress = ParseBigIntValue(LineExtracted[0].replace("$", ""), 16)
+					let EndAddress = 0n
+					let Length = 0n
+					if (/^\d+$/.test(LineExtracted[1])) { //If Length is provided
+						Length = ParseBigIntValue(LineExtracted[1], 10)
+						EndAddress = StartAddress+Length-1n
+					} else { //Otherwise if ending address provided
+						EndAddress = ParseBigIntValue(LineExtracted[1].replace(/^~/, "").replace(/\$/, ""), 16)
+						Length = EndAddress-StartAddress+1n
+					}
+					if (Length < 1n) {
+						ProcessError = true
+						return {
+							Type: "Error",
+							Reason: "Length less than 1 byte or ending address is less than start address",
+							SourceText: SourceText,
+							LineNumber: Index
+						}
+					}
+					let Description = LineExtracted[2] ?? ""
+					return {
+						Type: "Gap",
+						SourceText: SourceText,
+						LineNumber: Index,
+						StartAddress: StartAddress,
+						Length: Length,
+						EndAddress: EndAddress,
+						ConflictsWith: []
+					}
+				})
+				if (ProcessError) {
+					let ListOfBadGaps = ListOfGaps.filter(Item => Item.Type=="Error")
+					let ErrorText = "Error! The following items below are invalid entries of empty RAMs:\n"
+					ListOfBadGaps.forEach((Item, Index, Arr) => {
+						ErrorText += "Line " + (Item.LineNumber+1).toString(10) + ": [" + Item.SourceText + "]: " + Item.Reason
+						if (Index != Arr.length-1) {
 							ErrorText += "\n"
 						}
 					})
-					if (Index != Arr.length-1) {
-						ErrorText += "\n"
+					document.getElementById("OutputErrorMessage_Text").textContent = ErrorText
+					document.getElementById("OutputErrorMessage").hidden = false
+					document.getElementById("OutputResults").hidden = true
+					return
+				}
+				//Remove duplicates
+					ListOfGaps = ListOfGaps.filter(Item => Item.Type=="Gap")
+					if (document.getElementById("DuplicateSettings_EmptyRams").checked) {
+						ListOfGaps = ((ItemsList) => {
+							let DupeFree = []
+							ListOfGaps.forEach(Item => {
+								let DupedItemOriginal = DupeFree.find(Item2 => {
+									if ((Item.StartAddress == Item2.StartAddress)&&(Item.Length == Item2.Length)&&(Item.Description == Item2.Description)) {
+										return true
+									}
+								});
+								if (typeof DupedItemOriginal == "undefined") {
+									DupeFree.push(Item)
+								}
+							});
+							return DupeFree
+						})(ListOfGaps);
 					}
-				})
-				document.getElementById("OutputErrorMessage_Text").textContent = ErrorText
-				document.getElementById("OutputErrorMessage").hidden = false
-				document.getElementById("OutputResults").hidden = true
+				//ListOfGaps is done.
+				//Check if ListOfGaps contains items that overlap
+					{
+						let l = ListOfGaps.length
+						for (let i=0; i<l; i++) {
+							let Item = ListOfGaps[i]
+							for (let i2 = i+1; i2<l; i2++) {
+								let Item2 = ListOfGaps[i2]
+								if (CheckOverlap(Item.StartAddress, Item.EndAddress, Item2.StartAddress, Item2.EndAddress)) {
+									Item.Type = "Overlap"
+									Item2.Type = "Overlap"
+									ProcessError = true
+									Item.ConflictsWith.push({
+										LineNumber: Item2.LineNumber,
+										StartAddress: Item2.StartAddress,
+										Length: Item2.Length,
+										EndAddress: Item2.EndAddress,
+										Description: Item2.Description,
+										SourceText: Item2.SourceText,
+									})
+									Item2.ConflictsWith.push({
+										LineNumber: Item.LineNumber,
+										StartAddress: Item.StartAddress,
+										Length: Item.Length,
+										EndAddress: Item.EndAddress,
+										Description: Item.Description,
+										SourceText: Item.SourceText,
+									})
+								}
+							}
+						}
+					}
+					if (ProcessError) {
+						let Overlaps = ListOfGaps.filter(Item => Item.Type=="Overlap")
+						let ErrorText = "Error! The following items below are empty RAMs overlapping:\n"
+						Overlaps.forEach((Item, Index, Arr) => {
+							ErrorText += "Line " + (Item.LineNumber+1).toString(10) + ": [" + Item.SourceText + "]:\n\t;Conflicts with:\n"
+							Item.ConflictsWith.forEach((Item2, Index2, Arr2) => {
+								ErrorText += "\t;Line " + (Item2.LineNumber+1).toString(10) + " [" + Item2.SourceText + "]"
+								if (Index2 != Arr2.length-1) {
+									ErrorText += "\n"
+								}
+							})
+							if (Index != Arr.length-1) {
+								ErrorText += "\n"
+							}
+						})
+						document.getElementById("OutputErrorMessage_Text").textContent = ErrorText
+						document.getElementById("OutputErrorMessage").hidden = false
+						document.getElementById("OutputResults").hidden = true
+						return
+					}
+			
+			if (ListOfGaps.length == 0) {
+				document.getElementById("Statistics_EmptyRamRangeCountBefore").textContent = "0"
+				document.getElementById("Statistics_EmptyRamRangeCountAfter").textContent = "0"
+				document.getElementById("Statistics_EmptyRAMBytesBefore").textContent = "0"
+				document.getElementById("Statistics_EmptyRAMBytesAfter").textContent = "0"
+				document.getElementById("Statistics_EmptyRamBytesConsumed").textContent = "0"
+				document.getElementById("TextareaOutput_ResultingGaps").value = ""
 				return
 			}
-			let Statistics_EmptyRamRangeCountBefore_Count = ListOfGaps.length
-			document.getElementById("Statistics_EmptyRamRangeCountBefore").textContent = Statistics_EmptyRamRangeCountBefore_Count.toString(10)
+			let Statistics_EmptyRAMBytesBefore_Count = 0n
+			ListOfGaps.forEach(Gap => Statistics_EmptyRAMBytesBefore_Count += Gap.Length) //Count after removing dupes
+			document.getElementById("Statistics_EmptyRamRangeCountBefore").textContent = ListOfGaps.length.toString(10)
 			document.getElementById("Statistics_EmptyRAMBytesBefore").textContent = Statistics_EmptyRAMBytesBefore_Count.toString(10)
 			
 			document.getElementById("OutputErrorMessage_Text").textContent = ""
 			document.getElementById("OutputErrorMessage").hidden = true
 			document.getElementById("OutputResults").hidden = false
 			
-			if (FreeramList.length == 0 || ListOfGaps.length == 0) { //Prevent ListOfGaps[0] causing an exception
-				return
-			}
 			//Both inputs done. Loop through FreeramList and place them in ListOfGaps
 			//Sort, this makes it consistent that bytes will be used from low to high addresses when one define have multiple suitable ranges.
 			ListOfGaps.sort((a,b) => Number(a.StartAddress - b.StartAddress))
@@ -495,7 +502,6 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 			//We need this later for sorting by placed addresses, and because we're dealing with bigint and it cannot represent -Infinity or NaN.
 			//Basically, if any define exists having its address assigned failed, instead of using -Infinity, it simply uses Range_With_Lowest_Start_AddressNumber-1.
 			FailedPlaceHolderAddress = ListOfGaps[0].StartAddress-1n
-			
 			
 			//Now place the freeram at a given gap address, and update the gaps list
 			let l = FreeramList.length
@@ -558,8 +564,6 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 					}
 				}
 			}
-			
-			
 			FreeramList.forEach(Item => {
 				if (Item.AssignedAddressStartPos != -Infinity) {
 					FreeramDefinePlacementCountSuccess++

@@ -139,9 +139,11 @@ Where:
 	<div id="ViewMode_TextTable">
 		<div style="font-family: monospace;">Number of results (after filter): <span id="OutputStatistics_TotalAfterFilter">0</span></div>
 		<textarea id="Output_AddressInfo_Text" readonly cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: white"></textarea><br>
-			<button onclick="setClipboard(document.getElementById('Output_AddressInfo_Text').value);">Copy to clipboard</button>
-			<span id="CopiedMessage"></span><br><br>
-		<div style="overflow: auto; height: 500px">
+			<div>
+				<button onclick="setClipboard(document.getElementById('Output_AddressInfo_Text').value);">Copy to clipboard</button>
+				<span></span>
+			</div><br><br>
+		<div style="overflow: auto; height: 500px; border: 1px solid white">
 			<table id="Output_AddressInfo_Table"></table>
 		</div>
 	</div>
@@ -897,8 +899,8 @@ Where:
 		}
 		return StringOutput
 	}
-	function DeleteCopyMessage() {
-		CopiedMessage.textContent = ""
+	function DeleteCopyMessage(HTMLElement) {
+		HTMLElement.textContent = ""
 	}
 	
 	function setClipboard(String) {
@@ -908,19 +910,20 @@ Where:
 		const data = [new ClipboardItem({ [type]: blob })];
 		
 		let EventElement = event.target
+		let CopiedMessage = EventElement.parentNode.querySelector("span")
 	
 		navigator.clipboard.write(data).then(
-			(() => {
+			((EventElement) => {
 			/* success */
 				CopiedMessage.textContent = "Copied!"
 				CopiedMessage.style.color = "#00FF00"
-				setTimeout(DeleteCopyMessage, 1500)
+				setTimeout(DeleteCopyMessage.bind(null, CopiedMessage), 1500)
 			}).bind(null, EventElement),
-			(() => {
+			((EventElement) => {
 			/* failure */
 				CopiedMessage.textContent = "Failed!"
 				CopiedMessage.style.color = "#FF0000"
-				setTimeout(DeleteCopyMessage, 1500)
+				setTimeout(DeleteCopyMessage.bind(null, CopiedMessage), 1500)
 			}).bind(null, EventElement)
 		);
 	}

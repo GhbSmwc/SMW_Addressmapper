@@ -23,6 +23,7 @@
 	--AutoAssigner now also outputs the resulting RAMs left over.
 	--AutoAssigner will now bring up a prominent warning if any define
 	  fails to be assigned.
+	--Statistics on total bytes (gaps and used addresses) are added.
 	-Notes
 	--If you are entering an ending address, it is now denoted
 	  with a tilde ("~") instead of a hyphen due to negative

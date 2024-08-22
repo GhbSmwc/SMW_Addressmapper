@@ -89,10 +89,10 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 	</tr>
 	<tr>
 		<td>
-			<textarea id="TextareaInput_FreeramDefines" oninput="RefreshAndMainCode()" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
+			<textarea id="TextareaInput_FreeramDefines" oninput="RefreshAndMainCode()" cols="60" rows="15" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
 		</td>
 		<td>
-			<textarea id="TextareaInput_EmptyRams" oninput="RefreshAndMainCode()" cols="75" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
+			<textarea id="TextareaInput_EmptyRams" oninput="RefreshAndMainCode()" cols="60" rows="15" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
 		</td>
 	</tr>
 </table>
@@ -170,7 +170,8 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 					</tr>
 				</table>
 				<span id="SomeDefinesFailedWarning" style="color: red; font-family: monospace" hidden>There are define(s) have failed to be assigned and they are not counted as consuming RAM</span>
-				<textarea id="TextareaOutput_AssignedRAMs" cols="150" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
+				<textarea id="TextareaOutput_AssignedRAMs" cols="70" rows="15" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
+				<div><button onclick="setClipboard(document.getElementById('TextareaOutput_AssignedRAMs').value)">Copy</button><span></span></div>
 			</td>
 			<td>
 				<table>
@@ -196,7 +197,8 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 						</td>
 					</tr>
 				</table>
-				<textarea id="TextareaOutput_ResultingGaps" cols="150" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
+				<textarea id="TextareaOutput_ResultingGaps" cols="70" rows="15" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
+				<div><button onclick="setClipboard(document.getElementById('TextareaOutput_ResultingGaps').value)">Copy</button><span></span></div>
 			</td>
 		</tr>
 	</table>
@@ -741,7 +743,32 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 		}
 		return StringOutput
 	}
-	function DeleteCopyMessage() {
-		CopiedMessage.textContent = ""
+	function DeleteCopyMessage(HTMLElement) {
+		HTMLElement.textContent = ""
+	}
+	
+	function setClipboard(String) {
+		//Credit goes to Mozilla: https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/write
+		const type = "text/plain";
+		const blob = new Blob([String], { type });
+		const data = [new ClipboardItem({ [type]: blob })];
+		
+		let EventElement = event.target
+		let CopiedMessage = EventElement.parentNode.querySelector("span")
+	
+		navigator.clipboard.write(data).then(
+			((EventElement) => {
+			/* success */
+				CopiedMessage.textContent = "Copied!"
+				CopiedMessage.style.color = "#00FF00"
+				setTimeout(DeleteCopyMessage.bind(null, CopiedMessage), 1500)
+			}).bind(null, EventElement),
+			((EventElement) => {
+			/* failure */
+				CopiedMessage.textContent = "Failed!"
+				CopiedMessage.style.color = "#FF0000"
+				setTimeout(DeleteCopyMessage.bind(null, CopiedMessage), 1500)
+			}).bind(null, EventElement)
+		);
 	}
 </script>

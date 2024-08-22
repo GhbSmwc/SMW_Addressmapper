@@ -36,8 +36,11 @@ would take that address, and N bytes after it. Directional quake and the <a href
 
 <p>There are two tools:</p>
 <ul>
-	<li>The &ldquo;Addresser&rdquo;, which takes a given RAM range (either a literal range, or a starting byte address with a length/number-of-bytes given) and checks for overlaps and gaps in a sequential address order</li>
-	<li>The &ldquo;Assigner&rdquo;, which takes a given list of ASM defines and a list of empty RAMs and automatically assigns the ASM defines to every currently-unused RAM.</li>
+	<li>
+		The &ldquo;Addresser&rdquo;, which takes a given RAM range (either a literal range, or a starting byte address with a length/number-of-bytes given) and checks for overlaps and gaps in a sequential address order. It have visualizer
+		(&ldquo;<kbd>Byte view</kbd>&rdquo;)and an option to offset the RAM usage to another address if you are dealing with mirroring and SA-1 remapping.
+	</li>
+	<li>The &ldquo;Assigner&rdquo;, which takes a given list of ASM defines and a list of empty RAMs and automatically assigns the ASM defines to every currently-unused RAM address.</li>
 </ul>
 
 <p>This is especially very useful for collaboration hacks or any hacks that uses a ton of ASM resources, as manually pinpointing a problem can be especially difficult.</p>

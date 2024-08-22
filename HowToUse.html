@@ -32,21 +32,24 @@
 <p>This mostly-javascript &ldquo;program&rdquo; (more like a script) allows you to manage your RAM usage easily. It came to my attention that some beginners or anyone unaware of how memory usage works
 complains that one patch breaks another often was caused by RAM conflicts when installing ASM resources (patch, blocks, sprites, uberasm, etc.). Here is an
 <a href="https://www.smwcentral.net/?p=section&a=details&id=18776">example</a> (scroll and find DTA450's comment). He probably either forgot to change the freeram define setting OR assume that no RAM
-would take that address, and N bytes after it. Directional quake and the <a href="https://www.smwcentral.net/?p=section&a=details&id=18720">wall kick</a> have issues with RAM $61 when using default RAM addresses</p>
+would take that address, and N bytes after it. Directional quake and the <a href="https://www.smwcentral.net/?p=section&a=details&id=18720">wall kick</a> have issues with RAM $61 when using default RAM addresses.</p>
 
-<p>So I (re)build this script (<kbd>Addresser.html</kbd> and then <kbd>Addresser2.html</kbd>) that automates the process of finding conflicts (checks if RAM usage ranges overlaps), and most recently,
-an auto-freeram-assigner tool, <kbd>Ram_AutoAssigner.html</kbd>, which after given the list of defines asking for a RAM and the list of empty RAMs, will output the defines with their address to use being assigned/set to.</p>
+<p>There are two tools:</p>
+<ul>
+	<li>The &ldquo;Addresser&rdquo;, which takes a given RAM range (either a literal range, or a starting byte address with a length/number-of-bytes given) and checks for overlaps and gaps in a sequential address order</li>
+	<li>The &ldquo;Assigner&rdquo;, which takes a given list of ASM defines and a list of empty RAMs and automatically assigns the ASM defines to every unused RAM.</li>
+</ul>
 
-<p>This is especially very useful for collaboration hacks or any hacks that uses a ton of ASM resources, as manually pinpointing a problem can be especially difficult</p>
+<p>This is especially very useful for collaboration hacks or any hacks that uses a ton of ASM resources, as manually pinpointing a problem can be especially difficult.</p>
 
 <p>What you need to do is keep track of what RAM is being used, both by SMW and the ASM resources. Make sure they formatted as stated in those HTML javascript files.</p>
 
-<p>To use <kbd>Addresser1.html</kbd> or <kbd>Addresser2.html</kbd>, just copy the list in <kbd>SMW_UsedAddress.txt</kbd> and paste it in the HTML's textarea, it will output a list and a table showing their
-statuses as well as discovered gaps. <kbd>Addresser2.html</kbd> have a visualizer (&ldquo;Byte by byte address view&rdquo;) that lets you see in relation to other used/unused address along with each address byte.</p>
+<p>To use addresser, just copy the list in <kbd>SMW_UsedAddress.txt</kbd> and paste it in the HTML's textarea, it will output a list and a table showing their
+statuses as well as discovered gaps. You can also view them by <kbd>Byte view</kbd>, which will display a graph of every bytes in the sequence on how they're occupied.</p>
 
 <p>To add to above, you CAN add your own used RAMs here by the ASM resource you installed.</p>
 
-<p>To use <kbd>Ram_AutoAssigner.html</kbd>:
+<p>To use the auto-assigner:
 <ol>
 	<li>
 		Have any ASM resource that consumes freeram. For example, this <a href="https://www.smwcentral.net/?p=section&a=details&id=18720">wall kick patch</a> and the directional quake mentioned earlier:
@@ -68,7 +71,7 @@ statuses as well as discovered gaps. <kbd>Addresser2.html</kbd> have a visualize
 		index value at the highest possible value. In this example, wall kick patch all take 1 byte each, and the directional quake takes 2 bytes.
 	</li><br>
 	<li>
-		Next, open <kbd>Ram_AutoAssigner.html</kbd> and write your RAM usage of the ASM resource you're dealing with into the first textarea. Make sure it's formated as stated at the top, and make sure you supply the FULL address
+		Next, open the autoassigner and write your RAM usage of the ASM resource you're dealing with into the first textarea. Make sure it's formated as stated at the top, and make sure you supply the FULL address
 		and not the mirroring address (see the <a href="#BordersAndMirrors">notes</a> at the bottom of why). The ASM resource name isn't really much processed other than it has to exist (at least 1 character) and is used for sorting the
 		display, so any name without the tab character would work, I just recommend making sure you name them in a way it is easy to locate and such. Here is using the previous example:
 <table><tr><td><pre>wallKick	!flags	1	-	-
@@ -77,13 +80,13 @@ WallKick	!temp_y_spd	1	-	-
 DirectionalQuake	!Freeram_DirQuake_Layer1XDisplacement	2	-	-</pre></td></tr></table>
 	</li><br>
 	<li>
-		Now obtain a list of empty RAMs. You can do this by opening <kbd>SMW_UsedAddress.txt</kbd>, copy the list, use <kbd>Addresser1.html</kbd> or <kbd>Addresser2.html</kbd>, filter only by gaps, copy the plaintext form of the output,
-		and paste it in the second textarea of <kbd>Ram_AutoAssigner.html</kbd>.
+		Now obtain a list of empty RAMs. You can do this by opening <kbd>SMW_UsedAddress.txt</kbd>, copy the list, use addresser, filter only by gaps, copy the plaintext form of the output,
+		and paste it in the second textarea of assigner.
 	</li><br>
 	<li>
-		<kbd>Ram_AutoAssigner.html</kbd> will now output the assigned RAMs at the bottom, asar ASM formatted by default. I highly recommend having it sorted by resource name (which is set to that by default) so you can easily grab all
+		The assigner will now output the assigned RAMs at the bottom, asar ASM formatted by default. I highly recommend having it sorted by resource name (which is set to that by default) so you can easily grab all
 		the defines relating to a given ASM resource (such as to avoid placing a define from one resource into another). You can then easily set the RAMs in those ASM files by commenting out the original defines you are dealing with and then
-		paste the results from the assigner tool below it, like this:
+		paste the results from the assigner tool below it (and before any code that uses the defines), like this:
 <table><tr><td><pre>;Wallkick patch
 ;!flags			= $61		; The wallkick flags. (RAM)
 ;!no_back_timer		= $62		; The timer for not moving back. (RAM)
@@ -100,20 +103,24 @@ DirectionalQuake	!Freeram_DirQuake_Layer1XDisplacement	2	-	-</pre></td></tr></ta
 ; endif
 !Freeram_DirQuake_Layer1XDisplacement = $7E0061 ;&gt;DirectionalQuake, 2 byte(s)</pre></td></tr></table><br>
 		Don't forget to &ldquo;shorten&rdquo; your address when possible (replace <kbd>$7E005C</kbd> with <kbd>$5C</kbd>, <kbd>$7E0060</kbd> with <kbd>$60</kbd> and so on)
-
-		(add semicolons &ldquo;;&rdquo; before the string to be
-		read)  (easier using notepad++ shift+alt to make your selections column mode) and paste the assigned defines you got from <kbd>Ram_AutoAssigner.html</kbd> below it. Don't forget you can also add that to your
-		list of Used RAM by clicking on &ldquo;Address tracker format&rdquo;, copy that format, and paste it in your list of used RAM, so that any future ASM consuming RAM will avoid conflicting with that.
+		(add semicolons &ldquo;;&rdquo; before the string to be read) (easier using notepad++ shift+alt to make your selections column mode) and paste the assigned defines you got from the assigner below it. Don't forget you can also add that to your
+		list of Used RAM by clicking on &ldquo;Address tracker format&rdquo;, copy that format, and paste it in your list of used RAM, so that any future ASM consuming RAM will avoid conflicting with that updated list.
 	</li>
 </ol>
 </p>
 <h2>Notes</h2>
 <ul>
-	<li>The freeram defines in the first textarea of <kbd>Ram_AutoAssigner.html</kbd> are processed from top to bottom, and the second textarea are processed from lowest to highest address. This means the first RAM define
-	will get assigned to the current lowest available address (accounting the min and max address as well as the size of it).</li>
-	<li id="BordersAndMirrors">This entire tool does not account to bank borders, so do not assume things like a range of <kbd>$7EFFFF</kbd>-<kbd>$7F0000</kbd> that it avoids it. It also does not account for RAM mirroring, so make sure
-	you place your full address in the tool.</li>
-	<li>This tool can be used beyond smw modding, since this mostly checks address ranges and nothing more.</li>
+	<li>The freeram defines in the first textarea of autoassigner are processed from top to bottom, and the second textarea are processed from lowest to highest address. This means the first RAM define
+	will get assigned to the lowest available address (accounting the min and max address as well as the size of it).</li>
+	<li id="BordersAndMirrors">
+		This entire tool does not account to bank borders, so do not assume things like a range of <kbd>$7EFFFF</kbd>-<kbd>$7F0000</kbd> that it avoids it. It also does not account for RAM mirroring, so make sure
+		you place your full address in the tool.
+		<ul>
+			<li>Also, the assigner tool does not merge RAM ranges that are touching each other, so any define will not have its length cross that boundary. For example: A range from <kbd>$7E0060</kbd> to <kbd>$7E0061</kbd> and
+			another ranging from <kbd>$7E0062</kbd> to <kbd>$7E0063</kbd>, that is 2 ranges each having 2 bytes long, does not allow a 3 or 4 -bytes long freeram define to be assigned anywhere here.</li>
+		</ul>
+	</li>
+	<li>This tool can be used beyond smw modding, since this just checks address ranges and nothing more.</li>
 	<li>Some RAM may be reused for a different purpose when not used for a given specific purpose, such as reusing <kbd>$60</kbd> for a jump counter during a level, and for something else during overworld. If this is the case
 	then I would recommend having a list of used RAM being separated from &ldquo;local&rdquo; uses, it is only a problem if 2+ purposes are used at the same time. The same applies for custom scratch RAM besides $00-$0F.</li>
 </ul>

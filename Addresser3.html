@@ -679,7 +679,7 @@ Where:
 						OverlappedItem_Table.appendChild(OverlappedItem_HeaderRow)
 						
 						Item.ConflictsWith.forEach((overlapped, index2, Arr2) => {
-							PlainTextOutput += "\t;Line " + Item.LineNumber.toString(10) + ": " + BigIntToStringSignedHex(overlapped.StartAddress) + "\t"
+							PlainTextOutput += "\t;Line " + (Item.LineNumber+1).toString(10) + ": " + BigIntToStringSignedHex(overlapped.StartAddress) + "\t"
 							if (document.getElementById("PlaintextSetting_Output_Size").selected) {
 								PlainTextOutput += overlapped.Length.toString(10)
 							} else if (document.getElementById("PlaintextSetting_Output_Ending").selected) {

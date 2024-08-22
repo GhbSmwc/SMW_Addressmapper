@@ -54,7 +54,7 @@ Where:
 <ul>
 <li><kbd>ASM_resource_name</kbd> is the name of an ASM resource. Can be any character but must not contain a linebreak or tab.</li>
 <li><kbd>!RAM_Define</kbd> is the define name used in the ASM file that represents a RAM to use. Just like above, no linebreaks, no tabs.</li>
-<li><kbd>Number_of_bytes_Decimal</kbd> is how many bytes the RAM it requires, in decimal. Must be at least 1.</li>
+<li><kbd>Number_of_bytes_Decimal</kbd> is how many bytes the RAM it requires (contiguously), in decimal. Must be at least 1.</li>
 <li>
 	<kbd>Optional_min</kbd>: This is optional, either enter an address hex number (&ldquo;$&rdquo; is optional) or just &ldquo;-&rdquo; to nullify it. When a hex number is supplied, this forces
 	the RAM to search for a freeram define to not have its starting address location below this address. This is useful if RAMs that an ASM resource must or must not reset during loading screens (black screen).
@@ -147,33 +147,55 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 <div id="OutputResults">
 	<table>
 		<tr>
-			<th colspan="2">Statistics</th>
-		</tr>
-		<tr>
-			<td style="font-family: monospace">Total defines</td>
-			<td style="font-family: monospace" id="Statistics_TotalDefines">0</td>
-		</tr>
-		<tr>
-			<td style="font-family: monospace">Success</td>
-			<td style="font-family: monospace" id="Statistics_Success">0</td>
-		</tr>
-		<tr>
-			<td style="font-family: monospace">Failed</td>
-			<td style="font-family: monospace" id="Statistics_Failed">0</td>
-		</tr>
-	</table>
-	<table>
-		<tr>
 			<th>Freeram defines result</th>
 			<th>Remaining Empty RAMs result</th>
 		</tr>
 		<tr>
 			<td>
-				<span id="SomeDefinesFailedWarning" style="color: red; font-family: monospace" hidden>Some defines have failed to be assigned.</span>
+				<table>
+					<tr>
+						<th colspan="2">Define Statistics</th>
+					</tr>
+					<tr>
+						<td style="font-family: monospace">Total defines</td>
+						<td style="font-family: monospace" id="Statistics_TotalDefines">0</td>
+					</tr>
+					<tr>
+						<td style="font-family: monospace">Success</td>
+						<td style="font-family: monospace" id="Statistics_Success">0</td>
+					</tr>
+					<tr>
+						<td style="font-family: monospace">Failed</td>
+						<td style="font-family: monospace" id="Statistics_Failed">0</td>
+					</tr>
+				</table>
+				<span id="SomeDefinesFailedWarning" style="color: red; font-family: monospace" hidden>There are define(s) have failed to be assigned and they are not counted as consuming RAM</span>
 				<textarea id="TextareaOutput_AssignedRAMs" cols="150" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
 			</td>
 			<td>
-				<span style="font-family: monospace">Empty RAMs after assigning: <span id="Statistics_ResultEmptyRamCount">0</span></span><br>
+				<table>
+					<tr>
+						<th colspan="2">Empty RAM Statistics</th>
+					</tr>
+					<tr>
+						<td style="font-family: monospace">Number of ranges before</td>
+						<td style="font-family: monospace" id="Statistics_EmptyRamRangeCountBefore">0</td>
+					</tr>
+					<tr>
+						<td style="font-family: monospace">Number of ranges after</td>
+						<td style="font-family: monospace" id="Statistics_EmptyRamRangeCountAfter">0</td>
+					</tr>
+					<tr>
+						<td style="font-family: monospace">Total bytes before</td>
+						<td style="font-family: monospace" id="Statistics_EmptyRAMBytesBefore">0</td>
+					</tr>
+					<tr>
+						<td style="font-family: monospace">Total bytes after</td>
+						<td style="font-family: monospace">
+							<span id="Statistics_EmptyRAMBytesAfter">0</span> (<span id="Statistics_EmptyRamBytesConsumed">0</span> consumed)
+						</td>
+					</tr>
+				</table>
 				<textarea id="TextareaOutput_ResultingGaps" cols="150" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
 			</td>
 		</tr>
@@ -248,7 +270,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 						Type: "CommentOrBlankLine"
 					}
 				}
-				if (!(/^[^\t]+\t![a-zA-Z\d_]+\t\d+\t(?:-|-?\$?[\dA-Fa-f]+)\t(?:-|-?\$?[\dA-Fa-f]+)/).test(Line)) {
+				if (!(/^[^\t]+\t![a-zA-Z\d_]+\t\d+(?:\t-|-?\$?[\dA-Fa-f]+){2}$/).test(Line)) {
 					ProcessError = true
 					return {
 						Type: "Error",
@@ -332,6 +354,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 				})(FreeramList);
 			}
 			//FreeramList process are done.
+			let Statistics_EmptyRAMBytesBefore_Count = 0n
 			let ListOfGapsText = document.getElementById("TextareaInput_EmptyRams").value.split('\n')
 			ListOfGaps = ListOfGapsText.map((Line, Index) => {
 				let SourceText = Line
@@ -370,6 +393,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 						LineNumber: Index
 					}
 				}
+				Statistics_EmptyRAMBytesBefore_Count += Length
 				let Description = LineExtracted[2] ?? ""
 				return {
 					Type: "Gap",
@@ -464,6 +488,10 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 				document.getElementById("OutputResults").hidden = true
 				return
 			}
+			let Statistics_EmptyRamRangeCountBefore_Count = ListOfGaps.length
+			document.getElementById("Statistics_EmptyRamRangeCountBefore").textContent = Statistics_EmptyRamRangeCountBefore_Count.toString(10)
+			document.getElementById("Statistics_EmptyRAMBytesBefore").textContent = Statistics_EmptyRAMBytesBefore_Count.toString(10)
+			
 			document.getElementById("OutputErrorMessage_Text").textContent = ""
 			document.getElementById("OutputErrorMessage").hidden = true
 			document.getElementById("OutputResults").hidden = false
@@ -541,6 +569,8 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 					}
 				}
 			}
+			
+			
 			FreeramList.forEach(Item => {
 				if (Item.AssignedAddressStartPos != -Infinity) {
 					FreeramDefinePlacementCountSuccess++
@@ -554,6 +584,13 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 			if (FreeramDefinePlacementCountFailed > 0) {
 				document.getElementById("SomeDefinesFailedWarning").hidden = false
 			}
+			let Statistics_EmptyRAMBytesAfter_Count = 0n
+			ListOfGaps.forEach(Gap => Statistics_EmptyRAMBytesAfter_Count += Gap.Length)
+			document.getElementById("Statistics_EmptyRAMBytesAfter").textContent = Statistics_EmptyRAMBytesAfter_Count.toString(10)
+			document.getElementById("Statistics_EmptyRamBytesConsumed").textContent = (Statistics_EmptyRAMBytesBefore_Count-Statistics_EmptyRAMBytesAfter_Count).toString(10)
+			
+			
+			
 			Saved_Data.FreeramList = FreeramList
 			Saved_Data.ListOfGaps = ListOfGaps
 		} else {
@@ -591,7 +628,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 						if (PlacedRAM.Length > 1n) {
 							OutputString += "s" //plural
 						}
-						OutputString += "] " + PlacedRAM.ResourceName
+						OutputString += "] " + PlacedRAM.ResourceName + " (" + PlacedRAM.DefineName + ")"
 					} else {
 						OutputString += BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos) + "\t"
 						if (document.getElementById("FreeramDefine_OutputFormatSetting_AddressTrackerLength").selected) {
@@ -613,7 +650,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 			document.getElementById("Statistics_Success").textContent = FreeramDefinePlacementCountSuccess.toString(10)
 			document.getElementById("Statistics_Failed").textContent = FreeramDefinePlacementCountFailed.toString(10)
 		//Display the remaining gaps
-			document.getElementById("Statistics_ResultEmptyRamCount").textContent = ListOfGaps.length.toString(10)
+			document.getElementById("Statistics_EmptyRamRangeCountAfter").textContent = ListOfGaps.length.toString(10)
 			let OutputListOfGaps = null
 			let ReverseSort_Freeram = document.getElementById("Gaps_SortOption_Reverse").checked ? -1 : 1
 			

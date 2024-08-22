@@ -107,6 +107,9 @@ Notes:
 	</tr>
 	<tr>
 		<td>
+			Filter:
+			<div><label><input type="checkbox" onchange="MainCode()" checked id="FreeramDefine_Filter_Success">Successfully placed</label></div>
+			<div><label><input type="checkbox" onchange="MainCode()" checked id="FreeramDefine_Filter_Failed">Failed to place</label></div>
 			Sort:
 			<select onchange="MainCode()">
 				<option id="FreeramDefine_SortOption_None">None</option>
@@ -116,47 +119,49 @@ Notes:
 			</select><label><input type="checkbox" id="FreeramDefine_SortOption_Reverse" onchange="MainCode()">Reverse order</label><br><br>
 			Output format: <select onchange="MainCode()">
 				<optgroup label="ASM format">
-					<option id="OutputFormatSetting_ASMFormat">ASM define</option>
+					<option id="FreeramDefine_OutputFormatSetting_ASMFormat">ASM define</option>
 				</optgroup>
 				<optgroup label="Address tracker format">
-					<option id="OutputFormatSetting_AddressTracker">Address tracker format - length</option>
-					<option id="OutputFormatSetting_AddressTracker">Address tracker format - end address</option>
+					<option id="FreeramDefine_OutputFormatSetting_AddressTrackerLength">Address tracker format - length</option>
+					<option id="FreeramDefine_OutputFormatSetting_AddressTrackerEnding">Address tracker format - end address</option>
 				</optgroup>
 			</select>
 		</td>
 		<td>
 			Sort: <select onchange="MainCode()">
-				<option id="Gaps_SortOption_None">Keep order you entered</option>
 				<option id="Gaps_SortOption_ByAddr" selected>By start address</option>
 				<option id="Gaps_SortOption_Size">By size</option>
-				<option id="Gaps_SortOption_Discription">By description (lexicographically)</option>
-				<option id="Gaps_SortOption_Type">By type</option>
-				<option id="Gaps_SortOption_OverlapCount">By overlap count</option>
 			</select><label><input type="checkbox" id="Gaps_SortOption_Reverse" onchange="MainCode()">Reverse order</label><br><br>
+			
+			Size/ending address mode: <select onchange="MainCode()">
+				<option id="Gaps_OutputFormatSetting_Size" selected>Size</option>
+				<option id="Gaps_OutputFormatSetting_Ending">Ending</option>
+				<option id="Gaps_OutputFormatSetting_Ending">Size and ending (&lt;size&gt;/-&lt;ending_address&gt;</option>
+			</select>
 		</td>
 	</tr>
 </table>
 </div>
 <hr>
-<table>
-	<tr>
-		<th colspan="2">Statistics</th>
-	</tr>
-	<tr>
-		<td>Total defines</td>
-		<td style="font-family: monospace" id="Statistics_TotalDefines">0</td>
-	</tr>
-	<tr>
-		<td>Success</td>
-		<td style="font-family: monospace" id="Statistics_Success">0</td>
-	</tr>
-	<tr>
-		<td>Failed</td>
-		<td style="font-family: monospace" id="Statistics_Failed">0</td>
-	</tr>
-</table>
 <div id="OutputErrorMessage" hidden><pre id="OutputErrorMessage_Text" style="border: 1px solid white;"></pre></div>
 <div id="OutputResults">
+	<table>
+		<tr>
+			<th colspan="2">Statistics</th>
+		</tr>
+		<tr>
+			<td style="font-family: monospace">Total defines</td>
+			<td style="font-family: monospace" id="Statistics_TotalDefines">0</td>
+		</tr>
+		<tr>
+			<td style="font-family: monospace">Success</td>
+			<td style="font-family: monospace" id="Statistics_Success">0</td>
+		</tr>
+		<tr>
+			<td style="font-family: monospace">Failed</td>
+			<td style="font-family: monospace" id="Statistics_Failed">0</td>
+		</tr>
+	</table>
 	<table>
 		<tr>
 			<th>Freeram defines result</th>
@@ -164,7 +169,10 @@ Notes:
 		</tr>
 		<tr>
 			<td><textarea id="TextareaOutput_AssignedRAMs" cols="150" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea></td>
-			<td><textarea id="TextareaOutput_ResultingGaps" cols="150" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea></td>
+			<td>
+				<span style="font-family: monospace">Empty RAMs after assigning: <span id="Statistics_ResultEmptyRamCount">0</span></span>
+				<textarea id="TextareaOutput_ResultingGaps" cols="150" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
+			</td>
 		</tr>
 	</table>
 </div>
@@ -210,8 +218,8 @@ Notes:
 	})
 	
 	let Saved_Data = {
-		FreeramList: [],
-		ListOfGaps: []
+		ListOfGaps: [],
+		FreeramList: []
 	}
 	let NeedToUpdateLists = false
 	function RefreshAndMainCode() {
@@ -221,12 +229,14 @@ Notes:
 	function MainCode() {
 		let FreeramList = []
 		let ListOfGaps = []
+		let FailedPlaceHolderAddress = -Infinity
 		let ProcessError = false
 		document.getElementById("TextareaOutput_AssignedRAMs").value = ""
 		let FreeramDefinePlacementCountSuccess = 0
 		let FreeramDefinePlacementCountFailed = 0
 		
 		if (NeedToUpdateLists) {
+			
 			let InputText = document.getElementById("TextareaInput_FreeramDefines").value
 			InputText = InputText.split("\n")
 			FreeramList = InputText.map((Line, Index) => {
@@ -276,6 +286,7 @@ Notes:
 				}
 				return {
 					Type: "ValidItem",
+					Status: "Failed",
 					ResourceName: ResourceName,
 					DefineName: DefineName,
 					Length: Length,
@@ -453,15 +464,24 @@ Notes:
 			document.getElementById("OutputErrorMessage_Text").textContent = ""
 			document.getElementById("OutputErrorMessage").hidden = true
 			document.getElementById("OutputResults").hidden = false
+			
+			if (FreeramList.length == 0 || ListOfGaps.length == 0) { //Prevent ListOfGaps[0] causing an exception
+				return
+			}
 			//Both inputs done. Loop through FreeramList and place them in ListOfGaps
 			//Sort, this makes it consistent that bytes will be used from low to high addresses when one define have multiple suitable ranges.
 			ListOfGaps.sort((a,b) => Number(a.StartAddress - b.StartAddress))
+			
+			//We need this later for sorting by placed addresses, and because we're dealing with bigint and it cannot represent -Infinity or NaN.
+			//Basically, if any define exists having its address assigned failed, instead of using -Infinity, it simply uses Range_With_Lowest_Start_AddressNumber-1.
+			FailedPlaceHolderAddress = ListOfGaps[0].StartAddress-1n
+			
+			
 			//Now place the freeram at a given gap address, and update the gaps list
 			let l = FreeramList.length
 			for (let i=0; i<l; i++) { //Loop each freeram define list
 				let ASMFreeramDefine = FreeramList[i]
-				let IsAllLaterGapsBeyondMax = false //Cuts off the loop of searching each empty RAMs if we run into the max address (we know that as we go higher up, it still be greater than max.)
-				for (let i2 = 0; i2<ListOfGaps.length&&(!IsAllLaterGapsBeyondMax); i2++) { //Loop each RAM gaps
+				for (let i2 = 0; i2<ListOfGaps.length; i2++) { //Loop each RAM gaps
 					//^Now, I use ListOfGaps.length instead of "let l2 = ListOfGaps.length" because this array length changes as we successfully
 					//assign a define to a RAM.
 					let GapItem = ListOfGaps[i2]
@@ -479,6 +499,7 @@ Notes:
 					let SizeAvailableSpace = EndPos-StartPos+1n
 					if (ASMFreeramDefine.Length <= SizeAvailableSpace) { //If it can fit
 						ASMFreeramDefine.AssignedAddressStartPos = StartPos //Freeram have been successfully placed.
+						ASMFreeramDefine.Status = "Success"
 						IsPlacedUsageSuccessful = true
 						
 						//modify the empty RAM array. This can potentially split the RAM range into 2 ranges.
@@ -512,69 +533,98 @@ Notes:
 					} else { //If not, potentially stop the loop entirely and go to next RAM define
 						if (ASMFreeramDefine.MaxAddress != Infinity && StartPos+ASMFreeramDefine.Length-1n > ASMFreeramDefine.MaxAddress) {
 							//If last byte beyond the max address, it cannot fit and all later empty RAMs are beyond this
-							IsAllLaterGapsBeyondMax = true
+							break
 						}
 					}
 				}
 			}
+			FreeramList.forEach(Item => {
+				if (Item.AssignedAddressStartPos != -Infinity) {
+					FreeramDefinePlacementCountSuccess++
+					Item.AssignedAddressStartPos_SafeSort = Item.AssignedAddressStartPos
+				} else {
+					FreeramDefinePlacementCountFailed--
+					Item.AssignedAddressStartPos_SafeSort = FailedPlaceHolderAddress
+				}
+			});
 			Saved_Data.FreeramList = FreeramList
 			Saved_Data.ListOfGaps = ListOfGaps
 		} else {
-			FreeramList = Saved_Data.FreeramList
 			ListOfGaps = Save_Data.ListOfGaps
+			FreeramList = Save_Data.FreeramList
 		}
 		//Sorter (freeram defines)
-			let ReverseSort_Freeram = document.getElementById("FreeramDefine_SortOption_Reverse").checked ? -1 : 1
+			let ReverseSort_Defines = document.getElementById("FreeramDefine_SortOption_Reverse").checked ? -1 : 1
 			
+			FreeramListOutput = FreeramList.filter(Item => document.getElementById("FreeramDefine_Filter_" + Item.Status).checked)
 			if (document.getElementById("FreeramDefine_SortOption_ResourceName").selected) {
 				document.getElementById("FreeramDefine_SortOption_Reverse").disabled = false
-				FreeramList.sort((a,b) => {
+				FreeramListOutput.sort((a,b) => {
 					if (a.ResourceName === b.ResourceName) {
 						return 0
 					}
-					return ((a.ResourceName < b.ResourceName) ? -1 : 1)*ReverseSort
+					return ((a.ResourceName < b.ResourceName) ? -1 : 1)*ReverseSort_Defines
 				})
-			} else if (document.getElementById("SortOption_Size").selected) {
+			} else if (document.getElementById("FreeramDefine_SortOption_Addr").selected) {
 				document.getElementById("FreeramDefine_SortOption_Reverse").disabled = false
-				
-			} else if (document.getElementById("SortOption_Discription").selected) {
+				FreeramListOutput.sort((a,b) => Number(a.AssignedAddressStartPos_SafeSort - b.AssignedAddressStartPos_SafeSort)*ReverseSort_Defines)
+			} else if (document.getElementById("FreeramDefine_SortOption_Length").checked) {
 				document.getElementById("FreeramDefine_SortOption_Reverse").disabled = false
-
-			} else if (document.getElementById("SortOption_Type").selected) {
-				document.getElementById("FreeramDefine_SortOption_Reverse").disabled = false
-
-			} else if (document.getElementById("SortOption_OverlapCount").selected) {
-				document.getElementById("FreeramDefine_SortOption_Reverse").disabled = false
-
+				FreeramListOutput.sort((a,b) => Number(a.Length - b.Length)*ReverseSort_Defines)
 			} else {
 				document.getElementById("FreeramDefine_SortOption_Reverse").disabled = true
 			}
 			
-			
 		//Output
 			let OutputString = ""
-			FreeramList.forEach((PlacedRAM, Index, Arr) => { //Get text and count how many success and fails
+			FreeramListOutput.forEach((PlacedRAM, Index, Arr) => { //Get text and count how many success and fails
 				if (PlacedRAM.AssignedAddressStartPos != -Infinity) {
-					FreeramDefinePlacementCountSuccess++
-					OutputString += PlacedRAM.DefineName + " = " + BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos) + "\t;[" + PlacedRAM.Length + " bytes] " + PlacedRAM.ResourceName
+					OutputString += PlacedRAM.DefineName + " = " + BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos) + "\t; [" + PlacedRAM.Length + " byte"
+					if (PlacedRAM.Length > 1n) {
+						OutputString += "s" //plural
+					}
+					OutputString += "] " + PlacedRAM.ResourceName
 				} else {
-					FreeramDefinePlacementCountFailed++
-					OutputString += PlacedRAM.DefineName + " Error! No suitable RAM found."
+					OutputString += PlacedRAM.DefineName + ": Error! No suitable RAM found."
 				}
 				if (Index != Arr.length-1) {
 					OutputString += "\n"
 				}
 			})
+			document.getElementById("TextareaOutput_AssignedRAMs").value = OutputString
 			document.getElementById("Statistics_TotalDefines").textContent = FreeramList.length.toString(10)
 			document.getElementById("Statistics_Success").textContent = FreeramDefinePlacementCountSuccess.toString(10)
 			document.getElementById("Statistics_Failed").textContent = FreeramDefinePlacementCountFailed.toString(10)
-			document.getElementById("TextareaOutput_AssignedRAMs").value = OutputString
 		//Display the remaining gaps
+			document.getElementById("Statistics_ResultEmptyRamCount").textContent = ListOfGaps.length.toString(10)
+			let OutputListOfGaps = null
+			let ReverseSort_Freeram = document.getElementById("Gaps_SortOption_Reverse").checked ? -1 : 1
+			
+			//Sorting... ish
+			if (document.getElementById("Gaps_SortOption_ByAddr").selected && document.getElementById("Gaps_SortOption_Reverse").checked) {
+				//It's presorted during processing, worried about stability? No worries! Overlaps not allowed, thus either dupes are ignored or causes an error!
+				OutputListOfGaps = ListOfGaps.toReversed()
+			} else if (document.getElementById("Gaps_SortOption_Size").selected) {
+				OutputListOfGaps = ListOfGaps.toSorted((a,b) => Number(a.Length - b.Length)*ReverseSort_Freeram)
+			} else {
+				OutputListOfGaps = ListOfGaps
+			}
 			OutputString = ""
-			ListOfGaps.forEach((EmptyRam, Index, Arr) => {
+			OutputListOfGaps.forEach((EmptyRam, Index, Arr) => {
 				OutputString += BigIntToStringSignedHex(EmptyRam.StartAddress) + "\t"
-				
+				if (document.getElementById("Gaps_OutputFormatSetting_Size").selected) {
+					OutputString += EmptyRam.Length.toString(10)
+				} else if (document.getElementById("Gaps_OutputFormatSetting_Ending").selected) {
+					OutputString += "~" + BigIntToStringSignedHex(EmptyRam.EndAddress)
+				} else {
+					OutputString += EmptyRam.Length.toString(10) + "/~" + BigIntToStringSignedHex(EmptyRam.EndAddress)
+				}
+				OutputString += "\tGap"
+				if (Index != Arr.length-1) {
+					OutputString += "\n"
+				}
 			})
+			document.getElementById("TextareaOutput_ResultingGaps").value = OutputString
 	}
 //Helper
 	//Check if two ranges overlap.

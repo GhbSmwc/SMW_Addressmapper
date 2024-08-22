@@ -1,9 +1,9 @@
-2024-08-20 v3.0
+2024-08-22 v5.0
 	-Major updates
 	--Less reliant on "innerHTML" because it causes an entire HTML
 	  "re-painting" which is very slow and also not recommended due
 	  to security reasons.
-	--Cleaner javascript code, using guard statement (no more
+	--Cleaner JavaScript code, using guard statement (no more
 	  MASSIVE indentations) and make use of several JS array methods.
 	--Errors on both the AutoAssigner and Addresser can now report
 	  or passes multiple error types rather than just stopping

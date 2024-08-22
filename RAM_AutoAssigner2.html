@@ -268,7 +268,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 						ProcessError = true
 						return {
 							Type: "Error",
-							Reason: "Invalid text, please check no mistyped character.",
+							Reason: "Invalid syntax.",
 							LineNumber: Index,
 							SourceText: Line
 						}
@@ -318,7 +318,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 				})
 				if (ProcessError) {
 					let ListOfBadFreerams = FreeramList.filter(Item => Item.Type=="Error")
-					let ErrorText = "Error! The following items below are invalid free RAM entries:\n"
+					let ErrorText = "Error! The following items below are invalid RAM define entries:\n"
 					ListOfBadFreerams.forEach((Item, Index, Arr) => {
 						ErrorText += "Line " + (Item.LineNumber+1).toString(10) + ": [" + Item.SourceText + "]: " + Item.Reason
 						if (Index != Arr.length-1) {
@@ -360,7 +360,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 						ProcessError = true
 						return {
 							Type: "Error",
-							Reason: "Line containing invalid information.",
+							Reason: "Invalid syntax.",
 							SourceText: SourceText,
 							LineNumber: Index
 						}

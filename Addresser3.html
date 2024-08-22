@@ -780,6 +780,8 @@ Where:
 				AddressRect.setAttribute("ry", "8")
 				AddressRect.setAttribute("fill", ColorCodedStatus[Item.Type])
 				
+				//These need to be clamped so that the height wouldn't be such a large value that the SVG render would fail drawing them. It's clamped to a distance off-canvas so that the rounded corners indicating the start/end
+				//wouldn't display at the visible edge lying to the user that the start/end address would be there.
 				let TopPos = BigintClamp((Item.StartAddress-StartingAddressViewing)*Setting_ByteView_SVGGridSizeFactor, -Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfRows+1n)*Setting_ByteView_SVGGridSizeFactor)
 				let BottomPos = BigintClamp((Item.EndAddress-StartingAddressViewing+1n)*Setting_ByteView_SVGGridSizeFactor, -Setting_ByteView_SVGGridSizeFactor, (Setting_ByteView_NumberOfRows+1n)*Setting_ByteView_SVGGridSizeFactor)
 				let Height = BottomPos-TopPos
@@ -791,7 +793,7 @@ Where:
 				AddressRect.setAttribute("y", TopPos.toString(10))
 				
 				let TitleHover = createSVGElement("title")
-				TitleHover.appendChild(document.createTextNode(Item.SourceText))
+				TitleHover.appendChild(document.createTextNode(BigIntToStringSignedHex(Item.StartAddress) + "\t" + Item.Length.toString(10) + "/~" + BigIntToStringSignedHex(Item.EndAddress) + "\t" + Item.Description))
 				AddressRect.appendChild(TitleHover)
 				
 				SVG_GraphElement.appendChild(AddressRect)

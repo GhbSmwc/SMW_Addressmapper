@@ -621,7 +621,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 						if (PlacedRAM.Length > 1n) {
 							OutputString += "s" //plural
 						}
-						OutputString += "] " + PlacedRAM.ResourceName + " (" + PlacedRAM.DefineName + ")"
+						OutputString += "] " + PlacedRAM.ResourceName
 					} else {
 						OutputString += BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos) + "\t"
 						if (document.getElementById("FreeramDefine_OutputFormatSetting_AddressTrackerLength").selected) {
@@ -629,7 +629,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 						} else if (document.getElementById("FreeramDefine_OutputFormatSetting_AddressTrackerEnding").selected) {
 							OutputString += "~" + BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos + PlacedRAM.Length -1n)
 						}
-						OutputString += "\t" + PlacedRAM.ResourceName
+						OutputString += "\t" + PlacedRAM.ResourceName + " (" + PlacedRAM.DefineName + ")"
 					}
 				} else {
 					OutputString += ";[" + PlacedRAM.SourceText + "]: Error! No suitable RAM found. "

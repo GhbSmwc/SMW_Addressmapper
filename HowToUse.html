@@ -37,7 +37,7 @@ would take that address, and N bytes after it. Directional quake and the <a href
 <p>There are two tools:</p>
 <ul>
 	<li>The &ldquo;Addresser&rdquo;, which takes a given RAM range (either a literal range, or a starting byte address with a length/number-of-bytes given) and checks for overlaps and gaps in a sequential address order</li>
-	<li>The &ldquo;Assigner&rdquo;, which takes a given list of ASM defines and a list of empty RAMs and automatically assigns the ASM defines to every unused RAM.</li>
+	<li>The &ldquo;Assigner&rdquo;, which takes a given list of ASM defines and a list of empty RAMs and automatically assigns the ASM defines to every currently-unused RAM.</li>
 </ul>
 
 <p>This is especially very useful for collaboration hacks or any hacks that uses a ton of ASM resources, as manually pinpointing a problem can be especially difficult.</p>
@@ -92,16 +92,16 @@ DirectionalQuake	!Freeram_DirQuake_Layer1XDisplacement	2	-	-</pre></td></tr></ta
 ;!no_back_timer		= $62		; The timer for not moving back. (RAM)
 ;!temp_y_spd		= $63		; The temporary Y speed. (RAM)
 
-!no_back_timer = $7E005C ;&gt;WallKick, 1 byte(s)
-!temp_y_spd = $7E0060 ;&gt;WallKick, 1 byte(s)
-!flags = $7E0058 ;&gt;wallKick, 1 byte(s)</pre></td></tr></table>
+!flags = $7E0058	; [1 byte] WallKick
+!no_back_timer = $7E005C	; [1 byte] WallKick
+!temp_y_spd = $7E0060	; [1 byte] WallKick</pre></td></tr></table>
 <table><tr><td><pre>;directional quake
 ; if !sa1 == 0
 ;  !Freeram_DirQuake_Layer1XDisplacement		= $60
 ; else
 ;  !Freeram_DirQuake_Layer1XDisplacement		= $60
 ; endif
-!Freeram_DirQuake_Layer1XDisplacement = $7E0061 ;&gt;DirectionalQuake, 2 byte(s)</pre></td></tr></table><br>
+!Freeram_DirQuake_Layer1XDisplacement = $7E0061	; [2 bytes] DirectionalQuake</pre></td></tr></table><br>
 		Don't forget to &ldquo;shorten&rdquo; your address when possible (replace <kbd>$7E005C</kbd> with <kbd>$5C</kbd>, <kbd>$7E0060</kbd> with <kbd>$60</kbd> and so on)
 		(add semicolons &ldquo;;&rdquo; before the string to be read) (easier using notepad++ shift+alt to make your selections column mode) and paste the assigned defines you got from the assigner below it. Don't forget you can also add that to your
 		list of Used RAM by clicking on &ldquo;Address tracker format&rdquo;, copy that format, and paste it in your list of used RAM, so that any future ASM consuming RAM will avoid conflicting with that updated list.

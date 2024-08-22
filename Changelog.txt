@@ -1,35 +1,5 @@
-2024-08-22 v5.0
-	-Major updates
-	--Less reliant on "innerHTML" because it causes an entire HTML
-	  "re-painting" which is very slow and also not recommended due
-	  to security reasons.
-	--Cleaner JavaScript code, using guard statement (no more
-	  MASSIVE indentations) and make use of several JS array methods.
-	--Errors on both the AutoAssigner and Addresser can now report
-	  or passes multiple error types rather than just stopping
-	  before checking on a different error at the same time
-	  (previously, if you had errors with syntax and invalid range or
-	  length, it reports just the syntax, and not report other
-	  errors). It's done via the array.map function, returns an object
-	  representing an error of any kind, and let it process all of it,
-	  and then report all of them. Only exception is AutoAssigner's
-	  gap detection, because it needs all valid info prior to checking
-	  overlaps.
-	--Negative address supported, if you somehow need addresses
-	  located before the earliest one.
-	--Address offsetting added, if you need to relocate them to
-	  another area. This especially useful for things like mirroring
-	  and remapping to SA-1 locations.
-	--AutoAssigner now also outputs the resulting RAMs left over.
-	--AutoAssigner will now bring up a prominent warning if any define
-	  fails to be assigned.
-	--Statistics on total bytes (gaps and used addresses) are added.
-	--Quality-of-life improvement: Added a button that automatically
-	  copies the gaps list in the addresser tool.
-	-Notes
-	--If you are entering an ending address, it is now denoted
-	  with a tilde ("~") instead of a hyphen due to negative
-	  addressing supported.
+Newest on bottom
+
 2021-05-03 v2.0
 	-Released with the changes including a tab function. Thanks
 	 to dtothefourth (https://www.smwcentral.net/?p=profile&id=37441 )
@@ -94,3 +64,35 @@
 	 unused RAM. Enter a list of freeram defines and gaps generated
 	 by the addresser tools and it will output a list of defines
 	 with the RAMs to use.
+2024-08-22 v5.0
+	-Major updates
+	--Less reliant on "innerHTML" because it causes an entire HTML
+	  "re-painting" which is very slow and also not recommended due
+	  to security reasons.
+	--Cleaner JavaScript code, using guard statement (no more
+	  MASSIVE indentations) and make use of several JS array methods.
+	--Errors on both the AutoAssigner and Addresser can now report
+	  or passes multiple error types rather than just stopping
+	  before checking on a different error at the same time
+	  (previously, if you had errors with syntax and invalid range or
+	  length, it reports just the syntax, and not report other
+	  errors). It's done via the array.map function, returns an object
+	  representing an error of any kind, and let it process all of it,
+	  and then report all of them. Only exception is AutoAssigner's
+	  gap detection, because it needs all valid info prior to checking
+	  overlaps.
+	--Negative address supported, if you somehow need addresses
+	  located before the earliest one.
+	--Address offsetting added, if you need to relocate them to
+	  another area. This especially useful for things like mirroring
+	  and remapping to SA-1 locations.
+	--AutoAssigner now also outputs the resulting RAMs left over.
+	--AutoAssigner will now bring up a prominent warning if any define
+	  fails to be assigned.
+	--Statistics on total bytes (gaps and used addresses) are added.
+	--Quality-of-life improvement: Added a button that automatically
+	  copies the gaps list in the addresser tool.
+	-Notes
+	--If you are entering an ending address, it is now denoted
+	  with a tilde ("~") instead of a hyphen due to negative
+	  addressing supported.

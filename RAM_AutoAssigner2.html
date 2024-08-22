@@ -165,10 +165,13 @@ Notes:
 	<table>
 		<tr>
 			<th>Freeram defines result</th>
-			<th>Empty RAMs result</th>
+			<th>Remaining Empty RAMs result</th>
 		</tr>
 		<tr>
-			<td><textarea id="TextareaOutput_AssignedRAMs" cols="150" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea></td>
+			<td>
+				<span id="SomeDefinesFailedWarning" style="color: red; font-family: monospace" hidden>Some defines have failed to be assigned.</span>
+				<textarea id="TextareaOutput_AssignedRAMs" cols="150" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
+			</td>
 			<td>
 				<span style="font-family: monospace">Empty RAMs after assigning: <span id="Statistics_ResultEmptyRamCount">0</span></span>
 				<textarea id="TextareaOutput_ResultingGaps" cols="150" rows="30" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
@@ -543,10 +546,14 @@ Notes:
 					FreeramDefinePlacementCountSuccess++
 					Item.AssignedAddressStartPos_SafeSort = Item.AssignedAddressStartPos
 				} else {
-					FreeramDefinePlacementCountFailed--
+					FreeramDefinePlacementCountFailed++
 					Item.AssignedAddressStartPos_SafeSort = FailedPlaceHolderAddress
 				}
 			});
+			document.getElementById("SomeDefinesFailedWarning").hidden = true
+			if (FreeramDefinePlacementCountFailed > 0) {
+				document.getElementById("SomeDefinesFailedWarning").hidden = false
+			}
 			Saved_Data.FreeramList = FreeramList
 			Saved_Data.ListOfGaps = ListOfGaps
 		} else {
@@ -579,13 +586,23 @@ Notes:
 			let OutputString = ""
 			FreeramListOutput.forEach((PlacedRAM, Index, Arr) => { //Get text and count how many success and fails
 				if (PlacedRAM.AssignedAddressStartPos != -Infinity) {
-					OutputString += PlacedRAM.DefineName + " = " + BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos) + "\t; [" + PlacedRAM.Length + " byte"
-					if (PlacedRAM.Length > 1n) {
-						OutputString += "s" //plural
+					if (document.getElementById("FreeramDefine_OutputFormatSetting_ASMFormat").selected) {
+						OutputString += PlacedRAM.DefineName + " = " + BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos) + "\t; [" + PlacedRAM.Length + " byte"
+						if (PlacedRAM.Length > 1n) {
+							OutputString += "s" //plural
+						}
+						OutputString += "] " + PlacedRAM.ResourceName
+					} else {
+						OutputString += BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos) + "\t"
+						if (document.getElementById("FreeramDefine_OutputFormatSetting_AddressTrackerLength").selected) {
+							OutputString += PlacedRAM.Length
+						} else if (document.getElementById("FreeramDefine_OutputFormatSetting_AddressTrackerEnding").selected) {
+							OutputString += "~" + BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos + PlacedRAM.Length -1n)
+						}
+						OutputString += "\t" + PlacedRAM.ResourceName
 					}
-					OutputString += "] " + PlacedRAM.ResourceName
 				} else {
-					OutputString += PlacedRAM.DefineName + ": Error! No suitable RAM found."
+					OutputString += ";[" + PlacedRAM.SourceText + "]: Error! No suitable RAM found. "
 				}
 				if (Index != Arr.length-1) {
 					OutputString += "\n"

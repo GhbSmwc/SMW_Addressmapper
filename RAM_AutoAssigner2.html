@@ -99,48 +99,6 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 <div>Duplicate settings:
 	<div><label><input type="checkbox" checked onchange="RefreshAndMainCode()" id="DuplicateSettings_Defines">Ignore duplicates for defines</label></div>
 	<div><label><input type="checkbox" checked onchange="RefreshAndMainCode()" id="DuplicateSettings_EmptyRams">Ignore duplicates for gaps</label></div>
-
-<table>
-	<tr>
-		<th>Freeram list settings</th>
-		<th>Remaining gaps settings</th>
-	</tr>
-	<tr>
-		<td>
-			Filter:
-			<div><label><input type="checkbox" onchange="MainCode()" checked id="FreeramDefine_Filter_Success">Successfully placed</label></div>
-			<div><label><input type="checkbox" onchange="MainCode()" checked id="FreeramDefine_Filter_Failed">Failed to place</label></div>
-			Sort:
-			<select onchange="MainCode()">
-				<option id="FreeramDefine_SortOption_None">None</option>
-				<option id="FreeramDefine_SortOption_ResourceName" selected>Resource name</option>
-				<option id="FreeramDefine_SortOption_Addr">By address</option>
-				<option id="FreeramDefine_SortOption_Length">By number of bytes</option>
-			</select><label><input type="checkbox" id="FreeramDefine_SortOption_Reverse" onchange="MainCode()">Reverse order</label><br><br>
-			Output format: <select onchange="MainCode()">
-				<optgroup label="ASM format">
-					<option id="FreeramDefine_OutputFormatSetting_ASMFormat">ASM define</option>
-				</optgroup>
-				<optgroup label="Address tracker format">
-					<option id="FreeramDefine_OutputFormatSetting_AddressTrackerLength">Address tracker format - length</option>
-					<option id="FreeramDefine_OutputFormatSetting_AddressTrackerEnding">Address tracker format - end address</option>
-				</optgroup>
-			</select>
-		</td>
-		<td>
-			Sort: <select onchange="MainCode()">
-				<option id="Gaps_SortOption_ByAddr" selected>By start address</option>
-				<option id="Gaps_SortOption_Size">By size</option>
-			</select><label><input type="checkbox" id="Gaps_SortOption_Reverse" onchange="MainCode()">Reverse order</label><br><br>
-			
-			Size/ending address mode: <select onchange="MainCode()">
-				<option id="Gaps_OutputFormatSetting_Size" selected>Size</option>
-				<option id="Gaps_OutputFormatSetting_Ending">Ending</option>
-				<option id="Gaps_OutputFormatSetting_Ending">Size and ending (&lt;size&gt;/-&lt;ending_address&gt;</option>
-			</select>
-		</td>
-	</tr>
-</table>
 </div>
 <hr>
 <div id="OutputErrorMessage" hidden><pre id="OutputErrorMessage_Text" style="border: 1px solid white;"></pre></div>
@@ -152,6 +110,25 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 		</tr>
 		<tr>
 			<td>
+				Filter:
+				<div><label><input type="checkbox" onchange="MainCode()" checked id="FreeramDefine_Filter_Success">Successfully placed</label></div>
+				<div><label><input type="checkbox" onchange="MainCode()" checked id="FreeramDefine_Filter_Failed">Failed to place</label></div>
+				Sort:
+				<select onchange="MainCode()">
+					<option id="FreeramDefine_SortOption_None">None</option>
+					<option id="FreeramDefine_SortOption_ResourceName" selected>Resource name</option>
+					<option id="FreeramDefine_SortOption_Addr">By address</option>
+					<option id="FreeramDefine_SortOption_Length">By number of bytes</option>
+				</select><label><input type="checkbox" id="FreeramDefine_SortOption_Reverse" onchange="MainCode()">Reverse order</label><br><br>
+				Output format: <select onchange="MainCode()">
+					<optgroup label="ASM format">
+						<option id="FreeramDefine_OutputFormatSetting_ASMFormat">ASM define</option>
+					</optgroup>
+					<optgroup label="Address tracker format">
+						<option id="FreeramDefine_OutputFormatSetting_AddressTrackerLength">Address tracker format - length</option>
+						<option id="FreeramDefine_OutputFormatSetting_AddressTrackerEnding">Address tracker format - end address</option>
+					</optgroup>
+				</select>
 				<table>
 					<tr>
 						<th colspan="2">Define Statistics</th>
@@ -169,11 +146,21 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 						<td style="font-family: monospace" id="Statistics_Failed">0</td>
 					</tr>
 				</table>
-				<span id="SomeDefinesFailedWarning" style="color: red; font-family: monospace" hidden>There are define(s) have failed to be assigned and they are not counted as consuming RAM</span>
-				<textarea id="TextareaOutput_AssignedRAMs" cols="70" rows="15" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
+				<span id="SomeDefinesFailedWarning" style="color: red; font-family: monospace" hidden>There are define(s) failed to assigned and they are not counted as consuming RAM.</span><br>
+				<textarea id="TextareaOutput_AssignedRAMs" cols="80" rows="15" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
 				<div><button onclick="setClipboard(document.getElementById('TextareaOutput_AssignedRAMs').value)">Copy</button><span></span></div>
 			</td>
 			<td>
+				Sort: <select onchange="MainCode()">
+					<option id="Gaps_SortOption_ByAddr" selected>By start address</option>
+					<option id="Gaps_SortOption_Size">By size</option>
+				</select><label><input type="checkbox" id="Gaps_SortOption_Reverse" onchange="MainCode()">Reverse order</label><br><br>
+				
+				Size/ending address mode: <select onchange="MainCode()">
+					<option id="Gaps_OutputFormatSetting_Size" selected>Size</option>
+					<option id="Gaps_OutputFormatSetting_Ending">Ending</option>
+					<option id="Gaps_OutputFormatSetting_Ending">Size and ending (&lt;size&gt;/-&lt;ending_address&gt;</option>
+				</select>
 				<table>
 					<tr>
 						<th colspan="2">Empty RAM Statistics</th>

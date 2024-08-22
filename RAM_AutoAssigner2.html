@@ -462,7 +462,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 						Overlaps.forEach((Item, Index, Arr) => {
 							ErrorText += "Line " + (Item.LineNumber+1).toString(10) + ": [" + Item.SourceText + "]:\n\t;Conflicts with:\n"
 							Item.ConflictsWith.forEach((Item2, Index2, Arr2) => {
-								ErrorText += "\t;Line " + (Item2.LineNumber+1).toString(10) + " [" + Item2.SourceText + "]"
+								ErrorText += "\t;Line " + (Item2.LineNumber+1).toString(10) + ": [" + Item2.SourceText + "]"
 								if (Index2 != Arr2.length-1) {
 									ErrorText += "\n"
 								}

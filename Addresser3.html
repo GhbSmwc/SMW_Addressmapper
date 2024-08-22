@@ -142,7 +142,12 @@ Where:
 			<div>
 				<button onclick="setClipboard(document.getElementById('Output_AddressInfo_Text').value);">Copy to clipboard</button>
 				<span></span>
-			</div><br><br>
+			</div><br>
+			<div>
+				<button onclick="CopyGaps()" disabled id="Button_QuickCopyGaps">Quick-copy gaps</button>
+				<span></span>
+				<span id="QuickCopyGapsExistMsg"></span>
+			</div><br>
 		<div style="overflow: auto; height: 500px; border: 1px solid white">
 			<table id="Output_AddressInfo_Table"></table>
 		</div>
@@ -166,6 +171,7 @@ Where:
 	let UsedAddress_Min = Infinity
 	let UsedAddress_Max = -Infinity
 	let SVGHorizontalScroll = 0n
+	let GapList = []
 	
 	let ColorCodedStatus = {
 		"NonOverlap" : "#008000",
@@ -495,7 +501,7 @@ Where:
 				document.getElementById("OutputStatistics_NonOverlap").textContent = (ObjectOfDataRanges.length - OverlapCount).toString(10)
 				document.getElementById("OutputStatistics_TotalBytes_NonOverlaps").textContent = TotalNonOverlapsBytes.toString(10)
 			}
-			let GapList = []
+			GapList = []
 			{
 				//Get gaps
 				//let ArrayCopyButSortedForGapFinding = ListOfAddress.sort(SortByStartAddr) <-This will sort BOTH arrays.
@@ -520,6 +526,7 @@ Where:
 						let Length = ObjectOfDataRanges_tempSort[i].StartAddress - HighestEndAddressGapDetect-1n
 						let EndAddress = Length + HighestEndAddressGapDetect
 						GapList.push({
+							LineNumber: -1,
 							StartAddress: StartAddress,
 							Length: Length,
 							EndAddress: EndAddress,
@@ -532,6 +539,19 @@ Where:
 					}
 				}
 				document.getElementById("OutputStatistics_Gaps").textContent = GapList.length.toString(10)
+				document.getElementById("Button_QuickCopyGaps").disabled = false
+				let QuickCopyGapsExistMsg = document.getElementById("QuickCopyGapsExistMsg")
+					//^Yes there are 2 spans, one for if the clipboard write succeeds or fails, and the other for if gap exists.
+					// But I did this intentionally instead of having just one for both to prevent a bug where if you are fast,
+					// you click the quick-copy-gaps button, and then quickly edit the textarea so there are no gaps (to bring
+					// up the no-gap message), the settimeout would delete the now-"No gap exists!" message when it should stay
+					// there as long as no gaps exists.
+				QuickCopyGapsExistMsg.textContent = ""
+				if (GapList.length == 0) {
+					document.getElementById("Button_QuickCopyGaps").disabled = true
+					QuickCopyGapsExistMsg.textContent = "No gap exists!"
+					QuickCopyGapsExistMsg.style.color = "#FF0000"
+				}
 				if (document.getElementById("Filter_Gap").checked) {
 					ObjectOfDataRanges = ObjectOfDataRanges.concat(GapList)
 				}
@@ -627,7 +647,9 @@ Where:
 				let TableItem_LineNumber = document.createElement("td")
 				TableItem_LineNumber.style.fontFamily = "monospace"
 				TableItem_LineNumber.style.backgroundColor = ColorCodedStatus[Item.Type]
-				TableItem_LineNumber.appendChild(document.createTextNode((Item.LineNumber+1).toString(10)))
+				if (Item.LineNumber != -1) {
+					TableItem_LineNumber.appendChild(document.createTextNode((Item.LineNumber+1).toString(10)))
+				}
 				TableItemRow.appendChild(TableItem_LineNumber)
 				
 				let TableItem_StartAddress = document.createElement("td")
@@ -814,6 +836,16 @@ Where:
 			}
 			
 		}
+	}
+	function CopyGaps() {
+		let CopiedString = ""
+		GapList.forEach((Item, Index, Arr) => {
+			CopiedString += BigIntToStringSignedHex(Item.StartAddress) + "\t" + Item.Length.toString(10) + "\tGap"
+			if (Index != Arr.length) {
+				CopiedString += "\n"
+			}
+			setClipboard(CopiedString)
+		})
 	}
 //helper
 	function ParseBigIntValue(string, radix) {

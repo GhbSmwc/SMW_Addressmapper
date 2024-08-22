@@ -593,7 +593,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 		//Sorter (freeram defines)
 			let ReverseSort_Defines = document.getElementById("FreeramDefine_SortOption_Reverse").checked ? -1 : 1
 			
-			FreeramListOutput = FreeramList.filter(Item => document.getElementById("FreeramDefine_Filter_" + Item.Status).checked)
+			let FreeramListOutput = FreeramList.filter(Item => document.getElementById("FreeramDefine_Filter_" + Item.Status).checked)
 			if (document.getElementById("FreeramDefine_SortOption_ResourceName").selected) {
 				document.getElementById("FreeramDefine_SortOption_Reverse").disabled = false
 				FreeramListOutput.sort((a,b) => {

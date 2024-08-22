@@ -1,14 +1,28 @@
 2024-08-20 v3.0
 	-Major updates
-	--Less relient on "innerHTML" because it causes an entire HTML
+	--Less reliant on "innerHTML" because it causes an entire HTML
 	  "re-painting" which is very slow and also not recommended due
 	  to security reasons.
 	--Cleaner javascript code, using guard statement (no more
-	  MASSIVE indentation) and make use of several JS array methods.
+	  MASSIVE indentations) and make use of several JS array methods.
+	--Errors on both the AutoAssigner and Addresser can now report
+	  or passes multiple error types rather than just stopping
+	  before checking on a different error at the same time
+	  (previously, if you had errors with syntax and invalid range or
+	  length, it reports just the syntax, and not report other
+	  errors). It's done via the array.map function, returns an object
+	  representing an error of any kind, and let it process all of it,
+	  and then report all of them. Only exception is AutoAssigner's
+	  gap detection, because it needs all valid info prior to checking
+	  overlaps.
 	--Negative address supported, if you somehow need addresses
 	  located before the earliest one.
 	--Address offsetting added, if you need to relocate them to
-	  to another area.
+	  another area. This especially useful for things like mirroring
+	  and remapping to SA-1 locations.
+	--AutoAssigner now also outputs the resulting RAMs left over.
+	--AutoAssigner will now bring up a prominent warning if any define
+	  fails to be assigned.
 	-Notes
 	--If you are entering an ending address, it is now denoted
 	  with a tilde ("~") instead of a hyphen due to negative

@@ -117,10 +117,23 @@ Where:
 		<tr><th colspan="2">Address statistics</th></tr>
 		<tr><td style="font-family: monospace; background-color: #008000">Number of entered ranges that didn&apos;t overlap</td><td style="font-family: monospace" id="OutputStatistics_NonOverlap">0</td></tr>
 		<tr><td style="font-family: monospace; background-color: #800000">Number of entered ranges that overlap</td><td style="font-family: monospace" id="OutputStatistics_Overlap">0</td></tr>
-		<tr><td style="font-family: monospace; background-color: #808080">Number of gaps found</td><td style="font-family: monospace" id="OutputStatistics_Gaps">0</td></tr>
+		<tr><td style="font-family: monospace; background-color: #808080">Number of gap ranges found</td><td style="font-family: monospace" id="OutputStatistics_Gaps">0</td></tr>
 		<tr><td style="font-family: monospace;">Total ranges including gaps</td><td style="font-family: monospace" id="OutputStatistics_TotalIncludingGaps">0</td></tr>
 		<tr><td style="font-family: monospace;">Lowest used address</td><td style="font-family: monospace" id="OutputStatistics_UsedAddress_Min"></td></tr>
 		<tr><td style="font-family: monospace;">Highest used address</td><td style="font-family: monospace" id="OutputStatistics_UsedAddress_Max"></td></tr>
+		<tr>
+			<td style="font-family: monospace;">Number of bytes between the lowest and highest used addresses</td>
+			<td style="font-family: monospace;" id="OutputStatistics_TotalBytes_BetweenMinMax"></td>
+		</tr>
+		<tr>
+			<td style="font-family: monospace; background-color: #008000;">Non-overlaps total bytes</td>
+			<td style="font-family: monospace;" id="OutputStatistics_TotalBytes_NonOverlaps">0</td>
+		</tr>
+		<tr>
+			<td style="font-family: monospace; background-color: #808080">Gaps total bytes</td>
+			<td style="font-family: monospace;" id="OutputStatistics_TotalBytes_Gaps">0</td>
+		</tr>
+		
 	</table>
 	<hr>
 	<div id="ViewMode_TextTable">
@@ -385,6 +398,8 @@ Where:
 				
 				return
 			}
+			
+			//Discover lowest used address and clamp (only happens when editing the textarea) the SVG address view
 			document.getElementById("OutputStatistics_UsedAddress_Min").textContent = ""
 			if (typeof UsedAddress_Min == "bigint") {
 				document.getElementById("OutputStatistics_UsedAddress_Min").textContent = BigIntToStringSignedHex(UsedAddress_Min)
@@ -399,9 +414,17 @@ Where:
 					StartingAddressViewing = UsedAddress_Max
 				}
 			}
+			
+			//Display how many bytes between lowest and highest used address
+			document.getElementById("OutputStatistics_TotalBytes_BetweenMinMax").textContent = ""
+			if ((typeof UsedAddress_Min == "bigint") && (typeof UsedAddress_Max == "bigint")) {
+				document.getElementById("OutputStatistics_TotalBytes_BetweenMinMax").textContent = (UsedAddress_Max - UsedAddress_Min + 1n).toString(10)
+			}
+			
+			
 			document.getElementById("SVGAddressView").value = StartingAddressViewing.toString(16).toUpperCase()
 			
-			ObjectOfDataRanges = ObjectOfDataRanges.filter(Item => Item.Type == "NonOverlap")
+			ObjectOfDataRanges = ObjectOfDataRanges.filter(Item => Item.Type == "NonOverlap") //This gets non-errored lines, since we haven't detects overlaps yet.
 			document.getElementById("Output_ErrorMessage").hidden = true
 			document.getElementById("Output_AddressInfo").hidden = false
 			//Remove duplicate entries
@@ -424,6 +447,7 @@ Where:
 			{
 				let l = ObjectOfDataRanges.length
 				let OverlapCount = 0
+				let TotalNonOverlapsBytes = 0n
 				for (let i=0; i<l; i++) {
 					let Item = ObjectOfDataRanges[i]
 					for (let i2 = i+1; i2<l; i2++) {
@@ -453,10 +477,15 @@ Where:
 					if (Item.ConflictsWith.length != 0) {
 						OverlapCount++
 					}
+					if (Item.Type == "NonOverlap") {
+						TotalNonOverlapsBytes += Item.Length
+					}
 				}
 				document.getElementById("OutputStatistics_Overlap").textContent = OverlapCount.toString(10)
 				document.getElementById("OutputStatistics_NonOverlap").textContent = (ObjectOfDataRanges.length - OverlapCount).toString(10)
+				document.getElementById("OutputStatistics_TotalBytes_NonOverlaps").textContent = TotalNonOverlapsBytes.toString(10)
 			}
+			let GapList = []
 			{
 				//Get gaps
 				//let ArrayCopyButSortedForGapFinding = ListOfAddress.sort(SortByStartAddr) <-This will sort BOTH arrays.
@@ -469,8 +498,7 @@ Where:
 				// 7E0063 is what we assume the last byte, not 7E0062. Essentially, HighestEndAddressGapDetect holds the highest ending address
 				// currently processed that overlaps.
 				let HighestEndAddressGapDetect = -Infinity
-				let GapList = []
-				let ObjectOfDataRanges_tempSort = ObjectOfDataRanges.sort((a,b) => Number(a.StartAddress-b.StartAddress))
+				let ObjectOfDataRanges_tempSort = ObjectOfDataRanges.toSorted((a,b) => Number(a.StartAddress-b.StartAddress))
 				let l = ObjectOfDataRanges_tempSort.length
 				for (let i=1; i<l; i++) {
 					//If the highest index exceeds HighestEndAddressGapDetect, replace it with the higher number
@@ -499,6 +527,13 @@ Where:
 				}
 				document.getElementById("OutputStatistics_TotalIncludingGaps").textContent = ObjectOfDataRanges.length.toString(10)
 			}
+			let TotalGapBytes = 0n
+			GapList.forEach(Gap => TotalGapBytes += Gap.Length)
+			document.getElementById("OutputStatistics_TotalBytes_Gaps").textContent = TotalGapBytes.toString(10)
+			
+			let TotalNonOverlapsBytes = 0n
+			let NonOverlaps = 
+			
 			SavedAddresses = ObjectOfDataRanges
 		} else {
 			ObjectOfDataRanges = SavedAddresses

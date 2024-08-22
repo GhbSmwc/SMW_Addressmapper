@@ -57,10 +57,15 @@ Where:
 <li><kbd>Number_of_bytes_Decimal</kbd> is how many bytes the RAM it requires (contiguously), in decimal. Must be at least 1.</li>
 <li>
 	<kbd>Optional_min</kbd>: This is optional, either enter an address hex number (&ldquo;$&rdquo; is optional) or just &ldquo;-&rdquo; to nullify it. When a hex number is supplied, this forces
-	the RAM to search for a freeram define to not have its starting address location below this address. This is useful if RAMs that an ASM resource must or must not reset during loading screens (black screen).
+	the RAM to search for a freeram define to not have its starting address location below this address. This is useful for things like if RAMs that an ASM resource must or must not reset during loading screens (black screen) and things
+	like the freeram to use only works when being constrained to a certain range <abbr title="&ldquo;Extended No Sprite Tile Limits&rdquo; patch&apos;s define !RAM_ExtOAMIndex is stated it is compatible if set to any RAM between $0000 to $1FFF">
+	<a href="https://www.smwcentral.net/?p=section&a=details&id=32381">due to byte/word addressing-only and mirroring RAM limits</a>
+	</abbr>.<br><br>
 </li>
 <li><kbd>Optional_max</kbd>: Same as above, but forces the location of a freeram define address not to have its ending byte greater than this address. Note: when both min and max are set, max must be greater than or equal to min.</li>
 </ul>
+<p>NOTE: I strongly recommend having range-limited freeram defines at the top of the list so that defines with no specified min and max don't take away the bytes that the range-limited freeram defines can only go there (you don't want
+low addresses being taken by ASM defines that could've been placed at a higher address, and then the ASM defines that are limited to the low addresses have no place to be at, so they end up failing to be assigned).</p>
 Format for list of empty RAM should be (same as the address tracker):<br>
 <table><tr><td><pre>Address	Size_or_ending_address	Optional_description
 Address	Size_or_ending_address	Optional_description
@@ -476,7 +481,9 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 						document.getElementById("OutputResults").hidden = true
 						return
 					}
-			
+			document.getElementById("OutputErrorMessage_Text").textContent = ""
+			document.getElementById("OutputErrorMessage").hidden = true
+			document.getElementById("OutputResults").hidden = false
 			if (ListOfGaps.length == 0) {
 				document.getElementById("Statistics_EmptyRamRangeCountBefore").textContent = "0"
 				document.getElementById("Statistics_EmptyRamRangeCountAfter").textContent = "0"
@@ -490,10 +497,6 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 			ListOfGaps.forEach(Gap => Statistics_EmptyRAMBytesBefore_Count += Gap.Length) //Count after removing dupes
 			document.getElementById("Statistics_EmptyRamRangeCountBefore").textContent = ListOfGaps.length.toString(10)
 			document.getElementById("Statistics_EmptyRAMBytesBefore").textContent = Statistics_EmptyRAMBytesBefore_Count.toString(10)
-			
-			document.getElementById("OutputErrorMessage_Text").textContent = ""
-			document.getElementById("OutputErrorMessage").hidden = true
-			document.getElementById("OutputResults").hidden = false
 			
 			//Both inputs done. Loop through FreeramList and place them in ListOfGaps
 			//Sort, this makes it consistent that bytes will be used from low to high addresses when one define have multiple suitable ranges.

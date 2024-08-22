@@ -259,7 +259,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 						Type: "CommentOrBlankLine"
 					}
 				}
-				if (!(/^[^\t]+\t![a-zA-Z\d_]+\t\d+(?:\t-|-?\$?[\dA-Fa-f]+){2}$/).test(Line)) {
+				if (!(/^[^\t]+\t+![a-zA-Z\d_]+\t\d+(?:\t(?:-|-?\$?[\dA-Fa-f]+)){2}$/).test(Line)) {
 					ProcessError = true
 					return {
 						Type: "Error",

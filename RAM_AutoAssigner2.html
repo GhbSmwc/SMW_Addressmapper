@@ -77,8 +77,8 @@ Notes:
 	(unless if not, will state no suitable address is found)</li>
 	<li>If you have gap ranges touching each other, like this:
 	<table><tr><td><pre>
-	$7E0060	~$7E0061	Range 1
-	$7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last byte of the one above, no bytes between)</pre></td></tr></table>
+$7E0060	~$7E0061	Range 1
+$7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last byte of the one above, no bytes between)</pre></td></tr></table>
 	it will NOT merge them together and any freeram define set cannot cross the boundary where they touch. So a freeram that needs 3 or 4 bytes cannot fit here.</li>
 </ul>
 

@@ -457,6 +457,14 @@ Where:
 						if (CheckOverlap(Item.StartAddress, Item.EndAddress, Item2.StartAddress, Item2.EndAddress)) {
 							Item.Type = "Overlap"
 							Item2.Type = "Overlap"
+							//NOTE: I rather push only primitive data that is referencing, as opposed to pushing
+							//another range object here, as that will cause a circular reference (item A contains
+							//ConflictsWith list which reference to item B, which also contains a ConflictsWith
+							//listing item A). This causes potential memory leaks.
+							//
+							//circular reference means things in the memory will never disappear even when identifiers
+							//in the code are not referencing it, as garbage collector will assume these are always
+							//reference.
 							Item.ConflictsWith.push({
 								LineNumber: Item2.LineNumber,
 								StartAddress: Item2.StartAddress,
@@ -581,6 +589,10 @@ Where:
 			
 			let Output_TableHeaderRow = document.createElement("tr")
 			
+			let Output_TableHeader_LineNumber = document.createElement("th")
+			Output_TableHeader_LineNumber.appendChild(document.createTextNode("Line number"))
+			Output_TableHeaderRow.appendChild(Output_TableHeader_LineNumber)
+			
 			let Output_TableHeader_StartAddress = document.createElement("th")
 			Output_TableHeader_StartAddress.appendChild(document.createTextNode("Starting address"))
 			Output_TableHeaderRow.appendChild(Output_TableHeader_StartAddress)
@@ -612,6 +624,12 @@ Where:
 				
 				let TableItemRow = document.createElement("tr")
 				
+				let TableItem_LineNumber = document.createElement("td")
+				TableItem_LineNumber.style.fontFamily = "monospace"
+				TableItem_LineNumber.style.backgroundColor = ColorCodedStatus[Item.Type]
+				TableItem_LineNumber.appendChild(document.createTextNode((Item.LineNumber+1).toString(10)))
+				TableItemRow.appendChild(TableItem_LineNumber)
+				
 				let TableItem_StartAddress = document.createElement("td")
 				TableItem_StartAddress.style.fontFamily = "monospace"
 				TableItem_StartAddress.style.backgroundColor = ColorCodedStatus[Item.Type]
@@ -642,6 +660,10 @@ Where:
 						let OverlappedItem_Table = document.createElement("table")
 						let OverlappedItem_HeaderRow = document.createElement("tr")
 						
+						let OverlappedItem_HeaderLineNumb = document.createElement("th")
+						OverlappedItem_HeaderLineNumb.appendChild(document.createTextNode("Line number"))
+						OverlappedItem_HeaderRow.appendChild(OverlappedItem_HeaderLineNumb)
+						
 						let OverlappedItem_HeaderStart = document.createElement("th")
 						OverlappedItem_HeaderStart.appendChild(document.createTextNode("Starting address"))
 						OverlappedItem_HeaderRow.appendChild(OverlappedItem_HeaderStart)
@@ -657,7 +679,7 @@ Where:
 						OverlappedItem_Table.appendChild(OverlappedItem_HeaderRow)
 						
 						Item.ConflictsWith.forEach((overlapped, index2, Arr2) => {
-							PlainTextOutput += "\t;" + BigIntToStringSignedHex(overlapped.StartAddress) + "\t"
+							PlainTextOutput += "\t;Line " + Item.LineNumber.toString(10) + ": " + BigIntToStringSignedHex(overlapped.StartAddress) + "\t"
 							if (document.getElementById("PlaintextSetting_Output_Size").selected) {
 								PlainTextOutput += overlapped.Length.toString(10)
 							} else if (document.getElementById("PlaintextSetting_Output_Ending").selected) {
@@ -671,6 +693,11 @@ Where:
 							}
 							
 							let OverlappedItem_RowConflict = document.createElement("tr")
+							
+							let OverlappedItem_LineNumber = document.createElement("td")
+							OverlappedItem_LineNumber.style.fontFamily = "monospace"
+							OverlappedItem_LineNumber.appendChild(document.createTextNode((overlapped.LineNumber+1).toString(10)))
+							OverlappedItem_RowConflict.appendChild(OverlappedItem_LineNumber)
 							
 							let OverlappedItem_Start = document.createElement("td")
 							OverlappedItem_Start.style.fontFamily = "monospace"

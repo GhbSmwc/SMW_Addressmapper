@@ -102,7 +102,7 @@ Where:
 	</select><label><input type="checkbox" id="PlaintextSetting_Output_OverlapStatus" checked onchange="MainCode()">Show gap/overlap/non-overlap status</label>
 </div>
 <div id="SettingPanel_ByteViewOptions" hidden>
-	Address to view: $<input type="text" value="0" class="HexNumberInput" id="SVGAddressView" oninput="MainCode()"><br>
+	Address to view: $<input type="text" value="0" class="HexNumberInput" id="SVGAddressView" onchange="MainCode()" oninput="MainCode()"><br>
 	Useful tips using this feature:
 	<ul>
 	<li>Hover your mouse over the display and roll your scroll wheel to scroll the graph. Alternatively up/down arrow keys will work.</li>

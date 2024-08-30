@@ -96,3 +96,6 @@ Newest on bottom
 	--If you are entering an ending address, it is now denoted
 	  with a tilde ("~") instead of a hyphen due to negative
 	  addressing supported.
+2024-08-27 v5.0.1
+	-Fixed a bug with Addresser failing to update the SVG when up/down
+	 arrows are pressed to change what address to view.

@@ -105,4 +105,5 @@ Newest on bottom
 	 intended to write a newline for each item if it isn't the last
 	 item in the array.
 	-"No gap exists!" will now appear by default rather only after you
-	 first update the textarea.
+	 first update the textarea. Previously, the "Quick-copy gaps"
+	 button was disabled without the message.

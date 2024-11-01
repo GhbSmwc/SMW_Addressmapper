@@ -146,7 +146,7 @@ Where:
 			<div>
 				<button onclick="CopyGaps()" disabled id="Button_QuickCopyGaps">Quick-copy gaps</button>
 				<span></span>
-				<span id="QuickCopyGapsExistMsg"></span>
+				<span id="QuickCopyGapsExistMsg" style="color: #FF0000">No gap exists!</span>
 			</div><br>
 		<div style="overflow: auto; height: 500px; border: 1px solid white">
 			<table id="Output_AddressInfo_Table"></table>
@@ -841,7 +841,7 @@ Where:
 		let CopiedString = ""
 		GapList.forEach((Item, Index, Arr) => {
 			CopiedString += BigIntToStringSignedHex(Item.StartAddress) + "\t" + Item.Length.toString(10) + "\tGap"
-			if (Index != Arr.length) {
+			if (Index != Arr.length-1) {
 				CopiedString += "\n"
 			}
 			setClipboard(CopiedString)

@@ -99,3 +99,10 @@ Newest on bottom
 2024-08-27 v5.0.1
 	-Fixed a bug with Addresser failing to update the SVG when up/down
 	 arrows are pressed to change what address to view.
+2024-10-31 v5.0.2
+	-Minor fix of Addresser's "Quick-copy gaps" function that it would
+	 add a trailing newline after the last line, as the code was
+	 intended to write a newline for each item if it isn't the last
+	 item in the array.
+	-"No gap exists!" will now appear by default rather only after you
+	 first update the textarea.

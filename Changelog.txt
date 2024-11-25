@@ -107,3 +107,6 @@ Newest on bottom
 	-"No gap exists!" will now appear by default rather only after you
 	 first update the textarea. Previously, the "Quick-copy gaps"
 	 button was disabled without the message.
+2024-11-25 v5.0.3 Minor bugfix of "Assigner.html"
+	-Fixed a typo resulting in a browser console error due to a typo
+	 of "Save_Data" should be "Save_Data".

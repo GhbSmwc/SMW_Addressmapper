@@ -78,7 +78,7 @@ All of these ranges must NOT overlap.
 </ul><br><br>
 Notes:
 <ul>
-	<li>This tool will process each freeram defines from top to bottom order from the text, and the list of gaps at increasing address order. This means that the RAM at the top of the list will be assigned to the lowest address location that it can fit
+	<li>This tool will process each freeram defines from most number of bytes to least order, and the list of gaps at increasing address order. This means that the RAM at the top of the list will be assigned to the lowest address location that it can fit
 	(unless if not, will state no suitable address is found)</li>
 	<li>If you have gap ranges touching each other, like this:
 	<table><tr><td><pre>
@@ -330,7 +330,22 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 					document.getElementById("OutputResults").hidden = true
 					return
 				}
-				FreeramList = FreeramList.filter(Item => Item.Type=="ValidItem") //Got all our data, 
+				FreeramList = FreeramList.filter(Item => Item.Type=="ValidItem") //Got all our data,
+				FreeramList.sort((a, b) => Number(b.Length - a.Length))
+					//^Sort defines from longest to shortest number of bytes, as reported by Atari2.0 that entered-define-order is a bad idea.
+					//If you have the first defines with shorter number of bytes than the later, and the freeram whose size is bigger at
+					//lower addresses, a shorter define may render a freeram gap smaller so that later defines can no longer fit in that space.
+					//Example:
+					//test.asm	!asdf	2	-	-
+					//test2.asm	!asdf2	4	-	-
+					//
+					//$7e0060	4
+					//$7e0070	2
+					//!asdf can fit in gaps that are at least 2 bytes long, so both RAMs are suitable, but its actually supposed to be assigned
+					//to the later address, else it will block future defines from being assigned. however gets placed in $7e0060. Now the
+					//4-byte gap $7e0060-$7e0063 becomes a 2-byte gap $7e0062-$7e0063. At this point, now all remaining gaps are 2-bytes long,
+					//causing the next define, !asdf2 to have no room to place it. It's sort-of matching defines' length with the length of the
+					//freeram, as possible.
 				if (document.getElementById("DuplicateSettings_Defines").checked) {
 					FreeramList = ((ItemsList) => {
 						let DupeFree = []

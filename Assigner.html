@@ -334,21 +334,6 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 					return
 				}
 				FreeramList = FreeramList.filter(Item => Item.Type=="ValidItem") //Got all our data,
-				FreeramList.sort((a, b) => Number(b.Length - a.Length))
-					//^Sort defines from longest to shortest number of bytes, as reported by Atari2.0 that entered-define-order is a bad idea.
-					//If you have the first defines with shorter number of bytes than the later, and the freeram whose size is bigger at
-					//lower addresses, a shorter define may render a freeram gap smaller so that later defines can no longer fit in that space.
-					//Example:
-					//test.asm	!asdf	2	-	-
-					//test2.asm	!asdf2	4	-	-
-					//
-					//$7e0060	4
-					//$7e0070	2
-					//!asdf can fit in gaps that are at least 2 bytes long, so both RAMs are suitable, but its actually supposed to be assigned
-					//to the later address, else it will block future defines from being assigned. however gets placed in $7e0060. Now the
-					//4-byte gap $7e0060-$7e0063 becomes a 2-byte gap $7e0062-$7e0063. At this point, now all remaining gaps are 2-bytes long,
-					//causing the next define, !asdf2 to have no room to place it. It's sort-of matching defines' length with the length of the
-					//freeram, as possible.
 				if (document.getElementById("DuplicateSettings_Defines").checked) {
 					FreeramList = ((ItemsList) => {
 						let DupeFree = []
@@ -365,6 +350,22 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 						return DupeFree
 					})(FreeramList);
 				}
+				let FreeramList_Long2Short = FreeramList.toSorted((a, b) => Number(b.Length - a.Length))
+					//^Sort (a sorted copy keeping the original) defines from longest to shortest number of bytes, as reported by Atari2.0
+					//that entered-define-order is a bad idea. If you have the first defines with shorter number of bytes than the later, and
+					//the freeram whose size is bigger at lower addresses, a shorter define may render a freeram gap smaller so that later
+					//defines can no longer fit in that space.
+					//Example:
+					//test.asm	!asdf	2	-	-
+					//test2.asm	!asdf2	4	-	-
+					//
+					//$7e0060	4
+					//$7e0070	2
+					//!asdf can fit in gaps that are at least 2 bytes long, so both RAMs are suitable, but its actually supposed to be assigned
+					//to the later address, else it will block future defines from being assigned. however gets placed in $7e0060. Now the
+					//4-byte gap $7e0060-$7e0063 becomes a 2-byte gap $7e0062-$7e0063. At this point, now all remaining gaps are 2-bytes long,
+					//causing the next define, !asdf2 to have no room to place it. It's sort-of matching defines' length with the length of the
+					//freeram, as possible.
 			//FreeramList process are done. Now work on gaps
 				let ListOfGapsText = document.getElementById("TextareaInput_EmptyRams").value.split('\n')
 				ListOfGaps = ListOfGapsText.map((Line, Index) => {
@@ -525,9 +526,9 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 			FailedPlaceHolderAddress = ListOfGaps[0].StartAddress-1n
 			
 			//Now place the freeram at a given gap address, and update the gaps list
-			let l = FreeramList.length
+			let l = FreeramList_Long2Short.length
 			for (let i=0; i<l; i++) { //Loop each freeram define list
-				let ASMFreeramDefine = FreeramList[i]
+				let ASMFreeramDefine = FreeramList_Long2Short[i]
 				for (let i2 = 0; i2<ListOfGaps.length; i2++) { //Loop each RAM gaps
 					//^Now, I use ListOfGaps.length instead of "let l2 = ListOfGaps.length" because this array length changes as we successfully
 					//assign a define to a RAM.

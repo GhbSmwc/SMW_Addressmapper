@@ -951,11 +951,7 @@ Where:
 	//If B_End is touching A_Start, then Range_B is at the lowest position (or Range_A at the highest position) that would count as an overlap
 	//If B_Start is touching A_End, then Range_B is at the highest position (or Range_A is at the lowest position) that would count as an overlap
 		function CheckOverlap(A_Start, A_End, B_Start, B_End) {
-			if (B_End >= A_Start&&B_Start <= A_End) {
-				return true
-			} else {
-				return false
-			}
+			return (B_End >= A_Start&&B_Start <= A_End)
 		}
 	function createSVGElement(tag) { //https://stackoverflow.com/questions/57894500/why-is-it-necessary-to-use-document-createelementns-when-adding-svg-tags-to
 		return document.createElementNS('http://www.w3.org/2000/svg', tag)

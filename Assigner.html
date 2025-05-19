@@ -703,11 +703,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 	//If B_End is touching A_Start, then Range_B is at the lowest position (or Range_A at the highest position) that would count as an overlap
 	//If B_Start is touching A_End, then Range_B is at the highest position (or Range_A is at the lowest position) that would count as an overlap
 		function CheckOverlap(A_Start, A_End, B_Start, B_End) {
-			if (B_End >= A_Start&&B_Start <= A_End) {
-				return true
-			} else {
-				return false
-			}
+			return (B_End >= A_Start&&B_Start <= A_End)
 		}
 	function ParseBigIntValue(string, radix) {
 		//Acts more closely to parseInt, unlike other methods (other functions, like CorrectBinBigIntValue)

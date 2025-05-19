@@ -339,13 +339,14 @@ Where:
 			UsedAddress_Max = -Infinity
 			
 			ObjectOfDataRanges = LinesOfText.map((Line, Index) => {
+				//This converts each line entry into manageable objects.
 				let SourceText = Line
 				if (/^\s*(?:;.*)?$/.test(Line)) {
 					return {
 						Type: "CommentOrBlankLine"
 					}
 				}
-				if (!/^\s*-?\$?[\da-fA-F]+\t(?:\d+|\~-?\$?[\da-fA-F]+)(?:\t.*)?$/.test(Line)) {
+				if (!/^\s*-?\$?[\da-fA-F]+(?:\t| )(?:\d+|\~-?\$?[\da-fA-F]+)(?:(?:\t| ).*)?$/.test(Line)) {
 					ErrorExists = true
 					return {
 						Type: "Error",
@@ -355,7 +356,7 @@ Where:
 					}
 				
 				}
-				let LineExtracted = Line.replace(/^\s*/, "").split("\t")
+				let LineExtracted = Line.replace(/^\s*/, "").split(/(?:\t| )/)
 				let StartAddress = ParseBigIntValue(LineExtracted[0].replace("$", ""), 16) + Offsetter
 				let EndAddress = 0n
 				let Length = 0n
@@ -383,7 +384,7 @@ Where:
 				}
 				let Description = LineExtracted[2] ?? ""
 				return {
-					Type: "NonOverlap",
+					Type: "NonOverlap", //Default type "NonOverlap" that may later discover an overlap.
 					LineNumber: Index,
 					StartAddress: StartAddress,
 					Length: Length,
@@ -436,7 +437,7 @@ Where:
 			
 			document.getElementById("SVGAddressView").value = StartingAddressViewing.toString(16).toUpperCase()
 			
-			ObjectOfDataRanges = ObjectOfDataRanges.filter(Item => Item.Type == "NonOverlap") //This gets non-errored lines, since we haven't detects overlaps yet.
+			ObjectOfDataRanges = ObjectOfDataRanges.filter(Item => Item.Type == "NonOverlap") //This only gets actual ranges (removes errors and "CommentOrBlankLine")
 			document.getElementById("Output_ErrorMessage").hidden = true
 			document.getElementById("Output_AddressInfo").hidden = false
 			//Remove duplicate entries

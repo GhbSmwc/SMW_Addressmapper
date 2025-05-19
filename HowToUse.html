@@ -2,8 +2,8 @@
 	<head>
 		<style>
 			html {
-			background-color: black;
-			color: white;
+			background-color: rgb(29, 30, 38);
+			color: rgb(221, 221, 221);
 			font-family: sans-serif;
 			}
 			
@@ -28,22 +28,23 @@
 			input[type='number'] { font-family: monospace;}
 		</style>
 	</head>
-<body>
+<body onload="Calculate()" style="max-width: 1000px; margin: auto; padding: 15px">
 <p>This mostly-javascript &ldquo;program&rdquo; (more like a script) allows you to manage your RAM usage easily. It came to my attention that some beginners or anyone unaware of how memory usage works
 complains that one patch breaks another often was caused by RAM conflicts when installing ASM resources (patch, blocks, sprites, uberasm, etc.). Here is an
 <a href="https://www.smwcentral.net/?p=section&a=details&id=18776">example</a> (scroll and find DTA450's comment). He probably either forgot to change the freeram define setting OR assume that no RAM
-would take that address, and N bytes after it. Directional quake and the <a href="https://www.smwcentral.net/?p=section&a=details&id=18720">wall kick</a> have issues with RAM $61 when using default RAM addresses.</p>
+would take that address, and <kbd>BytesConsumed-1</kbd> consecutive bytes after it. In this case, the Directional quake and the <a href="https://www.smwcentral.net/?p=section&a=details&id=18720">wall kick</a> patch
+have issues with RAM $61 when using default RAM addresses.</p>
 
 <p>There are two tools:</p>
 <ul>
 	<li>
-		The &ldquo;Addresser&rdquo;, which takes a given RAM range (either a literal range, or a starting byte address with a length/number-of-bytes given) and checks for overlaps and gaps in a sequential address order. It have visualizer
-		(&ldquo;<kbd>Byte view</kbd>&rdquo;)and an option to offset the RAM usage to another address if you are dealing with mirroring and SA-1 remapping.
+		The &ldquo;Addresser&rdquo;, which takes a given RAM range (either a literal range, or a starting byte address with a length/number-of-bytes given) and checks for overlaps and gaps in a sequential address order.
+		It has a visualizer (&ldquo;<kbd>Byte view</kbd>&rdquo;) and an option to offset the RAM usage to another address if you are dealing with mirroring and SA-1 remapping.
 	</li>
 	<li>The &ldquo;Assigner&rdquo;, which takes a given list of ASM defines and a list of empty RAMs and automatically assigns the ASM defines to every currently-unused RAM address.</li>
 </ul>
 
-<p>This is especially very useful for collaboration hacks or any hacks that uses a ton of ASM resources, as manually pinpointing a problem can be especially difficult.</p>
+<p>This is especially very useful for collaboration hacks or any hacks that uses a ton of ASM resources, as manually pinpointing a problem can be difficult.</p>
 
 <p>What you need to do is keep track of what RAM is being used, both by SMW and the ASM resources. Make sure they formatted as stated in those HTML javascript files.</p>
 
@@ -81,6 +82,7 @@ statuses as well as discovered gaps. You can also view them by <kbd>Byte view</k
 WallKick	!no_back_timer	1	-	-
 WallKick	!temp_y_spd	1	-	-
 DirectionalQuake	!Freeram_DirQuake_Layer1XDisplacement	2	-	-</pre></td></tr></table>
+By the way, you can use space instead of tabs.
 	</li><br>
 	<li>
 		Now obtain a list of empty RAMs. You can do this by opening <kbd>SMW_UsedAddress.txt</kbd>, copy the list, paste it in the addresser, click the &ldquo;Quick-copy gaps&rdquo; button, and paste it in the second textarea of assigner.
@@ -112,7 +114,7 @@ DirectionalQuake	!Freeram_DirQuake_Layer1XDisplacement	2	-	-</pre></td></tr></ta
 </p>
 <h2>Notes</h2>
 <ul>
-	<li>The freeram defines in the first textarea of autoassigner are processed from top to bottom, and the second textarea are processed from lowest to highest address. This means the first RAM define
+	<li>The freeram defines in the first textarea of autoassigner are processed from longest to shortest number of bytes, and the second textarea are processed from lowest to highest address. This means the longest RAM define
 	will get assigned to the lowest available address (accounting the min and max address as well as the size of it).</li>
 	<li id="BordersAndMirrors">
 		This entire tool does not account to bank borders, so do not assume things like a range of <kbd>$7EFFFF</kbd>-<kbd>$7F0000</kbd> that it avoids it. It also does not account for RAM mirroring, so make sure

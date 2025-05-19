@@ -109,4 +109,14 @@ Newest on bottom
 	 button was disabled without the message.
 2024-11-25 v5.0.3 Minor bugfix of "Assigner.html"
 	-Fixed a typo resulting in a browser console error due to a typo
-	 of "Save_Data" should be "Save_Data".
+	 of "Save_data" should be "Save_Data".
+2025-05-18 v5.0.4
+	-Fixed a problem with Assigner that due to a greedy first hit
+	 algorithm, results in a failed assigned address that should be a
+	 success. This occurs if you have a define with a shorter RAM,
+	 then a longer one on the defines list, and the empty RAM list
+	 to have a lower-address gap being longer than the high-address
+	 gap, as pointed out by Atari2.0.
+	-All inputs entries now allow spaces instead of tabs seperating
+	 addresses, number of bytes, and min and max address (for
+	 assigner)

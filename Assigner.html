@@ -267,7 +267,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 							Type: "CommentOrBlankLine"
 						}
 					}
-					if (!(/^[^\t]+\t+![a-zA-Z\d_]+\t\d+(?:\t(?:-|-?\$?[\dA-Fa-f]+)){2}$/).test(Line)) {
+					if (!(/^[^\t ]+(?:\t| )+![a-zA-Z\d_]+(?:\t| )\d+(?:(?:\t| )(?:-|-?\$?[\dA-Fa-f]+)){2}$/).test(Line)) {
 						ProcessError = true
 						return {
 							Type: "Error",
@@ -276,7 +276,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 							SourceText: Line
 						}
 					}
-					let PartsOfString = Line.split("\t")
+					let PartsOfString = Line.split(/(?:\t| )/)
 					let ResourceName = PartsOfString[0]
 					let DefineName = PartsOfString[1]
 					let Length = ParseBigIntValue(PartsOfString[2].replace(/\$/, ""))
@@ -375,7 +375,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 							Type: "CommentOrBlankLine"
 						}
 					}
-					if (!/^\s*-?\$?[\da-fA-F]+\t(?:\d+|\~-?\$?[\da-fA-F]+)(?:\t.*)?$/.test(Line)) {
+					if (!/^\s*-?\$?[\da-fA-F]+(?:\t| )(?:\d+|\~-?\$?[\da-fA-F]+)(?:(?:\t| ).*)?$/.test(Line)) {
 						ProcessError = true
 						return {
 							Type: "Error",
@@ -385,7 +385,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 						}
 					
 					}
-					let LineExtracted = Line.replace(/^\s*/, "").split("\t")
+					let LineExtracted = Line.replace(/^\s*/, "").split(/(?:\t| )/)
 					let StartAddress = ParseBigIntValue(LineExtracted[0].replace("$", ""), 16)
 					let EndAddress = 0n
 					let Length = 0n

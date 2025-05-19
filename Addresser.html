@@ -83,8 +83,13 @@ Where:
 	<div><label><input type="radio" name="Setting_ViewMode" onchange="AdjustMode()" id="Setting_ViewMode_Table" checked>Table range</label></div>
 	<div><label><input type="radio" name="Setting_ViewMode" onchange="AdjustMode()" id="Setting_ViewMode_Byte">Byte view</label></div>
 </div>
+<div>
+	Other:
+	<div>
+		<label><input type="checkbox" id="Setting_IgnoreDupes" onchange="MainCodeWithFullRefresh()" checked>Ignore duplicates</label>
+	</div>
+</div>
 <hr>
-<label><input type="checkbox" id="Setting_IgnoreDupes" onchange="MainCodeWithFullRefresh()" checked>Ignore duplicates</label>
 <div id="SettingPanel_TableViewOptions">
 	Sort: <select onchange="MainCode()">
 		<option id="SortOption_None">Keep order you entered</option>

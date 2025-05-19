@@ -382,7 +382,8 @@ Where:
 				if (UsedAddress_Max < EndAddress) {
 					UsedAddress_Max = EndAddress
 				}
-				let Description = LineExtracted[2] ?? ""
+				//let Description = LineExtracted[2] ?? ""
+				let Description = Line.replace(/^[^\s]+\s[^\s]+\s/, "")
 				return {
 					Type: "NonOverlap", //Default type "NonOverlap" that may later discover an overlap.
 					LineNumber: Index,

@@ -26,14 +26,27 @@
 			
 			input[type='text'] { font-family: monospace;}
 			input[type='number'] { font-family: monospace;}
+			
+			div.BigHTMLTable {
+				overflow: auto;
+				width: 900px;
+				height: 50px;
+				border: 1px solid white;
+				resize: both;
+			}
+			pre {
+				margin: 0px;
+			}
 		</style>
 	</head>
-<body onload="Calculate()" style="max-width: 1000px; margin: auto; padding: 15px">
+<body style="max-width: 1000px; margin: auto; padding: 15px">
 <p>This mostly-javascript &ldquo;program&rdquo; (more like a script) allows you to manage your RAM usage easily. It came to my attention that some beginners or anyone unaware of how memory usage works
 complains that one patch breaks another often was caused by RAM conflicts when installing ASM resources (patch, blocks, sprites, uberasm, etc.). Here is an
 <a href="https://www.smwcentral.net/?p=section&a=details&id=18776">example</a> (scroll and find DTA450's comment). He probably either forgot to change the freeram define setting OR assume that no RAM
 would take that address, and <kbd>BytesConsumed-1</kbd> consecutive bytes after it. In this case, the Directional quake and the <a href="https://www.smwcentral.net/?p=section&a=details&id=18720">wall kick</a> patch
 have issues with RAM $61 when using default RAM addresses.</p>
+
+<p>Note: To easy-copy text inside code blocks here, hold CTRL and double-click the text.</p>
 
 <p>There are two tools:</p>
 <ul>
@@ -134,8 +147,8 @@ By the way, you can use space instead of tabs.
 	<ol>
 		<li>
 			Create an ASM defines file (example, <kbd>DefineTest.asm</kbd>), or have it in the ASM file with the code doing this:
-<table><tr><td><pre>!Freeram_test = $7E0060	;>Lets assume this takes 4 bytes.
-!Size	= 4		;>Some patches or any other ASM resource may have ram with a certain size depending on the settings.
+<table><tr><td><pre>!Freeram_test = $7E0060	;&gt;Lets assume this takes 4 bytes.
+!Size	= 4		;&gt;Some patches or any other ASM resource may have ram with a certain size depending on the settings.
 
 print "$", hex(!Freeram_test), "	", dec(!Size), "	Description here"</pre></td></tr></table>
 		</li>
@@ -145,9 +158,9 @@ print "$", hex(!Freeram_test), "	", dec(!Size), "	Description here"</pre></td></
 pause</pre></td></tr></table>
 		</li>
 		<li>If there are spaces in the file path, wrap the whole path in quotes. Then save, run it (should open the command prompt). Example:
-<table><tr><td><pre>"C:\Users\GreenHammerBro\Desktop\smw romhacking\General Tools\asar181\asar.exe" "C:\Users\GreenHammerBro\Desktop\smw romhacking\Submission\AddresserTool\DefineTest.asm" "C:\Users\GreenHammerBro\Desktop\smw romhacking\Submission\AddresserTool\a.smc" >> "C:\Users\RedBro\Desktop\smw romhacking\Submission\AddresserTool\Output.txt"
+<div class="BigHTMLTable"><pre>"C:\Users\GreenHammerBro\Desktop\smw romhacking\General Tools\asar181\asar.exe" "C:\Users\GreenHammerBro\Desktop\smw romhacking\Submission\AddresserTool\DefineTest.asm" "C:\Users\GreenHammerBro\Desktop\smw romhacking\Submission\AddresserTool\a.smc" >> "C:\Users\RedBro\Desktop\smw romhacking\Submission\AddresserTool\Output.txt"
 pause
-</pre></td></tr></table>
+</pre></div>
 		</li>
 		<li>
 			And a file should appear with the RAM info (at [path location to create the txt file]). Note: this HAS to be outputted as a text file, the command prompt will convert it into 5 regular space characters on the console window.
@@ -160,3 +173,35 @@ pause
 	<li><a href="https://www.samanthaming.com/tidbits/35-es6-way-to-clone-an-array/">samanthaming.com</a> that the assignment operator on objects like arrays would only copy the reference.</li>
 	<li><a href="https://www.smwcentral.net/?p=profile&id=37441">dtothefourth</a> for the tab function</li>
 </ul>
+<script>
+//These makes all <pre>...</pre> have an effect that double-clicking will select all the text
+//in it, to make it easy to copy code and paste it in your ASM stuff.
+//
+//Credit:
+// https://keestalkstech.com/2014/04/click-to-select-all-on-the-pre-element/
+// https://www.sanwebe.com/2014/04/select-all-text-in-element-on-click
+document.addEventListener('dblclick', e => {
+  let pre = getClosest(e.target, "PRE");
+  if (pre && e.ctrlKey) {
+    let range = new Range();
+    range.selectNodeContents(pre);
+    document.getSelection().removeAllRanges();
+    document.getSelection().addRange(range);
+  }
+});
+
+function getClosest(el, tagName) {
+  tagName = tagName && tagName.toUpperCase();
+
+  if (!tagName || !el)
+    return null;
+
+  do
+    if (el.nodeName === tagName)
+      return el;
+  while (el = el.parentNode);
+
+  return null;
+}
+
+</script>

@@ -48,16 +48,12 @@
 <table><tr><td><pre>Address	Size_in_bytes_Or_EndAddress	Description
 Address	Size_in_bytes_Or_EndAddress	Description
 Address	Size_in_bytes_Or_EndAddress	Description</pre></td></tr></table><br>
-Make sure the format is:
-<ul>
-	<li>No additional tabs, meaning multiple tabs that are used to align columns in text editors is not allowed. The tab character is reserved for <a href="https://en.wikipedia.org/wiki/Tab-separated_values">tab-separated values</a>.</li>
-</ul>
+Data is seperated with a single space or tab character.
 </p>
 
 Notes:
 	<ul>
 		<li>Lines that are blank or composed of just any whitespace characters are ignored. It will also ignore any lines that start with either a semicolon or a space (0 or more), followed by a semicolon (therefore ASM-styled comments are allowed).</li>
-		<li>Whitespace shown above is a TAB character, not a literal space character.</li>
 		<li>This does not take in account of addressing mirroring (a shorthand <kbd>$00</kbd> instead of <kbd>$7E0000</kbd>), so I strongly recommend putting the full address numbers here. Furthermore, it does not detect what type of memory map it is,
 		things like negative address (only shown on &ldquo;<kbd>Potential ending address before the starting byte of all the ranges</kbd>&rdquo;), address pointing beyond the last byte of the entire memory map, and so on.</li>
 		<li>This tool could be applied to other systems (beyond the SNES), since it merely check ranges.</li>

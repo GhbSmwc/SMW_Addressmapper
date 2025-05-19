@@ -99,11 +99,16 @@ Where:
 		<div><label><input type="checkbox" onchange="MainCode()" checked id="Filter_NonOverlap">Address with no conflicts</label></div>
 		<div><label><input type="checkbox" onchange="MainCode()" checked id="Filter_Overlap">Address that conflicted</label></div>
 	</div><br><br>
-	Plaintext size/ending address mode display: <select onchange="MainCode();">
-		<option id="PlaintextSetting_Output_Size">Size</option>
-		<option id="PlaintextSetting_Output_Ending">Ending</option>
-		<option id="PlaintextSetting_Output_SizeAndEnding">Size and ending (&lt;size&gt;/-&lt;ending_address&gt;)</option>
-	</select><label><input type="checkbox" id="PlaintextSetting_Output_OverlapStatus" checked onchange="MainCode()">Show gap/overlap/non-overlap status</label>
+	<div>
+		Plaintext size/ending address mode display: <select onchange="MainCode();">
+			<option id="PlaintextSetting_Output_Size">Size</option>
+			<option id="PlaintextSetting_Output_Ending">Ending</option>
+			<option id="PlaintextSetting_Output_SizeAndEnding">Size and ending (&lt;size&gt;/-&lt;ending_address&gt;)</option>
+		</select>
+	</div>
+	<div>
+		<label><input type="checkbox" id="PlaintextSetting_Output_OverlapStatus" checked onchange="MainCode()">Show gap/overlap/non-overlap status</label>
+	</div>
 </div>
 <div id="SettingPanel_ByteViewOptions" hidden>
 	Address to view: $<input type="text" value="0" class="HexNumberInput" id="SVGAddressView" onchange="MainCode()" oninput="MainCode()"><br>

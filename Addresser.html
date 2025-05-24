@@ -78,7 +78,7 @@ Where:
 	</li>
 	<li><kbd>Description</kbd> (optional) is a brief description.</li>
 </ul>
-<button onclick="ClearInputList()">Clear</button><br>
+<button onclick="ClearInputList()">Clear</button><button onclick="AutoEnterSMWInput()">Reset textarea</button><br>
 <textarea id="UserInputList" cols="75" rows="30" oninput="MainCodeWithFullRefresh()" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
 <div>
 	<abbr title="This will take the starting (and ending address) you entered above, add (offsets) by this value, and the output are the off-set by this. Useful if you using RAM mirrors - like this: $01 becomes $7E0001 by an offset of $7E0000.">Offset input addresses by</abbr>: <input type="number" id="AddressOffsetterDec" onchange="AddressOffsetterDec_DecToHex()" value="0" step="1">($<input type="text" value="0" class="HexNumberInput" onchange="AddressOffsetterDec_HexToDec()" id="AddressOffsetterHex">)<br>

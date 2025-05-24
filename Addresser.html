@@ -49,6 +49,7 @@
 		</style>
 	</head>
 <body style="max-width: 720px; margin: auto; padding: 15px">
+<p>Link to <a href="Assigner.html">Assigner tool</a></p>
 
 <p>Enter a list of RAM or any memory usage in the textarea below. Must be formatted like this:
 <table><tr><td><pre>Address	Size_in_bytes_Or_EndAddress	Description
@@ -77,7 +78,7 @@ Where:
 	</li>
 	<li><kbd>Description</kbd> (optional) is a brief description.</li>
 </ul>
-
+<button onclick="ClearInputList()">Clear</button><br>
 <textarea id="UserInputList" cols="75" rows="30" oninput="MainCodeWithFullRefresh()" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
 <div>
 	<abbr title="This will take the starting (and ending address) you entered above, add (offsets) by this value, and the output are the off-set by this. Useful if you using RAM mirrors - like this: $01 becomes $7E0001 by an offset of $7E0000.">Offset input addresses by</abbr>: <input type="number" id="AddressOffsetterDec" onchange="AddressOffsetterDec_DecToHex()" value="0" step="1">($<input type="text" value="0" class="HexNumberInput" onchange="AddressOffsetterDec_HexToDec()" id="AddressOffsetterHex">)<br>
@@ -1096,6 +1097,10 @@ $7F837B	~$7F9C7A	RAM used by SMW.
 $7F9C7B	~$7FC7FF	Empty, but partially used by other SMW tools.
 $7FC800	~$7FFFFF	RAM used by SMW.`
 		document.getElementById("UserInputList").value = SMWUsedRAMText
+		document.getElementById("UserInputList").oninput()
+	}
+	function ClearInputList() {
+		document.getElementById("UserInputList").value = ""
 		document.getElementById("UserInputList").oninput()
 	}
 </script>

@@ -59,9 +59,11 @@
 		</style>
 	</head>
 <body style="max-width: 1200px; margin: auto; padding: 15px">
-
+<p>Link to <a href="Addresser.html">Addresser tool</a></p>
 
 <p>This tool will take the provided freeram defines, and the list of unused RAM, and automatically find freeram and will assign each freeram defines to which address to use.</p>
+
+<p>The following syntax notes below represents the info to add into the following textarea. Once again, you can use a space or a tab character.</p>
 <div class="BorderedDiv">
 Syntax for freeram should be:<br>
 <table><tr><td><pre>ASM_resource_name	!RAM_Define	Number_of_bytes_Decimal	Optional_min	Optional_max
@@ -152,7 +154,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 				Sort:
 				<select onchange="MainCode()">
 					<option id="FreeramDefine_SortOption_None">None</option>
-					<option id="FreeramDefine_SortOption_ResourceName" selected>Resource name</option>
+					<option id="FreeramDefine_SortOption_ResourceName" selected>By resource name</option>
 					<option id="FreeramDefine_SortOption_Addr">By address</option>
 					<option id="FreeramDefine_SortOption_Length">By number of bytes</option>
 				</select><label><input type="checkbox" id="FreeramDefine_SortOption_Reverse" onchange="MainCode()">Reverse order</label><br><br>

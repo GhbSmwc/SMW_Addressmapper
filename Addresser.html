@@ -40,6 +40,12 @@
 				overflow-wrap: normal;
 				overflow-x: scroll;
 			}
+			
+			td.StatisticTableCell {
+				font-family: monospace;
+				min-width: 50px;
+				text-align: end;
+			}
 		</style>
 	</head>
 <body style="max-width: 720px; margin: auto; padding: 15px">
@@ -125,23 +131,23 @@ Where:
 <div id="Output_AddressInfo">
 	<table>
 		<tr><th colspan="2">Address statistics</th></tr>
-		<tr><td style="font-family: monospace; background-color: #008000">Number of entered ranges that didn&apos;t overlap</td><td style="font-family: monospace" id="OutputStatistics_NonOverlap">0</td></tr>
-		<tr><td style="font-family: monospace; background-color: #800000">Number of entered ranges that overlap</td><td style="font-family: monospace" id="OutputStatistics_Overlap">0</td></tr>
-		<tr><td style="font-family: monospace; background-color: #808080">Number of gap ranges found</td><td style="font-family: monospace" id="OutputStatistics_Gaps">0</td></tr>
-		<tr><td style="font-family: monospace;">Total ranges including gaps</td><td style="font-family: monospace" id="OutputStatistics_TotalIncludingGaps">0</td></tr>
-		<tr><td style="font-family: monospace;">Lowest used address</td><td style="font-family: monospace" id="OutputStatistics_UsedAddress_Min"></td></tr>
-		<tr><td style="font-family: monospace;">Highest used address</td><td style="font-family: monospace" id="OutputStatistics_UsedAddress_Max"></td></tr>
+		<tr><td style="font-family: monospace; background-color: #008000">Number of entered ranges that didn&apos;t overlap</td><td class="StatisticTableCell" id="OutputStatistics_NonOverlap">0</td></tr>
+		<tr><td style="font-family: monospace; background-color: #800000">Number of entered ranges that overlap</td><td class="StatisticTableCell" id="OutputStatistics_Overlap">0</td></tr>
+		<tr><td style="font-family: monospace; background-color: #808080">Number of gap ranges found</td><td class="StatisticTableCell" id="OutputStatistics_Gaps">0</td></tr>
+		<tr><td style="font-family: monospace;">Total ranges including gaps</td><td class="StatisticTableCell" id="OutputStatistics_TotalIncludingGaps">0</td></tr>
+		<tr><td style="font-family: monospace;">Lowest used address</td><td class="StatisticTableCell" id="OutputStatistics_UsedAddress_Min"></td></tr>
+		<tr><td style="font-family: monospace;">Highest used address</td><td class="StatisticTableCell" id="OutputStatistics_UsedAddress_Max"></td></tr>
 		<tr>
 			<td style="font-family: monospace;">Number of bytes between the lowest and highest used addresses</td>
-			<td style="font-family: monospace;" id="OutputStatistics_TotalBytes_BetweenMinMax"></td>
+			<td class="StatisticTableCell" id="OutputStatistics_TotalBytes_BetweenMinMax"></td>
 		</tr>
 		<tr>
 			<td style="font-family: monospace; background-color: #008000;">Non-overlaps total bytes</td>
-			<td style="font-family: monospace;" id="OutputStatistics_TotalBytes_NonOverlaps">0</td>
+			<td class="StatisticTableCell" id="OutputStatistics_TotalBytes_NonOverlaps">0</td>
 		</tr>
 		<tr>
 			<td style="font-family: monospace; background-color: #808080">Gaps total bytes</td>
-			<td style="font-family: monospace;" id="OutputStatistics_TotalBytes_Gaps">0</td>
+			<td class="StatisticTableCell" id="OutputStatistics_TotalBytes_Gaps">0</td>
 		</tr>
 		
 	</table>
@@ -995,5 +1001,101 @@ Where:
 				setTimeout(DeleteCopyMessage.bind(null, CopiedMessage), 1500)
 			}).bind(null, EventElement)
 		);
+	}
+	AutoEnterSMWInput()
+	function AutoEnterSMWInput() {
+		const SMWUsedRAMText = `$7E0000	~$7E0057	RAM used by SMW.
+$7E0059	~$7E005B	RAM used by SMW.
+$7E005D	~$7E005F	RAM used by SMW.
+$7E0064	~$7E0078	RAM used by SMW.
+$7E007A	~$7E007B	RAM used by SMW.
+$7E007D	~$7E0086	RAM used by SMW.
+$7E0088	~$7E00EF	RAM used by SMW.
+$7E00F0	~$7E00FF	RAM used by LM.
+$7E0100	~$7E049F	RAM used by SMW.
+$7E04A0	~$7E065C	RAM used by SMW. Remove if "Free $7E04A0" patch installed
+$7E065D	~$7E0694	RAM used by SMW.
+$7E0695	100	Used by LM 1.70+ for VRAM modification.
+$7E0701	~$7E0AF4	RAM used by SMW.
+$7E0AF6	~$7E0D9B	RAM used by SMW.
+$7E0D9D	~$7E0DA0	RAM used by SMW.
+$7E0DA2	~$7E0DC2	RAM used by SMW.
+$7E0DC7	~$7E0DD8	RAM used by SMW.
+$7E0DDA	1	RAM used by SMW.
+$7E0DDE	~$7E0F39	RAM used by SMW.
+$7E0F40	~$7E0F41	RAM used by SMW.
+$7E0F48	~$7E0F5D	RAM used by SMW.
+$7E0F72	~$7E13C7	RAM used by SMW.
+$7E13C9	~$7E13E5	RAM used by SMW.
+$7E13E8	~$7E13F1	RAM used by SMW.
+$7E13F3	~$7E1409	RAM used by SMW.
+$7E140D	~$7E1414	RAM used by SMW.
+$7E1417	~$7E142B	RAM used by SMW.
+$7E142C	~$7E142F	RAM used by SMW. Note: if using “Center Scroll” with !Setting_CenterScroll_ScrollType set to 0, remove this.
+$7E1430	~$7E1460	RAM used by SMW.
+$7E1462	~$7E146B	RAM used by SMW.
+$7E1470	~$7E1472	RAM used by SMW.
+$7E1474	1	RAM used by SMW.
+$7E1476	1	RAM used by SMW.
+$7E1478	1	RAM used by SMW.
+$7E147A	1	RAM used by SMW.
+$7E147C	1	RAM used by SMW.
+$7E147E	~$7E1486	RAM used by SMW.
+$7E148B	~$7E14AB	RAM used by SMW.
+$7E14AD	~$7E14BD	RAM used by SMW.
+$7E14BF	~$7E14C0	RAM used by SMW.
+$7E14C2	~$7E14C3	RAM used by SMW.
+$7E14C5	~$7E14C6	RAM used by SMW.
+$7E14C8	~$7E15E7	RAM used by SMW.
+$7E15E9	~$7E1695	RAM used by SMW.
+$7E1697	~$7E17BA	RAM used by SMW.
+$7E17BC	~$7E1863	RAM used by SMW.
+$7E1865	~$7E1868	RAM used by SMW.
+$7E186B	~$7E1878	RAM used by SMW.
+$7E187A	~$7E1889	RAM used by SMW.
+$7E188B	~$7E188D	RAM used by SMW.
+$7E188F	~$7E18A5	RAM used by SMW.
+$7E18A7	~$7E18B3	RAM used by SMW.
+$7E18B5	~$7E18B6	RAM used by SMW.
+$7E18B8	~$7E18BA	RAM used by SMW.
+$7E18BC	~$7E18C4	RAM used by SMW.
+$7E18CD	~$7E18D7	RAM used by SMW.
+$7E18D9	~$7E18DA	RAM used by SMW.
+$7E18DC	~$7E18E5	RAM used by SMW.
+$7E18E7	~$7E18F5	RAM used by SMW.
+$7E18F7	~$7E1907	RAM used by SMW.
+$7E1909	~$7E191A	RAM used by SMW.
+$7E191C	~$7E191E	RAM used by SMW.
+$7E1920	~$7E1922	RAM used by SMW.
+$7E1925	1	RAM used by SMW.
+$7E1928	1	RAM used by SMW.
+$7E192A	~$7E192B	RAM used by SMW.
+$7E192D	~$7E1B7E	RAM used by SMW.
+$7E1B80	~$7E1B96	RAM used by SMW.
+$7E1B99	~$7E1DEE	RAM used by SMW.
+$7E1DF0	~$7E1DFC	RAM used by SMW.
+$7E1DFF	1	RAM used by SMW.
+$7E1E02	~$7E1F2A	RAM used by SMW.
+$7E1F2E	~$7E1F3A	RAM used by SMW.
+$7E1F3C	~$7E1F47	RAM used by SMW.
+$7E1F49	~$7E1FF9	RAM used by SMW.
+$7E1FFB	~$7E1FFE	RAM used by SMW.
+$7E2000	~$7EACFF	RAM used by SMW. Note: Remove this if “Free up RAM $7E2000” is installed.
+$7EAD00	~$7EB8FF	RAM used by SMW and LM's examination
+$7EB900	~$7EBCFF	RAM used by SMW.
+$7EBD00	~$7EC0FF	RAM used by SMW.
+$7EC100	~$7EC67F	Originally empty, but LM use this for examination.
+$7EC680	~$7EC6DF	RAM used by SMW.
+$7EC6E0	~$7EC7FF	Empty, untouched RAM on an unhacked ROM. In a hacked ROM, it may be occupied by ExAnimation data (see $7E:C100).
+$7EC800	~$7EFFFF	RAM used by SMW.
+$7F0000	~$7F3FFF	RAM used by SMW. Note: Remove this if “Free $7F0000 (OW Event Restore)” is installed.
+$7F4000	~$7F7FFF	RAM used by SMW.
+$7F8000	~$7F8182	RAM used by SMW. Note: Remove this if “Free up RAM $7F:8000” is installed
+$7F8183	~$7F837A	Empty, but partially taken by LM. Not sure the exact amount of bytes used though.
+$7F837B	~$7F9C7A	RAM used by SMW.
+$7F9C7B	~$7FC7FF	Empty, but partially used by other SMW tools.
+$7FC800	~$7FFFFF	RAM used by SMW.`
+		document.getElementById("UserInputList").value = SMWUsedRAMText
+		document.getElementById("UserInputList").oninput()
 	}
 </script>

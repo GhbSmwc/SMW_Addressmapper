@@ -39,46 +39,74 @@
 				overflow-wrap: normal;
 				overflow-x: scroll;
 			}
+			td.StatisticTableCell {
+				font-family: monospace;
+				min-width: 50px;
+				text-align: end;
+			}
+			
+			div.BorderedDiv {
+				border: 1px solid white;
+				padding: 10px;
+				
+			}
+			
+			summary {
+				border: 1px solid white;
+				background-color: #707070;
+				cursor: pointer;
+			}
 		</style>
 	</head>
 <body style="max-width: 1200px; margin: auto; padding: 15px">
 
 
 <p>This tool will take the provided freeram defines, and the list of unused RAM, and automatically find freeram and will assign each freeram defines to which address to use.</p>
-
-<p>Make sure the supplied RAMs do not overlap.</p>
-
-Format for freeram should be:<br>
+<div class="BorderedDiv">
+Syntax for freeram should be:<br>
 <table><tr><td><pre>ASM_resource_name	!RAM_Define	Number_of_bytes_Decimal	Optional_min	Optional_max
 ASM_resource_name	!RAM_Define	Number_of_bytes_Decimal	Optional_min	Optional_max
-ASM_resource_name	!RAM_Define	Number_of_bytes_Decimal	Optional_min	Optional_max</pre></td></tr></table>
-
-Where:
-<ul>
-<li><kbd>ASM_resource_name</kbd> is the name of an ASM resource. Can be any character but must not contain a linebreak, space or tab.</li>
-<li><kbd>!RAM_Define</kbd> is the define name used in the ASM file that represents a RAM to use. Just like above, no linebreaks, no tabs.</li>
-<li><kbd>Number_of_bytes_Decimal</kbd> is how many bytes the RAM it requires (contiguously), in decimal. Must be at least 1.</li>
-<li>
-	<kbd>Optional_min</kbd>: This is optional, either enter an address hex number (&ldquo;$&rdquo; is optional) or just &ldquo;-&rdquo; to nullify it. When a hex number is supplied, this forces
-	the RAM to search for a freeram define to not have its starting address location below this address. This is useful for things like if RAMs that an ASM resource must or must not reset during loading screens (black screen) and things
-	like the freeram to use only works when being constrained to a certain range <abbr title="&ldquo;Extended No Sprite Tile Limits&rdquo; patch&apos;s define !RAM_ExtOAMIndex is stated it is compatible if set to any RAM between $0000 to $1FFF">
-	<a href="https://www.smwcentral.net/?p=section&a=details&id=32381">due to byte/word addressing-only and mirroring RAM limits</a>
-	</abbr>.<br><br>
-</li>
-<li><kbd>Optional_max</kbd>: Same as above, but forces the location of a freeram define address not to have its ending byte greater than this address. Note: when both min and max are set, max must be greater than or equal to min.</li>
-</ul>
-<p>NOTE: I strongly recommend having range-limited freeram defines at the top of the list so that defines with no specified min and max don't take away the bytes that the range-limited freeram defines can only go there (you don't want
-low addresses being taken by ASM defines that could've been placed at a higher address, and then the ASM defines that are limited to the low addresses have no place to be at, so they end up failing to be assigned).</p>
-Format for list of empty RAM should be (same as the address tracker):<br>
+ASM_resource_name	!RAM_Define	Number_of_bytes_Decimal	Optional_min	Optional_max</pre></td></tr></table><br>
+<details>
+	<summary>Parameter notes</summary>
+	<p>Where:</p>
+	<ul>
+		<li><kbd>ASM_resource_name</kbd> is the name of an ASM resource. Can be any character but must not contain a linebreak, space or tab.</li>
+		<li><kbd>!RAM_Define</kbd> is the define name used in the ASM file that represents a RAM to use. Just like above, no linebreaks, no space or tabs.</li>
+		<li><kbd>Number_of_bytes_Decimal</kbd> is how many bytes the RAM it requires (contiguously), in decimal. Must be at least 1.</li>
+		<li><kbd>Optional_min</kbd> and <kbd>Optional_max</kbd> are optional, you can omit both of these, or denote only with a hyphen (&ldquo;-&rdquo;), to specify no bounds. Note that
+			if you wish to have one of them but not both, then you MUST use a hyphen instead of omitting.
+			<ul>
+				<li>
+					<kbd>Optional_min</kbd>: This is optional, either enter an address hex number (&ldquo;$&rdquo; is optional) or just &ldquo;-&rdquo; to nullify it. When a hex number is supplied, this forces
+					the RAM to search for a freeram define to not have its starting address location below this address. This is useful for things like if RAMs that an ASM resource must or must not reset during loading screens (black screen) and things
+					like the freeram to use only works when being constrained to a certain range <abbr title="&ldquo;Extended No Sprite Tile Limits&rdquo; patch&apos;s define !RAM_ExtOAMIndex is stated it is compatible if set to any RAM between $0000 to $1FFF">
+					<a href="https://www.smwcentral.net/?p=section&a=details&id=32381">due to byte/word addressing-only and mirroring RAM limits</a>
+					</abbr>.
+				</li>
+				<li><kbd>Optional_max</kbd>: Same as above, but forces the location of a freeram define address not to have its ending byte greater than this address. Note: when both min and max are set, max must be greater than or equal to min.</li>
+			</ul>
+		</li>
+	</ul>
+	<p>NOTE: I strongly recommend having range-limited freeram defines at the top of the list so that defines with no specified min and max don't take away the bytes that the range-limited freeram defines can only go there (you don't want
+	low addresses being taken by ASM defines that could've been placed at a higher address, and then the ASM defines that are limited to the low addresses have no place to be at, so they end up failing to be assigned).</p>
+</details>
+</div>
+<div class="BorderedDiv">
+Syntax for list of empty RAM should be (same as the address tracker):<br>
 <table><tr><td><pre>Address	Size_or_ending_address	Optional_description
 Address	Size_or_ending_address	Optional_description
 Address	Size_or_ending_address	Optional_description</pre></td></tr></table><br>
 All of these ranges must NOT overlap.
-<ul>
-<li><kbd>Address</kbd> is the starting address. (dollar sign &ldquo;$&rdquo; is optional)</li>
-<li><kbd>Size_or_ending_address</kbd> is the size or ending addresses (entering a decimal number results in number of bytes, and typing tilde &ldquo;~&rdquo;, before a hexadecimal number denotes an ending address (dollar sign &ldquo;$&rdquo; is optional))</li>
-<li><kbd>Optional_description</kbd> is optional, will not be checked by this javascript at all. When the remove duplicate flags is checked here, will only check the location and size/ending address.</li>
-</ul><br><br>
+	<details>
+		<summary>Parameter notes</summary>
+		<ul>
+		<li><kbd>Address</kbd> is the starting address. (dollar sign &ldquo;$&rdquo; is optional)</li>
+		<li><kbd>Size_or_ending_address</kbd> is the size or ending addresses (entering a decimal number results in number of bytes, and typing tilde &ldquo;~&rdquo;, before a hexadecimal number denotes an ending address (dollar sign &ldquo;$&rdquo; is optional))</li>
+		<li><kbd>Optional_description</kbd> is optional, will not be checked by this javascript at all. When the remove duplicate flags is checked here, will only check the location and size/ending address.</li>
+		</ul><br>
+	</details>
+</div>
 Notes:
 <ul>
 	<li>This tool will process each freeram defines from most number of bytes to least order, and the list of gaps at increasing address order. This means that the RAM at the top of the list will be assigned to the lowest address location that it can fit
@@ -143,15 +171,15 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 					</tr>
 					<tr>
 						<td style="font-family: monospace">Total defines</td>
-						<td style="font-family: monospace" id="Statistics_TotalDefines">0</td>
+						<td class="StatisticTableCell" id="Statistics_TotalDefines">0</td>
 					</tr>
 					<tr>
 						<td style="font-family: monospace">Success</td>
-						<td style="font-family: monospace" id="Statistics_Success">0</td>
+						<td class="StatisticTableCell" id="Statistics_Success">0</td>
 					</tr>
 					<tr>
 						<td style="font-family: monospace">Failed</td>
-						<td style="font-family: monospace" id="Statistics_Failed">0</td>
+						<td class="StatisticTableCell" id="Statistics_Failed">0</td>
 					</tr>
 				</table>
 				<span id="SomeDefinesFailedWarning" style="color: red; font-family: monospace" hidden>There are define(s) failed to assigned and they are not counted as consuming RAM.</span><br>
@@ -175,19 +203,19 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 					</tr>
 					<tr>
 						<td style="font-family: monospace">Number of ranges before</td>
-						<td style="font-family: monospace" id="Statistics_EmptyRamRangeCountBefore">0</td>
+						<td class="StatisticTableCell" id="Statistics_EmptyRamRangeCountBefore">0</td>
 					</tr>
 					<tr>
 						<td style="font-family: monospace">Number of ranges after</td>
-						<td style="font-family: monospace" id="Statistics_EmptyRamRangeCountAfter">0</td>
+						<td class="StatisticTableCell" id="Statistics_EmptyRamRangeCountAfter">0</td>
 					</tr>
 					<tr>
 						<td style="font-family: monospace">Total bytes before</td>
-						<td style="font-family: monospace" id="Statistics_EmptyRAMBytesBefore">0</td>
+						<td class="StatisticTableCell" id="Statistics_EmptyRAMBytesBefore">0</td>
 					</tr>
 					<tr>
 						<td style="font-family: monospace">Total bytes after</td>
-						<td style="font-family: monospace">
+						<td class="StatisticTableCell">
 							<span id="Statistics_EmptyRAMBytesAfter">0</span> (<span id="Statistics_EmptyRamBytesConsumed">0</span> consumed)
 						</td>
 					</tr>
@@ -267,7 +295,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 							Type: "CommentOrBlankLine"
 						}
 					}
-					if (!(/^[^\t ]+(?:\t| )+![a-zA-Z\d_]+(?:\t| )\d+(?:(?:\t| )(?:-|-?\$?[\dA-Fa-f]+)){2}$/).test(Line)) {
+					if (!(/^[^\t ]+(?:\t| )+![a-zA-Z\d_]+(?:\t| )\d+(?:((?:\t| )(?:-|\$?[a-zA-Z\d_]+)){2})?\s*$/).test(Line)) {
 						ProcessError = true
 						return {
 							Type: "Error",
@@ -308,7 +336,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 					}
 					return {
 						Type: "ValidItem",
-						Status: "Failed",
+						Status: "Failed", //Default value, will be updated when successfully set to a RAM address.
 						ResourceName: ResourceName,
 						DefineName: DefineName,
 						Length: Length,

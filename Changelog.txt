@@ -117,6 +117,10 @@ Newest on bottom
 	 then a longer one on the defines list, and the empty RAM list
 	 to have a lower-address gap being longer than the high-address
 	 gap, as pointed out by Atari2.0.
-	-All inputs entries now allow spaces instead of tabs seperating
+	-All inputs entries now allow spaces instead of tabs separating
 	 addresses, number of bytes, and min and max address (for
-	 assigner)
+	 assigner).
+	-Made the HTML files more pleasnt to read:
+	--No sharp contrasting white-text-on-black-background
+	-Addresser now accepts freeram list having both the min and max
+	 addresses omitted for user friendliness.

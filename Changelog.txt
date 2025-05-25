@@ -123,6 +123,8 @@ Newest on bottom
 	 accepts spaces in its name.
 	-Made the HTML files more pleasnt to read:
 	--No sharp contrasting white-text-on-black-background
+	--Some blocks of text on the 2 tools are now contained within
+	  HTML details tag.
 	-Addresser now accepts freeram list having both the min and max
 	 addresses omitted for user friendliness.
 	-Added a percentage and a progress bar for Assigner.html showing

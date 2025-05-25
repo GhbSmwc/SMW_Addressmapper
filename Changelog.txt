@@ -117,10 +117,10 @@ Newest on bottom
 	 then a longer one on the defines list, and the empty RAM list
 	 to have a lower-address gap being longer than the high-address
 	 gap, as pointed out by Atari2.0.
-	-All inputs entries now allow spaces instead of tabs separating
-	 addresses, number of bytes, and min and max address (for
-	 assigner). This also means that the ASM resource name no longer
-	 accepts spaces in its name.
+	-All inputs entries now allow spaces instead of just tabs
+	 separating addresses, number of bytes, and min and max address
+	 (for assigner). This also means that the ASM resource name no
+	 longer accepts spaces in its name.
 	-Made the HTML files more pleasnt to read:
 	--No sharp contrasting white-text-on-black-background
 	--Some blocks of text on the 2 tools are now contained within

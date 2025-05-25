@@ -59,11 +59,12 @@
 		</style>
 	</head>
 <body style="max-width: 1200px; margin: auto; padding: 15px">
-<p>Link to <a href="Addresser.html">Addresser tool</a></p>
+<p><a href="HowToUse.html#From_Assigner" id="From_HowToUse">How to Use</a></p>
+<p><a href="Addresser.html#From_Assigner" id="From_Addresser">Addresser tool</a></p>
 
 <p>This tool will take the provided freeram defines, and the list of unused RAM, and automatically find freeram and will assign each freeram defines to which address to use.</p>
 
-<p>The following syntax notes below represents the info to add into the following textarea. Once again, you can use a space or a tab character to separate parts.</p>
+<p>The following syntax notes below represents the info to add into the following textarea. Once again, you can use a space or a tab character to separate parts. Once again, comments are ignored.</p>
 <div class="BorderedDiv">
 Syntax for freeram should be:<br>
 <table><tr><td><pre>ASM_resource_name	!RAM_Define	Number_of_bytes_Decimal	Optional_min	Optional_max
@@ -946,4 +947,33 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 			return WholeNumberPart + "." + DecimalPart + "%"
 		}
 	}
+//These makes all <pre>...</pre> have an effect that double-clicking will select all the text
+//in it, to make it easy to copy code and paste it in your ASM stuff.
+//
+//Credit:
+// https://keestalkstech.com/2014/04/click-to-select-all-on-the-pre-element/
+// https://www.sanwebe.com/2014/04/select-all-text-in-element-on-click
+document.addEventListener('dblclick', e => {
+  let pre = getClosest(e.target, "PRE");
+  if (pre && e.ctrlKey) {
+    let range = new Range();
+    range.selectNodeContents(pre);
+    document.getSelection().removeAllRanges();
+    document.getSelection().addRange(range);
+  }
+});
+
+function getClosest(el, tagName) {
+  tagName = tagName && tagName.toUpperCase();
+
+  if (!tagName || !el)
+    return null;
+
+  do
+    if (el.nodeName === tagName)
+      return el;
+  while (el = el.parentNode);
+
+  return null;
+}
 </script>

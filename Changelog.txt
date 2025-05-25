@@ -119,10 +119,14 @@ Newest on bottom
 	 gap, as pointed out by Atari2.0.
 	-All inputs entries now allow spaces instead of tabs separating
 	 addresses, number of bytes, and min and max address (for
-	 assigner).
+	 assigner). This also means that the ASM resource name no longer
+	 accepts spaces in its name.
 	-Made the HTML files more pleasnt to read:
 	--No sharp contrasting white-text-on-black-background
 	-Addresser now accepts freeram list having both the min and max
 	 addresses omitted for user friendliness.
 	-Added a percentage and a progress bar for Assigner.html showing
 	 how much of all available bytes are taken.
+	-You can now double-click on code displays (in "pre" HTML tags)
+	 to easily select the entire thing to copy it.
+	-All HTMLs are now linked to each other for ease of use.

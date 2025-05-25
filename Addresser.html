@@ -46,10 +46,16 @@
 				min-width: 50px;
 				text-align: end;
 			}
+			summary {
+				border: 1px solid white;
+				background-color: #707070;
+				cursor: pointer;
+			}
 		</style>
 	</head>
 <body style="max-width: 720px; margin: auto; padding: 15px">
-<p>Link to <a href="Assigner.html">Assigner tool</a></p>
+<p><a href="HowToUse.html#From_Addresser" id="From_HowToUse">How to use</a></p>
+<p><a href="Assigner.html#From_Addresser" id="From_Assigner">Assigner tool</a></p>
 
 <p>Enter a list of RAM or any memory usage in the textarea below. Must be formatted like this:
 <table><tr><td><pre>Address	Size_in_bytes_Or_EndAddress	Description
@@ -57,27 +63,28 @@ Address	Size_in_bytes_Or_EndAddress	Description
 Address	Size_in_bytes_Or_EndAddress	Description</pre></td></tr></table><br>
 Data is seperated with a single space or tab character.
 </p>
-
-Notes:
+<details>
+<summary>Syntax and formatting notes</summary>
+	Formatting notes:
 	<ul>
 		<li>Lines that are blank or composed of just any whitespace characters are ignored. It will also ignore any lines that start with either a semicolon or a space (0 or more), followed by a semicolon (therefore ASM-styled comments are allowed).</li>
 		<li>This does not take in account of addressing mirroring (a shorthand <kbd>$00</kbd> instead of <kbd>$7E0000</kbd>), so I strongly recommend putting the full address numbers here. Furthermore, it does not detect what type of memory map it is,
 		things like negative address (only shown on &ldquo;<kbd>Potential ending address before the starting byte of all the ranges</kbd>&rdquo;), address pointing beyond the last byte of the entire memory map, and so on.</li>
 		<li>This tool could be applied to other systems (beyond the SNES), since it merely check ranges.</li>
 	</ul>
-
-Where:
-<ul>
-	<li><kbd>Address</kbd> is the starting address, in hex. <kbd>$</kbd> prefix is optional.</li>
-	<li><kbd>Size_in_bytes_Or_EndAddress</kbd> can either be the number of bytes starting from <kbd>Address</kbd> and ending at <kbd>Address + Size_in_bytes - 1</kbd> or the ending address:
-		<ul>
-			<li><kbd>Decimal_Number</kbd> - number of bytes, in decimal. Don't use commas to separate digit grouping.</li>
-			<li><kbd>~Hexidecimal_EndAddress</kbd> - the ending address (note the tilde to denote a range), in hex. Also <kbd>$</kbd> prefix is optional (must be placed after
-			the tilde and before the hexadecimal address number (example: <kbd>$~10</kbd> is wrong, <kbd>~$10</kbd> is correct)).</li>
-		</ul>
-	</li>
-	<li><kbd>Description</kbd> (optional) is a brief description.</li>
-</ul>
+	Where:
+	<ul>
+		<li><kbd>Address</kbd> is the starting address, in hex. <kbd>$</kbd> prefix is optional.</li>
+		<li><kbd>Size_in_bytes_Or_EndAddress</kbd> can either be the number of bytes starting from <kbd>Address</kbd> and ending at <kbd>Address + Size_in_bytes - 1</kbd> or the ending address:
+			<ul>
+				<li><kbd>Decimal_Number</kbd> - number of bytes, in decimal. Don't use commas to separate digit grouping.</li>
+				<li><kbd>~Hexidecimal_EndAddress</kbd> - the ending address (note the tilde to denote a range), in hex. Also <kbd>$</kbd> prefix is optional (must be placed after
+				the tilde and before the hexadecimal address number (example: <kbd>$~10</kbd> is wrong, <kbd>~$10</kbd> is correct)).</li>
+			</ul>
+		</li>
+		<li><kbd>Description</kbd> (optional) is a brief description.</li>
+	</ul>
+</details>
 <button onclick="ClearInputList()">Clear</button><button onclick="AutoEnterSMWInput()">Reset textarea</button><br>
 <textarea id="UserInputList" cols="75" rows="30" oninput="MainCodeWithFullRefresh()" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
 <div>
@@ -175,6 +182,9 @@ Where:
 	</div>
 </div>
 <script>
+	//Note to users updating my addresser tool: If you are planning to modify RAM info text that would be freed up by patches,
+	//to find that data, just CTRL+F "SMWUsedRAMText" without quotes.
+
 	const Setting_ByteView_SVGGridSizeFactor = 16n
 	const Setting_ByteView_AddressColumnPosition = 5n		//Note: right-aligned, from text-anchor, position of the right edge of text
 	const Setting_ByteView_BarsXPosStart = 5n			//Note: left-aligned, position from left edge.
@@ -1103,4 +1113,33 @@ $7FC800	~$7FFFFF	RAM used by SMW.`
 		document.getElementById("UserInputList").value = ""
 		document.getElementById("UserInputList").oninput()
 	}
+//These makes all <pre>...</pre> have an effect that double-clicking will select all the text
+//in it, to make it easy to copy code and paste it in your ASM stuff.
+//
+//Credit:
+// https://keestalkstech.com/2014/04/click-to-select-all-on-the-pre-element/
+// https://www.sanwebe.com/2014/04/select-all-text-in-element-on-click
+document.addEventListener('dblclick', e => {
+  let pre = getClosest(e.target, "PRE");
+  if (pre && e.ctrlKey) {
+    let range = new Range();
+    range.selectNodeContents(pre);
+    document.getSelection().removeAllRanges();
+    document.getSelection().addRange(range);
+  }
+});
+
+function getClosest(el, tagName) {
+  tagName = tagName && tagName.toUpperCase();
+
+  if (!tagName || !el)
+    return null;
+
+  do
+    if (el.nodeName === tagName)
+      return el;
+  while (el = el.parentNode);
+
+  return null;
+}
 </script>

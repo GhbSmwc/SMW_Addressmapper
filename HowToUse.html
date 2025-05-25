@@ -102,7 +102,7 @@ DirectionalQuake	!Freeram_DirQuake_Layer1XDisplacement	2	-	-</pre></td></tr></ta
 By the way, you can use space instead of tabs.
 	</li><br>
 	<li>
-		Now obtain a list of empty RAMs. You can do this by opening <kbd>SMW_UsedAddress.txt</kbd>, copy the list, paste it in the addresser, click the &ldquo;Quick-copy gaps&rdquo; button, and paste it in the second textarea of assigner.
+		Now obtain a list of empty RAMs. <s>You can do this by opening <kbd>SMW_UsedAddress.txt</kbd>, copy the list, paste it in the addresser</s> EDIT: It's auto-filled, click the &ldquo;Quick-copy gaps&rdquo; button, and paste it in the second textarea of assigner.
 	</li><br>
 	<li>
 		The assigner will now output the assigned RAMs at the bottom, asar ASM formatted by default. I highly recommend having it sorted by resource name (which is set to that by default) so you can easily grab all
@@ -147,7 +147,7 @@ By the way, you can use space instead of tabs.
 </ul>
 <h2>Useful tips</h2>
 <ul>
-	<li>It's possible to make asar output a txt file in the format the JS accepts this, here's how to do it</li>
+	<li>It's possible to make asar output a txt file in the format the tools here would accept, here's how to do it</li>
 	<ol>
 		<li>
 			Create an ASM defines file (example, <kbd>DefineTest.asm</kbd>), or have it in the ASM file with the code doing this:
@@ -167,7 +167,7 @@ pause
 </pre></div>
 		</li>
 		<li>
-			And a file should appear with the RAM info (at [path location to create the txt file]). Note: this HAS to be outputted as a text file, the command prompt will convert it into 5 regular space characters on the console window.
+			And a file should appear with the RAM info (at <kbd>[path location to create the txt file]</kbd>). Note: this HAS to be outputted as a text file, the command prompt will convert it into 5 regular space characters when copied directly from the console window.
 		</li>
 	</ol>
 </ul>

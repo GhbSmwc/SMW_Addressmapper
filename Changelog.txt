@@ -110,7 +110,7 @@ Newest on bottom
 2024-11-25 v5.0.3 Minor bugfix of "Assigner.html"
 	-Fixed a typo resulting in a browser console error due to a typo
 	 of "Save_data" should be "Save_Data".
-2025-05-18 v5.0.4
+2025-05-25 v5.0.4
 	-Fixed a problem with Assigner that due to a greedy first hit
 	 algorithm, results in a failed assigned address that should be a
 	 success. This occurs if you have a define with a shorter RAM,

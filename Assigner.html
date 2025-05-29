@@ -152,22 +152,25 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 				Filter:
 				<div><label><input type="checkbox" onchange="MainCode()" checked id="FreeramDefine_Filter_Success">Successfully placed</label></div>
 				<div><label><input type="checkbox" onchange="MainCode()" checked id="FreeramDefine_Filter_Failed">Failed to place</label></div>
-				Sort:
-				<select onchange="MainCode()">
-					<option id="FreeramDefine_SortOption_None">None</option>
-					<option id="FreeramDefine_SortOption_ResourceName" selected>By resource name</option>
-					<option id="FreeramDefine_SortOption_Addr">By address</option>
-					<option id="FreeramDefine_SortOption_Length">By number of bytes</option>
-				</select><label><input type="checkbox" id="FreeramDefine_SortOption_Reverse" onchange="MainCode()">Reverse order</label><br><br>
 				Output format: <select onchange="MainCode()">
 					<optgroup label="ASM format">
 						<option id="FreeramDefine_OutputFormatSetting_ASMFormat">ASM define</option>
+						<option id="FreeramDefine_OutputFormatSetting_ASMFormatGrouped">ASM define, grouped</option>
 					</optgroup>
 					<optgroup label="Address tracker format">
 						<option id="FreeramDefine_OutputFormatSetting_AddressTrackerLength">Address tracker format - length</option>
 						<option id="FreeramDefine_OutputFormatSetting_AddressTrackerEnding">Address tracker format - end address</option>
 					</optgroup>
-				</select>
+				</select><br><br>
+				<div id="SortDefineOptions">
+					Sort list:
+					<select onchange="MainCode()">
+						<option id="FreeramDefine_SortOption_None">None</option>
+						<option id="FreeramDefine_SortOption_ResourceName" selected>By resource name</option>
+						<option id="FreeramDefine_SortOption_Addr">By address</option>
+						<option id="FreeramDefine_SortOption_Length">By number of bytes</option>
+					</select><label><input type="checkbox" id="FreeramDefine_SortOption_Reverse" onchange="MainCode()">Reverse order</label><br><br>
+				</div>
 				<table>
 					<tr>
 						<th colspan="2">Define Statistics</th>
@@ -302,7 +305,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 							Type: "CommentOrBlankLine"
 						}
 					}
-					if (!(/^[^\t ]+(?:\t| )+![a-zA-Z\d_]+(?:\t| )\d+(?:((?:\t| )(?:-|\$?[a-zA-Z\d_]+)){2})?\s*$/).test(Line)) {
+					if (!(/^\s*[^\t ]+(?:\t| )+![a-zA-Z\d_]+(?:\t| )\d+(?:((?:\t| )(?:-|\$?[a-zA-Z\d_]+)){2})?\s*$/).test(Line)) {
 						ProcessError = true
 						return {
 							Type: "Error",
@@ -311,7 +314,8 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 							SourceText: Line
 						}
 					}
-					let PartsOfString = Line.split(/(?:\t| )/)
+					let LineNoLeadingSpaces = Line.replace(/^\s*/, "")
+					let PartsOfString = LineNoLeadingSpaces.split(/(?:\t| )/)
 					let ResourceName = PartsOfString[0]
 					let DefineName = PartsOfString[1]
 					let Length = ParseBigIntValue(PartsOfString[2].replace(/\$/, ""))
@@ -653,10 +657,13 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 			FreeramList = Saved_Data.FreeramList
 		}
 		//Sorter (freeram defines)
+			let isASMFormatGrouped = document.getElementById("FreeramDefine_OutputFormatSetting_ASMFormatGrouped").selected
+			document.getElementById("SortDefineOptions").hidden = isASMFormatGrouped
+			
 			let ReverseSort_Defines = document.getElementById("FreeramDefine_SortOption_Reverse").checked ? -1 : 1
 			
 			let FreeramListOutput = FreeramList.filter(Item => document.getElementById("FreeramDefine_Filter_" + Item.Status).checked)
-			if (document.getElementById("FreeramDefine_SortOption_ResourceName").selected) {
+			if (document.getElementById("FreeramDefine_SortOption_ResourceName").selected || isASMFormatGrouped) {
 				document.getElementById("FreeramDefine_SortOption_Reverse").disabled = false
 				FreeramListOutput.sort((a,b) => {
 					if (a.ResourceName === b.ResourceName) {
@@ -676,30 +683,63 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 			
 		//Output
 			let OutputString = ""
-			FreeramListOutput.forEach((PlacedRAM, Index, Arr) => { //Get text and count how many success and fails
-				if (PlacedRAM.AssignedAddressStartPos != -Infinity) {
-					if (document.getElementById("FreeramDefine_OutputFormatSetting_ASMFormat").selected) {
-						OutputString += PlacedRAM.DefineName + " = " + BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos) + "\t; [" + PlacedRAM.Length + " byte"
+			if (!document.getElementById("FreeramDefine_OutputFormatSetting_ASMFormatGrouped").selected) {
+				FreeramListOutput.forEach((PlacedRAM, Index, Arr) => { //Get text and count how many success and fails
+					if (PlacedRAM.AssignedAddressStartPos != -Infinity) {
+						if (document.getElementById("FreeramDefine_OutputFormatSetting_ASMFormat").selected) {
+							OutputString += PlacedRAM.DefineName + " = " + BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos) + "\t; [" + PlacedRAM.Length + " byte"
+							if (PlacedRAM.Length > 1n) {
+								OutputString += "s" //plural
+							}
+							OutputString += "] " + PlacedRAM.ResourceName
+						} else {
+							OutputString += BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos) + "\t"
+							if (document.getElementById("FreeramDefine_OutputFormatSetting_AddressTrackerLength").selected) {
+								OutputString += PlacedRAM.Length
+							} else if (document.getElementById("FreeramDefine_OutputFormatSetting_AddressTrackerEnding").selected) {
+								OutputString += "~" + BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos + PlacedRAM.Length -1n)
+							}
+							OutputString += "\t" + PlacedRAM.ResourceName + " (" + PlacedRAM.DefineName + ")"
+						}
+					} else {
+						OutputString += ";[" + PlacedRAM.SourceText + "]: Error! No suitable RAM found. "
+					}
+					if (Index != Arr.length-1) {
+						OutputString += "\n"
+					}
+				})
+			} else {
+				//Grouped
+				let GroupedDefines = Object.groupBy(FreeramListOutput, ({ResourceName}) => ResourceName)
+				GroupedDefines = Object.entries(GroupedDefines)
+				
+				GroupedDefines.forEach((ASMResourceItem, Index, Arr) => {
+					let ResourceName = ASMResourceItem[0]
+					OutputString += "; " + ResourceName + ":\n"
+					
+					let ResourceDefines = ASMResourceItem[1]
+					ResourceDefines.forEach((PlacedRAM, Index, Arr) => {
+						if (PlacedRAM.AssignedAddressStartPos != -Infinity) {
+							OutputString += "\t" + PlacedRAM.DefineName + " = " + BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos)
+						} else {
+							OutputString += "\t" + PlacedRAM.DefineName + " = (No suitable RAM found)"
+						}
+						OutputString += " ; [" + PlacedRAM.Length + " byte"
 						if (PlacedRAM.Length > 1n) {
 							OutputString += "s" //plural
 						}
-						OutputString += "] " + PlacedRAM.ResourceName
-					} else {
-						OutputString += BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos) + "\t"
-						if (document.getElementById("FreeramDefine_OutputFormatSetting_AddressTrackerLength").selected) {
-							OutputString += PlacedRAM.Length
-						} else if (document.getElementById("FreeramDefine_OutputFormatSetting_AddressTrackerEnding").selected) {
-							OutputString += "~" + BigIntToStringSignedHex(PlacedRAM.AssignedAddressStartPos + PlacedRAM.Length -1n)
+						OutputString += "]"
+						if (Index != Arr.length-1) {
+							OutputString += "\n"
 						}
-						OutputString += "\t" + PlacedRAM.ResourceName + " (" + PlacedRAM.DefineName + ")"
+					})
+					if (Index != Arr.length-1) {
+						OutputString += "\n"
 					}
-				} else {
-					OutputString += ";[" + PlacedRAM.SourceText + "]: Error! No suitable RAM found. "
-				}
-				if (Index != Arr.length-1) {
-					OutputString += "\n"
-				}
-			})
+				})
+				
+				
+			}
 			document.getElementById("TextareaOutput_AssignedRAMs").value = OutputString
 			document.getElementById("Statistics_TotalDefines").textContent = FreeramList.length.toString(10)
 			document.getElementById("Statistics_Success").textContent = FreeramDefinePlacementCountSuccess.toString(10)

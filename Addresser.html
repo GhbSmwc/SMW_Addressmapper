@@ -379,7 +379,10 @@ Data is seperated with a single space or tab character.
 					}
 				
 				}
-				let LineExtracted = Line.replace(/^\s*/, "").split(/(?:\t| )/)
+				let LineNoLeadingSpaces = Line.replace(/^\s*/, "")
+				let LineExtracted = LineNoLeadingSpaces.match(/[^\s]+/g)
+				let Description = LineNoLeadingSpaces.replace(/^[^\s]+\s[^\s]+\s/, "")
+				LineExtracted.splice(2, Infinity, Description)
 				let StartAddress = ParseBigIntValue(LineExtracted[0].replace("$", ""), 16) + Offsetter
 				let EndAddress = 0n
 				let Length = 0n
@@ -405,8 +408,6 @@ Data is seperated with a single space or tab character.
 				if (UsedAddress_Max < EndAddress) {
 					UsedAddress_Max = EndAddress
 				}
-				//let Description = LineExtracted[2] ?? ""
-				let Description = Line.replace(/^[^\s]+\s[^\s]+\s/, "")
 				return {
 					Type: "NonOverlap", //Default type "NonOverlap" that may later discover an overlap.
 					LineNumber: Index,

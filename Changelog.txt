@@ -132,3 +132,9 @@ Newest on bottom
 	-You can now double-click on code displays (in "pre" HTML tags)
 	 to easily select the entire thing to copy it.
 	-All HTMLs are now linked to each other for ease of use.
+2025-05-28 v5.0.5
+	-Fixed a problem with addresser breaking should a line begins
+	 with a whitespace character(s). Did a similar thing to assigner
+	 as it won't accept lines beginning with spaces.
+	-Added a new ASM format for assigner, in grouped format (makes
+	 use of JavaScript's Object.groupBy() feature).

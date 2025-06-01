@@ -138,3 +138,15 @@ Newest on bottom
 	 as it won't accept lines beginning with spaces.
 	-Added a new ASM format for assigner, in grouped format (makes
 	 use of JavaScript's Object.groupBy() feature).
+2025-06-01 v5.0.6
+	-Fixed a slight visual error caused by when the message "There are
+	 define(s) failed to assigned and they are not counted as
+	 consuming RAM." causes a slight vertical height changes in that
+	 area.
+	-Fixed the progress bar having an odd pixel on the left edge and a
+	 slight subpixel color on where the fill edge meets the empty
+	 part. This is due to some browser rendering error (tested on
+	 chrome v137.0.7151.41). This is now moved to a separate HTML
+	 element.
+	--As an addition, I added color indicator that turns yellow
+	  when 50-75 percent and red when 75 or more percent.

@@ -39,7 +39,7 @@
 				overflow-wrap: normal;
 				overflow-x: scroll;
 			}
-			td.StatisticTableCell {
+			span, td.StatisticTableCell {
 				font-family: monospace;
 				min-width: 50px;
 				text-align: end;
@@ -188,7 +188,9 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 						<td class="StatisticTableCell" id="Statistics_Failed">0</td>
 					</tr>
 				</table>
-				<span id="SomeDefinesFailedWarning" style="color: red; font-family: monospace" hidden>There are define(s) failed to assigned and they are not counted as consuming RAM.</span><br>
+				<div style="height: 1rem;">
+					<span id="SomeDefinesFailedWarning" style="color: red; font-family: monospace" hidden>There are define(s) failed to assigned and they are not counted as consuming RAM.</span><br>
+				</div>
 				<textarea id="TextareaOutput_AssignedRAMs" cols="80" rows="15" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
 				<div><button onclick="setClipboard(document.getElementById('TextareaOutput_AssignedRAMs').value)">Copy</button><span></span></div>
 			</td>
@@ -227,7 +229,10 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 					</tr>
 					<tr>
 						<td style="font-family: monospace">Percentage of empty RAM used</td>
-						<td class="StatisticTableCell" id="Statistics_EmptyRAMUsagePercentage">?</td>
+						<td style="text-align: center;">
+							<span class="StatisticTableCell" id="Statistics_EmptyRAMUsagePercentage">?</span><br>
+							<div id="Statistics_EmptyRAMUsagePercentage_ProgressBar" style="border-radius: 5px; width: 150px; height: 10px; background-color: #404040"></div>
+						</td>
 					</tr>
 				</table>
 				<textarea id="TextareaOutput_ResultingGaps" cols="70" rows="15" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll; background-color: #000000; color: #FFFFFF;" readonly></textarea>
@@ -550,7 +555,8 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 				document.getElementById("Statistics_EmptyRamBytesConsumed").textContent = "0"
 				document.getElementById("TextareaOutput_ResultingGaps").value = ""
 				document.getElementById("Statistics_EmptyRAMUsagePercentage").textContent = "?"
-				document.getElementById("Statistics_EmptyRAMUsagePercentage").style.backgroundImage = ""
+				document.getElementById("Statistics_EmptyRAMUsagePercentage_ProgressBar").style.backgroundImage = ""
+				document.getElementById("Statistics_EmptyRAMUsagePercentage_ProgressBar").style.backgroundColor = "#404040"
 				return
 			}
 			let Statistics_EmptyRAMBytesBefore_Count = 0n
@@ -641,14 +647,25 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 				document.getElementById("SomeDefinesFailedWarning").hidden = false
 			}
 			//Statistics for empty RAMs
+			{
 				let Statistics_EmptyRAMBytesAfter_Count = 0n
 				ListOfGaps.forEach(Gap => Statistics_EmptyRAMBytesAfter_Count += Gap.Length)
 				document.getElementById("Statistics_EmptyRAMBytesAfter").textContent = Statistics_EmptyRAMBytesAfter_Count.toString(10)
 				let NumberOfEmptyBytesConsumed = Statistics_EmptyRAMBytesBefore_Count-Statistics_EmptyRAMBytesAfter_Count
 				document.getElementById("Statistics_EmptyRamBytesConsumed").textContent = NumberOfEmptyBytesConsumed.toString(10)
 				document.getElementById("Statistics_EmptyRAMUsagePercentage").textContent = DisplayIntOutOfIntAsPercentageText({Quantity: NumberOfEmptyBytesConsumed, MaxQuantity: Statistics_EmptyRAMBytesBefore_Count})
-				document.getElementById("Statistics_EmptyRAMUsagePercentage").style.backgroundImage = CSSLinearGradientProgressBar({Quantity: Number(NumberOfEmptyBytesConsumed), MaxQuantity: Number(Statistics_EmptyRAMBytesBefore_Count), ColorFull: "#008000"})
-			
+				
+				let MemoryProgressBarFillColorWarning = "#008000"
+				{
+					let MemoryUsagePercentage = Number(NumberOfEmptyBytesConsumed)*100/Number(Statistics_EmptyRAMBytesBefore_Count)
+					if ((MemoryUsagePercentage  >= 50) && MemoryUsagePercentage < 75) {
+						MemoryProgressBarFillColorWarning = "#808000"
+					} else if (MemoryUsagePercentage >= 75) {
+						MemoryProgressBarFillColorWarning = "#800000"
+					}
+				}
+				document.getElementById("Statistics_EmptyRAMUsagePercentage_ProgressBar").style.backgroundImage = CSSLinearGradientProgressBar({Quantity: Number(NumberOfEmptyBytesConsumed), MaxQuantity: Number(Statistics_EmptyRAMBytesBefore_Count), ColorFull: MemoryProgressBarFillColorWarning, ColorEmpty: "#404040"})
+			}
 			
 			Saved_Data.FreeramList = FreeramList
 			Saved_Data.ListOfGaps = ListOfGaps

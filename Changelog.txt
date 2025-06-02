@@ -150,3 +150,6 @@ Newest on bottom
 	 element.
 	--As an addition, I added color indicator that turns yellow
 	  when 50-75 percent and red when 75 or more percent.
+	-Updated the note about prioritizing ranged address over
+	 range-less so rangeless does not clog up the address for
+	 ranged addresses.

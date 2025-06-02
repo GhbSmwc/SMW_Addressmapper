@@ -91,8 +91,13 @@ ASM_resource_name	!RAM_Define	Number_of_bytes_Decimal	Optional_min	Optional_max<
 			</ul>
 		</li>
 	</ul>
-	<p>NOTE: I strongly recommend having range-limited freeram defines at the top of the list so that defines with no specified min and max don't take away the bytes that the range-limited freeram defines can only go there (you don't want
-	low addresses being taken by ASM defines that could've been placed at a higher address, and then the ASM defines that are limited to the low addresses have no place to be at, so they end up failing to be assigned).</p>
+	<p>NOTE: if you have range-limited (min and max address where the freeram can be used) freeram define stuff:
+	<ol>
+		<li><b>Only</b> do those defines first, without the defines lacking a min and/or max range.</li>
+		<li>After getting them assigned. Take the empty RAM results and insert that into empty rams list and clear out the defines list.</li>
+		<li>Now only enter the freeram defines with no range limits.</li>
+	</ol>
+	Doing so will prevent a potential issue where range-less defines from using up all the RAMs that the ranged defines are meant to go there.</p>
 </details>
 </div>
 <div class="BorderedDiv">
@@ -155,7 +160,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 				Output format: <select onchange="MainCode()">
 					<optgroup label="ASM format">
 						<option id="FreeramDefine_OutputFormatSetting_ASMFormat">ASM define</option>
-						<option id="FreeramDefine_OutputFormatSetting_ASMFormatGrouped">ASM define, grouped</option>
+						<option id="FreeramDefine_OutputFormatSetting_ASMFormatGrouped">ASM define, grouped by resource name</option>
 					</optgroup>
 					<optgroup label="Address tracker format">
 						<option id="FreeramDefine_OutputFormatSetting_AddressTrackerLength">Address tracker format - length</option>
@@ -673,13 +678,12 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 			ListOfGaps = Saved_Data.ListOfGaps
 			FreeramList = Saved_Data.FreeramList
 		}
+		//Filter (best optimized to filter then sort in this case, as sorting especially in interpreted language can be slow for large arrays.)
+			let FreeramListOutput = FreeramList.filter(Item => document.getElementById("FreeramDefine_Filter_" + Item.Status).checked)
 		//Sorter (freeram defines)
 			let isASMFormatGrouped = document.getElementById("FreeramDefine_OutputFormatSetting_ASMFormatGrouped").selected
 			document.getElementById("SortDefineOptions").hidden = isASMFormatGrouped
-			
 			let ReverseSort_Defines = document.getElementById("FreeramDefine_SortOption_Reverse").checked ? -1 : 1
-			
-			let FreeramListOutput = FreeramList.filter(Item => document.getElementById("FreeramDefine_Filter_" + Item.Status).checked)
 			if (document.getElementById("FreeramDefine_SortOption_ResourceName").selected || isASMFormatGrouped) {
 				document.getElementById("FreeramDefine_SortOption_Reverse").disabled = false
 				FreeramListOutput.sort((a,b) => {

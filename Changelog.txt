@@ -153,3 +153,6 @@ Newest on bottom
 	-Updated the note about prioritizing ranged address over
 	 range-less so rangeless does not clog up the address for
 	 ranged addresses.
+2025-06-14 Note added about data fragmentation
+	-Added a note warning about data fragmentation on auto-assigner
+	 when a define is given a min and max address.

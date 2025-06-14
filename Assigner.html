@@ -91,21 +91,13 @@ ASM_resource_name	!RAM_Define	Number_of_bytes_Decimal	Optional_min	Optional_max<
 			</ul>
 		</li>
 	</ul>
-	<p>NOTE: if you have range-limited (min and max address where the freeram can be used) freeram define stuff:
-	<ol>
-		<li><b>Only</b> do those defines first, without the defines lacking a min and/or max range.</li>
-		<li>After getting them assigned. Take the empty RAM results and insert that into empty rams list and clear out the defines list.</li>
-		<li>Now only enter the freeram defines with no range limits.</li>
-	</ol>
-	Doing so will prevent a potential issue where range-less defines from using up all the RAMs that the ranged defines are meant to go there.</p>
 </details>
 </div>
 <div class="BorderedDiv">
-Syntax for list of empty RAM should be (same as the address tracker):<br>
+Syntax for list of empty RAMs (not to overlap with other empty RAMs) should be (same as the address tracker):<br>
 <table><tr><td><pre>Address	Size_or_ending_address	Optional_description
 Address	Size_or_ending_address	Optional_description
 Address	Size_or_ending_address	Optional_description</pre></td></tr></table><br>
-All of these ranges must NOT overlap.
 	<details>
 		<summary>Parameter notes</summary>
 		<ul>
@@ -114,8 +106,9 @@ All of these ranges must NOT overlap.
 		<li><kbd>Optional_description</kbd> is optional, will not be checked by this javascript at all. When the remove duplicate flags is checked here, will only check the location and size/ending address.</li>
 		</ul><br>
 	</details>
-</div>
-Notes:
+</div><br>
+<details>
+<summary>Notes</summary>
 <ul>
 	<li>This tool will process each freeram defines from most number of bytes to least order, and the list of gaps at increasing address order. This means that the longest RAM of the list will be assigned to the lowest address location that it can fit
 	(unless if not, will state no suitable address is found)</li>
@@ -124,7 +117,29 @@ Notes:
 $7E0060	~$7E0061	Range 1
 $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last byte of the one above, no bytes between)</pre></td></tr></table>
 	it will NOT merge them together and any freeram define set cannot cross the boundary where they touch. So a freeram that needs 3 or 4 bytes cannot fit here.</li>
+	<li>If you have range-limited (min and max address where the freeram can be used) freeram define stuff:
+		<ol>
+			<li><b>Only</b> do those defines first, without the defines lacking a min and/or max range.</li>
+			<li>After getting them assigned. Take the empty RAM results and insert that into empty rams list and clear out the defines list.</li>
+			<li>Now only enter the freeram defines with no range limits.</li>
+		</ol>
+		Doing so will prevent a potential issue where range-less defines from using up all the RAMs that the ranged defines are meant to go there.
+	</li>
+	<li>
+		<a href="https://en.wikipedia.org/wiki/Fragmentation_(computing)">Data fragmentation</a> can occur and prevent defines from being assigned if a define gets assigned
+		to an address in a way that the currently-empty bytes surround that now-used address(es). Consider this example: There is only empty RAM at <kbd>$7E0060</kbd> being 4 bytes long (ending at <kbd>$7E0063</kbd>),
+		and we have 2 defines each being 2 bytes long. The first one have a min address of <kbd>$7E0061</kbd> and the other lacks a min and max address. This means you enter these:
+		
+	<table><tr><td><pre>
+TestASM1	!Define2Bytes1	2	$7E0061	-
+TestASM1	!Define2Bytes2	2	-	-</pre></td></tr></table><br>
+	<table><tr><td><pre>
+$7E0060	4	Gap</pre></td></tr></table>
+	Causes <kbd>!Define2Bytes2</kbd> to fail, because <kbd>!Define2Bytes1</kbd> gets assigned to <kbd>$7E0061</kbd>, causing 2 bytes of empty RAM, <kbd>$7E0060</kbd> and <kbd>$7E0063</kbd> to not be contiguous
+	as each of them are 1 byte long.
+	</li>
 </ul>
+</details><br>
 
 <table>
 	<tr>
@@ -246,6 +261,7 @@ $7E0062	~$7E0063	Range 2 (notice that this range starts the byte after the last 
 		</tr>
 	</table>
 </div>
+<div style="height: 300px;" !-- This is to make the resizable DIV element above easily resizable and prevent scrol-jumping when page size changes --></div>
 <script>
 	function keyHandler_Tab(e) {
 

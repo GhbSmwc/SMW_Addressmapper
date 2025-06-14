@@ -155,4 +155,5 @@ Newest on bottom
 	 ranged addresses.
 2025-06-14 Note added about data fragmentation
 	-Added a note warning about data fragmentation on auto-assigner
-	 when a define is given a min and max address.
+	 when a define is given a min and max address, causing defines
+	 to fail.

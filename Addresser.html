@@ -855,7 +855,7 @@ Data is seperated with a single space or tab character.
 			//Generate addresses text (not merged with the line separator loop so that numbers are written on top of the bars when horizontal scroll is applied)
 			for (let i=0n; i<Setting_ByteView_NumberOfRows; i++) {
 				let AddressText = createSVGElement("text")
-				AddressText.setAttribute("stroke", "#ffffff")
+				AddressText.setAttribute("fill", "#ffffff")
 				AddressText.setAttribute("font-weight", "lighter")
 				AddressText.setAttribute("text-anchor", "left")
 				AddressText.setAttribute("alignment-baseline", "hanging")

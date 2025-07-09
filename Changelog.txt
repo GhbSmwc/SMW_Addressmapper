@@ -157,3 +157,4 @@ Newest on bottom
 	-Added a note warning about data fragmentation on auto-assigner
 	 when a define is given a min and max address, causing defines
 	 to fail.
+2025-07-08 Fixed a bold-looking text on the Byte View mode.

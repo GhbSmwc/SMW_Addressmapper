@@ -158,7 +158,7 @@ Newest on bottom
 	 when a define is given a min and max address, causing defines
 	 to fail.
 2025-07-08 - Fixed a bold-looking text on the Byte View mode.
-2025-08-17
+2025-08-17 - minor update
 	-Fixed a blank description bug where if the user just enters
 	 an address then size/ending but then not have a space/tab
 	 afterwards followed by a description, would have its description be

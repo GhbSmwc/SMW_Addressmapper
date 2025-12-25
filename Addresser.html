@@ -417,12 +417,13 @@ Data is seperated with a single space or tab character.
 		try {
 			FileReaderText.readAsText(FileToProcess) //Yet to read the file
 		} catch {
-			document.getElementById("UserInputList").value = ""
-			document.getElementById("SuccessReadMsg").hidden = true
-			document.getElementById("FileProcessingDisplay").hidden = true
-			document.getElementById("InvalidFileMsg").hidden = true
-			MainCodeWithFullRefresh()
-			MainCode()
+			//User presses escapes and causes an exception
+				document.getElementById("UserInputList").value = ""
+				document.getElementById("SuccessReadMsg").hidden = true
+				document.getElementById("FileProcessingDisplay").hidden = true
+				document.getElementById("InvalidFileMsg").hidden = true
+				MainCodeWithFullRefresh()
+				MainCode()
 		}
 	}
 	function CSSLinearGradientProgressBar({Quantity = 0, MaxQuantity = 100, Direction = "to right", ColorFull = "#C0C0C0", ColorEmpty = "rgb(29, 30, 38)"}) {

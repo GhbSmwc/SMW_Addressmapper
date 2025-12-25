@@ -101,14 +101,14 @@ Data is seperated with a single space or tab character.
 	<div><label><input type="radio" name="InputSetting" id="InputSetting_PasteText" onchange="HideInputSetting();">Paste text</label></div>
 </div><br><br>
 <div>
-	<div id="Input_UploadTxt">
+	<div id="Input_UploadTxt" style="font-family: monospace;">
 		<input type="file" id="UserInputTxtFile" accept=".txt,.asm" onchange="ProcessFile();">
 		<div hidden style="color: #800000;" id="InvalidFileMsg">Error reading file.</div>
-		<div hidden style="color: #008000;" id="SuccessReadMsg">File read successful.</div>
 		<div hidden id="FileProcessingDisplay">
 			<div id="ProgressText"></div>
 			<div id="ProgressBar" style="width: 400px; height: 5px; border: 1px solid #FFFFFF;"></div>
 		</div>
+		<div hidden style="color: #008000;" id="SuccessReadMsg">File read successful.</div>
 	</div>
 	<div id="Input_PasteText" hidden>
 		<button onclick="ClearInputList()">Clear</button><button onclick="AutoEnterSMWInput()">Reset textarea</button><br>

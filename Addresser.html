@@ -68,7 +68,7 @@
 <p><a href="HowToUse.html#From_Addresser" id="From_HowToUse">How to use</a></p>
 <p><a href="Assigner.html#From_Addresser" id="From_Assigner">Assigner tool</a></p>
 
-<p>Enter a list of RAM or any memory usage in the textarea below. Must be formatted like this:
+<p>Enter a list of RAM or any memory usage. You can submit a text file (works directly in your browser, no data are sent to any server), or enter text in the textarea. Must be formatted like this:
 <table><tr><td><pre>Address	Size_in_bytes_Or_EndAddress	Description
 Address	Size_in_bytes_Or_EndAddress	Description
 Address	Size_in_bytes_Or_EndAddress	Description</pre></td></tr></table><br>
@@ -95,7 +95,7 @@ Data is seperated with a single space or tab character.
 		</li>
 		<li><kbd>Description</kbd> (optional) is a brief description.</li>
 	</ul>
-</details>
+</details><br>
 <div>
 	<div><label><input type="radio" name="InputSetting" id="InputSetting_UploadTxt" onchange="HideInputSetting();" checked>Upload text file</label></div>
 	<div><label><input type="radio" name="InputSetting" id="InputSetting_PasteText" onchange="HideInputSetting();">Paste text</label></div>
@@ -106,7 +106,7 @@ Data is seperated with a single space or tab character.
 		<div hidden style="color: #800000;" id="InvalidFileMsg">Error reading file.</div>
 		<div hidden id="FileProcessingDisplay">
 			<div id="ProgressText"></div>
-			<div id="ProgressBar" style="width: 400px; height: 5px; border: 1px solid #FFFFFF;"></div>
+			<div id="ProgressBar" style="width: 200px; height: 5px; border: 1px solid #FFFFFF;"></div>
 		</div>
 		<div hidden style="color: #008000;" id="SuccessReadMsg">File read successful.</div>
 	</div>
@@ -382,10 +382,10 @@ Data is seperated with a single space or tab character.
 		document.getElementById("Input_PasteText").hidden = document.getElementById("InputSetting_UploadTxt").checked
 	}
 	function ProcessFile() {
-		let Files = [...event.target.files]
-		let FileToProcess = Files.at(-1)
+		let Files = [...event.target.files]	//failsafe
+		let FileToProcess = Files.at(-1)	//
 		
-		let Flag_InvalidFile = (FileToProcess && FileToProcess.type !== "text/plain")
+		let Flag_InvalidFile = (FileToProcess && (FileToProcess.type !== "text/plain"))
 		document.getElementById("InvalidFileMsg").hidden = !Flag_InvalidFile
 		if (Flag_InvalidFile) {
 			return
@@ -413,7 +413,14 @@ Data is seperated with a single space or tab character.
 			document.getElementById("ProgressText").textContent = "Loading: " + ProgressPercentage.toFixed(2) + "%"
 			document.getElementById("ProgressBar").style.backgroundImage = CSSLinearGradientProgressBar({Quantity: Progress, MaxQuantity: ProgressEnd, ColorFull: "#0000C0"})
 		}
-		let TextContent = FileReaderText.readAsText(FileToProcess) //Yet to read the file
+		let TextContent = null
+		try {
+			FileReaderText.readAsText(FileToProcess) //Yet to read the file
+		} catch {
+			document.getElementById("UserInputList").value = ""
+			MainCodeWithFullRefresh()
+			MainCode()
+		}
 	}
 	function CSSLinearGradientProgressBar({Quantity = 0, MaxQuantity = 100, Direction = "to right", ColorFull = "#C0C0C0", ColorEmpty = "rgb(29, 30, 38)"}) {
 		//Returns a percentage displayed as a gradient representing a bar graph as CSS. Preferably as a background image.

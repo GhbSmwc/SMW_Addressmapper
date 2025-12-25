@@ -96,8 +96,25 @@ Data is seperated with a single space or tab character.
 		<li><kbd>Description</kbd> (optional) is a brief description.</li>
 	</ul>
 </details>
-<button onclick="ClearInputList()">Clear</button><button onclick="AutoEnterSMWInput()">Reset textarea</button><br>
-<textarea id="UserInputList" cols="75" rows="30" oninput="MainCodeWithFullRefresh()" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
+<div>
+	<div><label><input type="radio" name="InputSetting" id="InputSetting_UploadTxt" onchange="HideInputSetting();" checked>Upload text file</label></div>
+	<div><label><input type="radio" name="InputSetting" id="InputSetting_PasteText" onchange="HideInputSetting();">Paste text</label></div>
+</div><br><br>
+<div>
+	<div id="Input_UploadTxt">
+		<input type="file" id="UserInputTxtFile" accept=".txt,.asm" onchange="ProcessFile();">
+		<div hidden style="color: #800000;" id="InvalidFileMsg">Error reading file.</div>
+		<div hidden style="color: #008000;" id="SuccessReadMsg">File read successful.</div>
+		<div hidden id="FileProcessingDisplay">
+			<div id="ProgressText"></div>
+			<div id="ProgressBar" style="width: 400px; height: 5px; border: 1px solid #FFFFFF;"></div>
+		</div>
+	</div>
+	<div id="Input_PasteText" hidden>
+		<button onclick="ClearInputList()">Clear</button><button onclick="AutoEnterSMWInput()">Reset textarea</button><br>
+		<textarea id="UserInputList" cols="75" rows="30" oninput="MainCodeWithFullRefresh()" style="white-space: pre; overflow-wrap: normal; overflow-x: scroll;"></textarea>
+	</div>
+</div><br><br>
 <div>
 	<abbr title="This will take the starting (and ending address) you entered above, add (offsets) by this value, and the output are the off-set by this. Useful if you using RAM mirrors - like this: $01 becomes $7E0001 by an offset of $7E0000.">Offset input addresses by</abbr>: <input type="number" id="AddressOffsetterDec" onchange="AddressOffsetterDec_DecToHex()" value="0" step="1">($<input type="text" value="0" class="HexNumberInput" onchange="AddressOffsetterDec_HexToDec()" id="AddressOffsetterHex">)<br>
 	View mode:
@@ -297,6 +314,9 @@ Data is seperated with a single space or tab character.
 				"keydown",
 				((e) => {
 					let KeyName = e.key
+					if (e.altKey) {
+						return
+					}
 					if (/(?:ArrowUp|ArrowDown)/.test(KeyName)) {
 						let Str = e.target.value
 						try {
@@ -357,8 +377,59 @@ Data is seperated with a single space or tab character.
 		
 		MainCode()
 	}
-	function MainCodeSortRefresh() {
+	function HideInputSetting() {
+		document.getElementById("Input_UploadTxt").hidden = !document.getElementById("InputSetting_UploadTxt").checked
+		document.getElementById("Input_PasteText").hidden = document.getElementById("InputSetting_UploadTxt").checked
+	}
+	function ProcessFile() {
+		let Files = [...event.target.files]
+		let FileToProcess = Files.at(-1)
 		
+		let Flag_InvalidFile = (FileToProcess && FileToProcess.type !== "text/plain")
+		document.getElementById("InvalidFileMsg").hidden = !Flag_InvalidFile
+		if (Flag_InvalidFile) {
+			return
+		}
+		let FileReaderText = new FileReader()
+		FileReaderText.onload = function (e) {
+			let TextContent = e.target.result
+			document.getElementById("UserInputList").value = TextContent
+			document.getElementById("SuccessReadMsg").hidden = false
+			document.getElementById("InvalidFileMsg").hidden = true
+			MainCodeWithFullRefresh()
+			MainCode()
+		}
+		FileReaderText.onerror = function(e) {
+			document.getElementById("UserInputList").value = ""
+			document.getElementById("SuccessReadMsg").hidden = true
+			document.getElementById("FileProcessingDisplay").hidden = true
+			document.getElementById("InvalidFileMsg").hidden = false
+		}
+		FileReaderText.onprogress = (e) => {
+			let Progress = e.loaded
+			let ProgressEnd = e.total
+			let ProgressPercentage = Progress * 100 / ProgressEnd //Multiply first so that rounding (after division) happens at the end to mitigate rounding errors
+			document.getElementById("FileProcessingDisplay").hidden = false
+			document.getElementById("ProgressText").textContent = "Loading: " + ProgressPercentage.toFixed(2) + "%"
+			document.getElementById("ProgressBar").style.backgroundImage = CSSLinearGradientProgressBar({Quantity: Progress, MaxQuantity: ProgressEnd, ColorFull: "#0000C0"})
+		}
+		let TextContent = FileReaderText.readAsText(FileToProcess) //Yet to read the file
+	}
+	function CSSLinearGradientProgressBar({Quantity = 0, MaxQuantity = 100, Direction = "to right", ColorFull = "#C0C0C0", ColorEmpty = "rgb(29, 30, 38)"}) {
+		//Returns a percentage displayed as a gradient representing a bar graph as CSS. Preferably as a background image.
+		let Percentage = 0
+		if (MaxQuantity != 0) {
+			Percentage = Quantity * 100/MaxQuantity //Multiply first so that it only rounds at the last step, minimizing rounding errors.
+		}
+		Percentage = clamp(Percentage, 0, 100)
+		return "linear-gradient("+Direction+", "+ColorFull+" "+Percentage.toFixed(17)+"%, "+ColorEmpty+" "+Percentage.toFixed(17)+"% 100%)"
+	}
+	function clamp(num, min, max) {
+		//Restrict a number within a specified range.
+			if (isNaN(num) == true) {
+				num = 0
+			}
+			return num <= min ? min : num >= max ? max : num;
 	}
 	function MainCode() {
 		ObjectOfDataRanges = []

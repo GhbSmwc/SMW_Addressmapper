@@ -163,3 +163,6 @@ Newest on bottom
 	 an address then size/ending but then not have a space/tab
 	 afterwards followed by a description, would have its description be
 	 the entire line.
+2025-12-24
+	-Fixed a minor display issue with Addresser.html when an error message
+	 appears with a long enough line of text.

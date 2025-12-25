@@ -418,6 +418,9 @@ Data is seperated with a single space or tab character.
 			FileReaderText.readAsText(FileToProcess) //Yet to read the file
 		} catch {
 			document.getElementById("UserInputList").value = ""
+			document.getElementById("SuccessReadMsg").hidden = true
+			document.getElementById("FileProcessingDisplay").hidden = true
+			document.getElementById("InvalidFileMsg").hidden = true
 			MainCodeWithFullRefresh()
 			MainCode()
 		}

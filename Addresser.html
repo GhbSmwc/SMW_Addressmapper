@@ -382,7 +382,7 @@ Data is seperated with a single space or tab character.
 						Type: "CommentOrBlankLine"
 					}
 				}
-				if (!/^\s*-?\$?[\da-fA-F]+(?:\t| )(?:\d+|\~-?\$?[\da-fA-F]+)(?:(?:\t| ).*)?$/.test(Line)) {
+				if (!/^\s*-?\$?[\da-fA-F]+(?:\s+)(?:\d+|\~-?\$?[\da-fA-F]+)(?:(?:\s+).*)?$/.test(Line)) {
 					ErrorExists = true
 					return {
 						Type: "Error",

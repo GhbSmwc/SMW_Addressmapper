@@ -164,5 +164,8 @@ Newest on bottom
 	 afterwards followed by a description, would have its description be
 	 the entire line.
 2025-12-24
-	-Fixed a minor display issue with Addresser.html when an error message
-	 appears with a long enough line of text.
+	-Addresser.html changes:
+	--Fixed a minor display issue with Addresser.html when an error message
+	  appears with a long enough line of text.
+	--Fixed a regex that checks for invalid syntax refusing to accept lines
+	  that have multiple whitespace characters as a separator between data.

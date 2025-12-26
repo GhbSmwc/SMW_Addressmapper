@@ -391,28 +391,10 @@ Data is seperated with a single space or tab character.
 			return
 		}
 		let FileReaderText = new FileReader()
-		FileReaderText.onload = function (e) {
-			let TextContent = e.target.result
-			document.getElementById("UserInputList").value = TextContent
-			document.getElementById("SuccessReadMsg").hidden = false
-			document.getElementById("InvalidFileMsg").hidden = true
-			MainCodeWithFullRefresh()
-			MainCode()
-		}
-		FileReaderText.onerror = function(e) {
-			document.getElementById("UserInputList").value = ""
-			document.getElementById("SuccessReadMsg").hidden = true
-			document.getElementById("FileProcessingDisplay").hidden = true
-			document.getElementById("InvalidFileMsg").hidden = false
-		}
-		FileReaderText.onprogress = (e) => {
-			let Progress = e.loaded
-			let ProgressEnd = e.total
-			let ProgressPercentage = Progress * 100 / ProgressEnd //Multiply first so that rounding (after division) happens at the end to mitigate rounding errors
-			document.getElementById("FileProcessingDisplay").hidden = false
-			document.getElementById("ProgressText").textContent = "Loading: " + ProgressPercentage.toFixed(2) + "%"
-			document.getElementById("ProgressBar").style.backgroundImage = CSSLinearGradientProgressBar({Quantity: Progress, MaxQuantity: ProgressEnd, ColorFull: "#0000C0"})
-		}
+		FileReaderText.addEventListener("load", SuccessfulLoad)
+		FileReaderText.addEventListener("error", LoadError)
+		FileReaderText.addEventListener("progress", DisplayProgress)
+		FileReaderText.addEventListener("loadend", ClearLoad)
 		let TextContent = null
 		try {
 			FileReaderText.readAsText(FileToProcess) //Yet to read the file
@@ -425,6 +407,35 @@ Data is seperated with a single space or tab character.
 				MainCodeWithFullRefresh()
 				MainCode()
 		}
+	}
+	function SuccessfulLoad(e) {
+		let TextContent = e.target.result
+		document.getElementById("UserInputList").value = TextContent
+		document.getElementById("SuccessReadMsg").hidden = false
+		document.getElementById("InvalidFileMsg").hidden = true
+		MainCodeWithFullRefresh()
+		MainCode()
+	}
+	function LoadError(e) {
+		document.getElementById("UserInputList").value = ""
+		document.getElementById("SuccessReadMsg").hidden = true
+		document.getElementById("FileProcessingDisplay").hidden = true
+		document.getElementById("InvalidFileMsg").hidden = false
+	}
+	function DisplayProgress(e) {
+		let Progress = e.loaded
+		let ProgressEnd = e.total
+		let ProgressPercentage = Progress * 100 / ProgressEnd //Multiply first so that rounding (after division) happens at the end to mitigate rounding errors
+		document.getElementById("FileProcessingDisplay").hidden = false
+		document.getElementById("ProgressText").textContent = "Loading: " + ProgressPercentage.toFixed(2) + "%"
+		document.getElementById("ProgressBar").style.backgroundImage = CSSLinearGradientProgressBar({Quantity: Progress, MaxQuantity: ProgressEnd, ColorFull: "#0000C0"})
+	}
+	function ClearLoad(e) {
+		let FileRead = event.target
+		FileRead.removeEventListener("load", SuccessfulLoad)
+		FileRead.removeEventListener("error", LoadError)
+		FileRead.removeEventListener("progress", DisplayProgress)
+		FileRead.removeEventListener("loadend", ClearLoad)
 	}
 	function CSSLinearGradientProgressBar({Quantity = 0, MaxQuantity = 100, Direction = "to right", ColorFull = "#C0C0C0", ColorEmpty = "rgb(29, 30, 38)"}) {
 		//Returns a percentage displayed as a gradient representing a bar graph as CSS. Preferably as a background image.

@@ -395,7 +395,6 @@ Data is seperated with a single space or tab character.
 		FileReaderText.addEventListener("error", LoadError)
 		FileReaderText.addEventListener("progress", DisplayProgress)
 		FileReaderText.addEventListener("loadend", ClearLoad)
-		let TextContent = null
 		try {
 			FileReaderText.readAsText(FileToProcess) //Yet to read the file
 		} catch {
